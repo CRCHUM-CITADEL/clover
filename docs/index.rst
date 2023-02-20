@@ -108,16 +108,11 @@ The branch 'main' contains the latest development version.
 Quickstart
 ==========
 To get started, we created two notebooks to guide you through the generation of synthetic data
-and their associated utility report:
-
-.. toctree::
-   :maxdepth: 3
-
-   notebooks/modules
+and their associated utility report.
 
 The notebooks are based on the `Breast Wisconsin Cancer WBCD dataset
 <https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Original%29>`_.
-They can be found in the notebooks/ folder.
+They can be found in the notebooks/ folder on Github.
 
 .. _join:
 

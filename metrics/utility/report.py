@@ -53,7 +53,6 @@ class Report:
         figsize: Tuple[float, float] = (8, 6),
         random_state: int = 0,
     ):
-
         if metrics is not None:
             assert set(metrics) <= set(metrics_mapping.keys()), (
                 "Wrong metrics name. Must be among the following list: '"

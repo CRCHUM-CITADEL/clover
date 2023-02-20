@@ -1,0 +1,166 @@
+from abc import ABCMeta, abstractmethod  # Standard library
+from typing import Tuple, List
+import random
+
+import pandas as pd  # 3rd party packages
+import numpy as np
+
+
+class UtilityMetric(metaclass=ABCMeta):
+    """
+    Abstract utility metric class providing the template to follow for each metric.
+
+    :cvar name: the name of the metric
+    :vartype name: str
+    :cvar alias: the shortname of the metric
+    :vartype alias: str
+    :cvar min: the minimal bound
+    :vartype min: Union[int, float]
+    :cvar max: the maximal bound
+    :vartype max: Union[int, float]
+    :cvar objective: the target value for the metric: 'min' or 'max'
+    :vartype objective: str
+
+    :param random_state: for reproducibility purposes
+    """
+
+    name: str
+    alias: str
+    min: float
+    max: float
+    objective: str
+
+    @classmethod
+    @property
+    @abstractmethod
+    def name(cls) -> str:
+        """
+        :return: the name of the metric
+        """
+
+    @classmethod
+    @property
+    @abstractmethod
+    def alias(cls) -> str:
+        """
+        :return: the alias of the metric
+        """
+
+    @classmethod
+    @property
+    @abstractmethod
+    def min(cls) -> float:
+        """
+        :return: the minimum value taken by the metric
+        """
+
+    @classmethod
+    @property
+    @abstractmethod
+    def max(cls) -> float:
+        """
+        :return: the maximal value taken by the metric
+        """
+
+    @classmethod
+    @property
+    @abstractmethod
+    def objective(cls) -> str:
+        """
+        :return: the target value of the metric, can be "min" or "max"
+        """
+
+    def __init__(self, random_state: int = None):
+        if random_state is not None:
+            random.seed(random_state)
+            np.random.seed(random_state)
+
+    @classmethod
+    @abstractmethod
+    def get_average_submetrics(cls) -> List[str]:
+        """
+        Get the average submetrics of the current metric.
+
+        :return: the list of the average submetrics
+        """
+
+    @classmethod
+    def get_class_variables(cls) -> dict:
+        """
+        Getter for the class variables.
+
+        :return: a dict containing the name of the class variables as key and their value
+        """
+
+        class_variables = {
+            "name": cls.name,
+            "alias": cls.alias,
+            "min": cls.min,
+            "max": cls.max,
+            "objective": cls.objective,
+        }
+        return class_variables
+
+    @abstractmethod
+    def compute(
+        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+    ) -> dict:
+        """
+        Compute the metric. To be reimplemented for each metric.
+
+        :param df_real: the real dataset
+        :param df_synthetic: the synthetic dataset
+        :param metadata: a dict containing the metadata with the following keys:
+          **continuous**, **categorical** and **variable_to_predict**
+        :return: a dictionary containing two keys: the **average** metric values and the **detailed** ones
+        """
+        pass
+
+    def check_consistency_compute_parameters(
+        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+    ) -> None:
+        """
+        Assert that the compute method parameters are consistent.
+
+        :param df_real: the real dataset
+        :param df_synthetic: the synthetic dataset
+        :param metadata: a dict containing the metadata with the following keys:
+          **continuous**, **categorical** and **variable_to_predict**
+        :return: *None*
+        """
+
+        assert df_real.shape == df_synthetic.shape, "Datasets must have the same shape"
+
+        assert set(df_real.columns) == set(
+            df_synthetic.columns
+        ), "Datasets must have the same columns"
+
+        assert {"continuous", "categorical", "variable_to_predict"} == set(
+            metadata.keys()
+        ), "Missing keys in the metadata dictionary"
+
+        assert set(metadata["continuous"] + metadata["categorical"]) == set(
+            df_real.columns
+        ), "All columns should be specified in the metadata"
+
+        assert (
+            len(metadata["continuous"] + metadata["categorical"]) == df_real.shape[1]
+        ), "All columns should be specified once in the metadata"
+
+        assert (
+            metadata["variable_to_predict"] is None
+            or metadata["variable_to_predict"] in df_real.columns
+        ), "The variable to predict should be in the dataset"
+
+    @classmethod
+    @abstractmethod
+    def draw(cls, report: dict, figsize: Tuple[float, float] = None) -> None:
+        """
+        Create a graphical visualization of the metric based on the detailed report.
+        To be reimplemented for each metric.
+
+        :param report: the **detailed** report, outcome of the *compute* method
+        :param figsize: the size of the figure in inches (width, height)
+        :return: *None*
+        """
+        pass

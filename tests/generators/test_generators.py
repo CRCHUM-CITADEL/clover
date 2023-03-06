@@ -64,6 +64,29 @@ def test_generation(
             df_synth.columns
         ), "Datasets must have the same columns"
 
-        # Check the hyperparameters search method
-        hyper = gen.search_hyperparameters(num_iter=1)
-        assert isinstance(hyper, dict)
+
+@pytest.mark.parametrize("search_method", ["random", "pso"])
+def test_search_hyperparameters_synthpop(
+    search_method: str, df_wbcd: pd.DataFrame, metadata_wbcd: dict
+) -> None:
+    """
+    Check the search for hyperparameters for the sequential trees.
+
+    :param search_method: the search method, "pso" for Particle Swarm Optimization or "random"
+    :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture
+    :param metadata_wbcd: the wbcd metadata fixture
+    :return: *None*
+    """
+
+    # Create the generator
+    gen = SynthpopGenerator(df=df_wbcd, metadata=metadata_wbcd)
+
+    # Check the hyperparameters search method
+    hyper = gen.search_hyperparameters(
+        search=search_method, num_iter=1, population_size=5
+    )
+
+    assert isinstance(hyper, dict)
+    assert {"variables_order", "cost"} <= hyper.keys()
+    assert len(hyper["variables_order"]) == len(df_wbcd.columns)
+    assert set(hyper["variables_order"]) == set(df_wbcd.columns)

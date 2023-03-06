@@ -2,6 +2,8 @@ from typing import Union, Any  # standard library
 from pathlib import Path
 import pickle
 from datetime import datetime
+import os
+import sys
 
 
 def get_date() -> str:
@@ -39,3 +41,22 @@ def save_pickle(obj: Any, path: Union[Path, str], filename: str) -> None:
     if obj is not None:
         with open(Path(path) / f"{get_date()}_{filename}.pkl", "wb") as file:
             pickle.dump(obj, file, pickle.HIGHEST_PROTOCOL)
+
+
+class HiddenPrints:
+    """
+    Block print calls.
+    From https://stackoverflow.com/questions/8391411/how-to-block-calls-to-print
+
+    Usage:
+        with HiddenPrints():
+            print("This will not be printed")
+    """
+
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, "w")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout

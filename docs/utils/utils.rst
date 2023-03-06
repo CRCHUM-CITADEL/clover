@@ -20,6 +20,30 @@ utils.learning module
    :undoc-members:
    :show-inheritance:
 
+utils.optimization module
+-------------------------
+
+.. automodule:: utils.optimization
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+utils.preprocessing module
+--------------------------
+
+.. automodule:: utils.preprocessing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+utils.standard module
+---------------------
+
+.. automodule:: utils.standard
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 utils.stats module
 ------------------
 

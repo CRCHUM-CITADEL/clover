@@ -36,6 +36,22 @@ tests.metrics.utility.test\_population module
    :undoc-members:
    :show-inheritance:
 
+tests.metrics.utility.test\_application module
+----------------------------------------------
+
+.. automodule:: tests.metrics.utility.test_application
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tests.metrics.utility.test\_report module
+-----------------------------------------
+
+.. automodule:: tests.metrics.utility.test_report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

@@ -30,13 +30,13 @@ preserve the properties of the real data without compromising the privacy of the
 ## Useful Links
 
 * [Documentation]()
-* [Github Repository]()
+* [Github Repository](https://github.com/CRCHUM-CITADEL/clover)
 
 ## Current Features
 
 * Synthetic data generators, supporting continuous and categorical variables (unique identifiers are not handled):
    - [DataSynthesizer](https://github.com/DataResponsibly/DataSynthesizer)
-   - [Synthpop](https://github.com/hazy/synthpop) with random search to tune the variables order
+   - [Synthpop](https://github.com/hazy/synthpop) with random or Particle Swarm Optimization search to tune the variables order
 * Utility report to assess the fidelity of the synthetic data:
    - Summary table
    - Detailed report with figures
@@ -75,8 +75,7 @@ and their associated utility report:
 * [Utility report](notebooks/utility_report.ipynb)
 
 The notebooks are based on the 
-[Breast Wisconsin Cancer WBCD dataset](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Original%29). 
-They can also be found in the documentation.
+[Breast Wisconsin Cancer WBCD dataset](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Original%29).
 
 ### Join Our Community
 If you have any question, feature request or if you have encountered an issue, please open an issue on Github.

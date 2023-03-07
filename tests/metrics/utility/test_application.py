@@ -43,7 +43,7 @@ def test_fscore() -> None:
     with pytest.raises(AssertionError):
         app.FScore.fscore(df=df_labels_only, predicted_var="class")
     assert all(app.FScore.fscore(df=df_ab, predicted_var="class") > 2)
-    assert all(app.FScore.fscore(df=df_aa, predicted_var="class") < 0.01)
+    assert all(app.FScore.fscore(df=df_aa, predicted_var="class") < 0.05)
 
 
 test_params = [

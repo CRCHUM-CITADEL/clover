@@ -39,7 +39,6 @@ Table of Contents
 Useful Links
 ============
 
-* `Documentation <link>`_
 * `Github Repository <https://github.com/CRCHUM-CITADEL/clover>`_
 
 .. _current_features:
@@ -112,7 +111,14 @@ and their associated utility report.
 
 The notebooks are based on the `Breast Wisconsin Cancer WBCD dataset
 <https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Original%29>`_.
-They can be found in the notebooks/ folder on Github.
+
+.. toctree::
+   :maxdepth: 4
+
+   notebooks/modules
+
+The original notebooks can be found in the
+`notebooks/ <https://github.com/CRCHUM-CITADEL/clover/tree/main/notebooks>`_ folder on Github.
 
 .. _join:
 

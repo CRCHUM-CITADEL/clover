@@ -29,8 +29,20 @@ preserve the properties of the real data without compromising the privacy of the
 
 ## Useful Links
 
-* [Documentation]()
+* [Documentation](#documentation)
 * [Github Repository](https://github.com/CRCHUM-CITADEL/clover)
+
+## Documentation
+
+We shall keep the repository private during the first stage of development.
+The documentation is therefore not yet available as a web page. To browse it, please follow the following steps:
+
+* `git clone git@github.com:CRCHUM-CITADEL/clover.git` or `git clone https://github.com/CRCHUM-CITADEL/clover`
+* `git checkout gh-pages` (a new local branch will automatically be created from the remote `gh-pages` branch)
+* open the file `index.html` in your browser to visualize the documentation home page
+
+Nb: The branch `gh-pages` is recreated each time the main branch is modified on Github.
+
 
 ## Current Features
 
@@ -56,7 +68,7 @@ preserve the properties of the real data without compromising the privacy of the
      - Prediction (regression & classification)
      - F-Score for binary classification with continuous variables only
 
-See the documentation for more details.
+See the [documentation](#documentation) for more details.
 
 ## Usage
 
@@ -80,7 +92,9 @@ The notebooks are based on the
 ### Join Our Community
 If you have any question, feature request or if you have encountered an issue, please open an issue on Github.
 
-We also welcome any contribution to the project. The required packages for development can be found in the [dev-requirements file](dev-requirements.txt)
+We also welcome any contribution to the project. 
+The required packages for development can be found in the [dev-requirements file](dev-requirements.txt).
+The documentation was generated with Sphinx.
 
 ### Ongoing Work - Next Steps
 * Implement more generators

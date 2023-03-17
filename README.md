@@ -80,7 +80,7 @@ Clover has been tested on a Linux system running Python 3.8.10.
 The package is not yet available on pypi. You can clone the Github repository.
 The branch 'main' contains the latest development version.
 
-### Quickstart
+## Quickstart
 To get started, we created two notebooks to guide you through the generation of synthetic data
 and their associated utility report:
 * [Synthetic data generation](notebooks/synthetic_data_generation.ipynb)
@@ -89,14 +89,14 @@ and their associated utility report:
 The notebooks are based on the 
 [Breast Wisconsin Cancer WBCD dataset](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Original%29).
 
-### Join Our Community
+## Join Our Community
 If you have any question, feature request or if you have encountered an issue, please open an issue on Github.
 
 We also welcome any contribution to the project. 
 The required packages for development can be found in the [dev-requirements file](dev-requirements.txt).
 The documentation was generated with Sphinx.
 
-### Ongoing Work - Next Steps
+## Ongoing Work - Next Steps
 * Implement more generators
 * Optimise the generators with hyperparameters search
 * Integrate Differential Privacy in to each generator

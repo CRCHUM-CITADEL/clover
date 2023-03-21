@@ -9,7 +9,7 @@ import numpy as np
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, LabelBinarizer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 import matplotlib.pyplot as plt
 
 import utils.learning as ulearning  # local
@@ -133,7 +133,12 @@ class Distinguishability(UtilityMetric):
         # Compute scores several times to account for randomness
         for _ in range(self._num_repeat):
             # Propensity MSE - no train test split
-            pipe = Pipeline(steps=[("gbm", GradientBoostingClassifier())])
+            pipe = Pipeline(
+                steps=[
+                    ("standardization", StandardScaler()),
+                    ("gbm", GradientBoostingClassifier()),
+                ]
+            )
             auc_score, y_pred_proba = ulearning.train_predict(
                 pipeline=pipe,
                 x_train=x,
@@ -158,7 +163,12 @@ class Distinguishability(UtilityMetric):
                     # Add the synthetic indices
                     train_index = np.hstack([tr_ind, tr_ind + len(df_real)])
                     test_index = np.hstack([te_ind, te_ind + len(df_real)])
-                    pipe = Pipeline(steps=[("gbm", GradientBoostingClassifier())])
+                    pipe = Pipeline(
+                        steps=[
+                            ("standardization", StandardScaler()),
+                            ("gbm", GradientBoostingClassifier()),
+                        ]
+                    )
                     scores, y_pred_proba = ulearning.train_predict(
                         pipeline=pipe,
                         x_train=x[train_index],

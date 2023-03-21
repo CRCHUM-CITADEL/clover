@@ -7,7 +7,7 @@ import warnings
 import pandas as pd  # 3rd party packages
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import OneHotEncoder, LabelBinarizer
+from sklearn.preprocessing import OneHotEncoder, LabelBinarizer, StandardScaler
 from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
@@ -311,7 +311,12 @@ class Regression(Prediction):
         mse_test = []
         kf = KFold(n_splits=num_folds, shuffle=True)
         for train_index, test_index in kf.split(x_train, y_train):
-            pipe = Pipeline(steps=[("gbm", GradientBoostingRegressor())])
+            pipe = Pipeline(
+                steps=[
+                    ("standardization", StandardScaler()),
+                    ("gbm", GradientBoostingRegressor()),
+                ]
+            )
             scores, _ = ulearning.train_predict(
                 pipeline=pipe,
                 x_train=x_train[train_index],
@@ -407,7 +412,12 @@ class Classification(Prediction):
         auc_test = []
         kf = StratifiedKFold(n_splits=num_folds, shuffle=True)
         for train_index, test_index in kf.split(x_train, y_train):
-            pipe = Pipeline(steps=[("gbm", GradientBoostingClassifier())])
+            pipe = Pipeline(
+                steps=[
+                    ("standardization", StandardScaler()),
+                    ("gbm", GradientBoostingClassifier()),
+                ]
+            )
             scores, _ = ulearning.train_predict(
                 pipeline=pipe,
                 x_train=x_train[train_index],

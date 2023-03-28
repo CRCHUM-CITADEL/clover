@@ -1,5 +1,5 @@
 import pytest  # standard library
-from typing import Type, Tuple
+from typing import Type, Tuple, Callable
 
 import pandas as pd  # 3rd party packages
 import numpy as np
@@ -11,30 +11,30 @@ import utils.stats as ustats
 
 
 @pytest.mark.parametrize(
-    "metric_class, function_name",
+    "distance_function",
     [
-        (uni.UnivariateDiscreteDistance, "hellinger_distance"),
-        (uni.UnivariateDiscreteDistance, "kullback_leibler_divergence"),
+        uni.UnivariateDiscreteDistance.hellinger_distance,
+        uni.UnivariateDiscreteDistance.kullback_leibler_divergence,
     ],
 )
-def test_distance_divergence(metric_class, function_name) -> None:
+def test_distance_divergence(distance_function: Callable) -> None:
     """
     Test the distance and divergence functions.
 
+    :param distance_function: the function to test
     :return: None
     """
 
     p = ustats.discrete_probability_distribution(size=20)
     q = ustats.discrete_probability_distribution(size=20)
 
-    d = metric_class
+    with pytest.raises(AssertionError):
+        distance_function(p, np.array([]))
+    with pytest.raises(AssertionError):
+        distance_function(np.array([0.6, 0.8]), np.array([0.3, 0.7]))
 
-    with pytest.raises(AssertionError):
-        getattr(d, function_name)(p, np.array([]))
-    with pytest.raises(AssertionError):
-        getattr(d, function_name)(np.array([0.6, 0.8]), np.array([0.3, 0.7]))
-    assert getattr(d, function_name)(p, q) > 0.1
-    assert getattr(d, function_name)(p, p) == 0
+    assert distance_function(p, q) > 0.1
+    assert distance_function(p, p) == 0
 
 
 test_params = [

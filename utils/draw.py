@@ -144,7 +144,12 @@ def box_plot(
     :param ax: the *Axes* object to draw the plot onto, otherwise use the current *Axes*
     :return: the *Axes* object with the plot drawn into it
     """
-    axis = sns.boxplot(data=data, orient=orient, ax=ax)
+    axis = sns.boxplot(
+        data=data,
+        orient=orient,
+        ax=ax,
+        palette=config.SEABORN_PALETTE,
+    )
 
     axis.set_title(title)
 

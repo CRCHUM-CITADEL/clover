@@ -9,7 +9,9 @@ import numpy as np
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.utils import shuffle
 import matplotlib.pyplot as plt
 
 import utils.learning as ulearning  # local
@@ -74,7 +76,12 @@ class Distinguishability(UtilityMetric):
 
         :return: the list of the average submetrics
         """
-        return ["propensity_mse", "prediction_mse", "prediction_auc"]
+        return [
+            "propensity_mse",
+            "prediction_mse_real",
+            "prediction_mse_synth",
+            "prediction_auc",
+        ]
 
     @staticmethod
     def propensity_mse(propensity_scores: Union[List[float], np.ndarray]) -> float:
@@ -107,11 +114,12 @@ class Distinguishability(UtilityMetric):
         :return: a dictionary with two keys pointing to dictionaries
 
             * **average** -- the average across repetitions propensity mean squared error **propensity_mse** and
-              the average across repetitions and folds prediction mean squared error **prediction_mse**
-              and prediction auc score **prediction_auc**
-            * **detailed** -- the propensity mean squared errors **propensity_mse** and
-              the average across folds prediction mean squared errors **prediction_mse**
-              and prediction auc scores **prediction_auc**
+              the average across repetitions and folds prediction mean squared error for real and synthetic test sets
+              **prediction_mse_real** and **prediction_mse_synth** and prediction auc score **prediction_auc**
+            * **detailed** -- the propensity mean squared errors **propensity_mse**,
+              the average across folds prediction mean squared errors for real and synthetic test sets
+              **prediction_mse_real** and **prediction_mse_synth** and prediction auc scores **prediction_auc**,
+              the predictions for real and synthetic test sets **prediction_real** and **prediction_synth**
         """
 
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
@@ -120,90 +128,129 @@ class Distinguishability(UtilityMetric):
         # TODO: ensure no need for imputation, normalization?
         df = pd.concat([df_real, df_synthetic], axis=0, ignore_index=True)
 
-        #   One-hot conversion for categorical columns
-        encoder = OneHotEncoder(drop="first")
-        x_cat = encoder.fit_transform(df[metadata["categorical"]]).toarray()
-        x = np.concatenate([df[metadata["continuous"]].to_numpy(), x_cat], axis=1)
+        # ColumnTransformers
+        preprocessing = ColumnTransformer(
+            [
+                ("continuous", StandardScaler(), metadata["continuous"]),
+                (
+                    "categorical",
+                    OneHotEncoder(drop="first", handle_unknown="ignore"),
+                    metadata["categorical"],
+                ),
+            ],
+            verbose_feature_names_out=False,
+        )
 
         #   Label 1 for real records and 0 for synthetic ones
         y = np.array([1] * len(df_real) + [0] * len(df_synthetic))
 
         # Compute the distinguishability score in three different settings
         dist_scores = []
+        prediction_real = []
+        prediction_synth = []
+
         # Compute scores several times to account for randomness
         for _ in range(self._num_repeat):
             # Propensity MSE - no train test split
             pipe = Pipeline(
                 steps=[
-                    ("standardization", StandardScaler()),
+                    ("preprocessing", preprocessing),
                     ("gbm", GradientBoostingClassifier()),
                 ]
             )
             auc_score, y_pred_proba = ulearning.train_predict(
                 pipeline=pipe,
-                x_train=x,
+                x_train=df,
                 y_train=y,
-                x_test_list=[x],
+                x_test_list=[df],
                 y_test_list=[y],
                 classif_labels=[0, 1],
             )
             propensity_score = self.propensity_mse(y_pred_proba[0])  # only one test set
 
             # Prediction MSE and AUC score on the test set with kfolds
-            prediction_mse = []
+            prediction_mse_real = []
+            prediction_mse_synth = []
             prediction_auc = []
+
             if self._num_folds < 2:  # test data is equal to training data
-                prediction_mse.append(propensity_score)
+                prediction_mse_real.append(propensity_score)
+                prediction_mse_synth.append(propensity_score)
                 prediction_auc.append(
                     max(0.5, auc_score[0]) * 2 - 1
                 )  # scale between 0 and 1
             else:
                 kf = KFold(n_splits=self._num_folds, shuffle=True)
-                for tr_ind, te_ind in kf.split(x[: len(df_real)], y[: len(df_real)]):
-                    # Add the synthetic indices
+                for tr_ind, te_ind in kf.split(df_real, y[: len(df_real)]):
+                    # Add the synthetic indices and shuffle training indices
                     train_index = np.hstack([tr_ind, tr_ind + len(df_real)])
+                    np.random.shuffle(train_index)
                     test_index = np.hstack([te_ind, te_ind + len(df_real)])
+
                     pipe = Pipeline(
                         steps=[
-                            ("standardization", StandardScaler()),
+                            ("preprocessing", preprocessing),
                             ("gbm", GradientBoostingClassifier()),
                         ]
                     )
+
                     scores, y_pred_proba = ulearning.train_predict(
                         pipeline=pipe,
-                        x_train=x[train_index],
+                        x_train=df.iloc[train_index],
                         y_train=y[train_index],
-                        x_test_list=[x[test_index]],
+                        x_test_list=[df.iloc[test_index]],
                         y_test_list=[y[test_index]],
                         classif_labels=[0, 1],
                     )
-                    mse = self.propensity_mse(y_pred_proba[0])  # only one test set
-                    auc = scores[0]  # only one test set
-                    prediction_mse.append(mse)
-                    prediction_auc.append(
-                        max(0.5, auc) * 2 - 1
-                    )  # scale between 0 and 1
+
+                    y_pred_real = y_pred_proba[0][: len(test_index) // 2]
+                    mse_real = self.propensity_mse(y_pred_real)  # only one test set
+                    y_pred_synth = y_pred_proba[0][len(test_index) // 2 :]
+                    mse_synth = self.propensity_mse(y_pred_synth)  # only one test set
+                    auc = (
+                        max(0.5, scores[0]) * 2 - 1
+                    )  # only one test set and scale between 0 and 1
+
+                    prediction_mse_real.append(mse_real)
+                    prediction_mse_synth.append(mse_synth)
+                    prediction_auc.append(auc)
+                    prediction_real.extend(y_pred_real)
+                    prediction_synth.extend(y_pred_synth)
 
             # Average scores on kfolds
             dist_scores.append(
-                [propensity_score, np.mean(prediction_mse), np.mean(prediction_auc)]
+                [
+                    propensity_score,
+                    np.mean(prediction_mse_real),
+                    np.mean(prediction_mse_synth),
+                    np.mean(prediction_auc),
+                ]
             )
 
         dist_scores = np.array(dist_scores)
 
         # Average scores on repetitions
-        propensity_score, prediction_mse, prediction_auc = np.mean(dist_scores, axis=0)
+        (
+            propensity_score,
+            prediction_mse_real,
+            prediction_mse_synth,
+            prediction_auc,
+        ) = np.mean(dist_scores, axis=0)
 
         res = {
             "average": {
                 "propensity_mse": propensity_score,
-                "prediction_mse": prediction_mse,
+                "prediction_mse_real": prediction_mse_real,
+                "prediction_mse_synth": prediction_mse_synth,
                 "prediction_auc": prediction_auc,
             },
             "detailed": {
                 "propensity_mse": dist_scores[:, 0],
-                "prediction_mse": dist_scores[:, 1],
-                "prediction_auc": dist_scores[:, 2],
+                "prediction_mse_real": dist_scores[:, 1],
+                "prediction_mse_synth": dist_scores[:, 2],
+                "prediction_auc": dist_scores[:, 3],
+                "prediction_real": np.array(prediction_real),
+                "prediction_synth": np.array(prediction_synth),
             },
         }
 
@@ -212,7 +259,7 @@ class Distinguishability(UtilityMetric):
     @classmethod
     def draw(cls, report: dict, figsize: Tuple[float, float] = None) -> None:
         """
-        Draw a barplot to compare the distinguishability scores.
+        Draw a barplot to compare the distinguishability scores and a boxplot to compare the predictions.
 
         :param report: the **detailed** report, outcome of the *compute* method
         :param figsize: the size of the figure in inches (width, height)
@@ -221,15 +268,24 @@ class Distinguishability(UtilityMetric):
         assert report is not None
         assert all(
             key in report
-            for key in ["propensity_mse", "prediction_mse", "prediction_auc"]
+            for key in [
+                "propensity_mse",
+                "prediction_mse_real",
+                "prediction_mse_synth",
+                "prediction_auc",
+                "prediction_real",
+                "prediction_synth",
+            ]
         )
 
+        # Bar plot single value
         plt.figure(figsize=figsize, layout="constrained")
 
         data = pd.DataFrame(
             {
                 "propensity_mse": report["propensity_mse"],
-                "prediction_mse": report["prediction_mse"],
+                "prediction_mse_real": report["prediction_mse_real"],
+                "prediction_mse_synth": report["prediction_mse_synth"],
                 "prediction_auc": report["prediction_auc"],
             }
         )
@@ -237,6 +293,21 @@ class Distinguishability(UtilityMetric):
             data=data,
             title=f"Metric: {cls.name}",
             value_name="Distinguishability score",
+        )
+
+        # Box plot for predictions
+        plt.figure(figsize=figsize, layout="constrained")
+
+        data = pd.DataFrame(
+            {
+                "prediction_real": report["prediction_real"],
+                "prediction_synth": report["prediction_synth"],
+            }
+        )
+
+        udraw.box_plot(
+            data=data,
+            title=f"Metric: {cls.name}",
         )
 
 

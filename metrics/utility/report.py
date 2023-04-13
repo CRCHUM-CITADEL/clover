@@ -32,7 +32,9 @@ class Report:
     :param df_synthetic: the synthetic dataset
     :param metadata: dictionary with two entries: the **continuous** and **categorical** lists of variables.
         Must be specified by the user since the variable type might be equivocal.
-    :param metrics: list of the metrics to compute
+    :param metrics: list of the metrics to compute. If not specified, all the metrics are computed.
+    :param cross_learning: the Cross Learning metrics can slown down the report computation.
+        Set to *False* to exclude these metrics. Not taken into account if a list of metrics is provided.
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
     :param num_folds: the scores are averaged across the number of folds to account for split randomness
     :param alpha: the significance level for the chi square test
@@ -47,6 +49,7 @@ class Report:
         df_synthetic: pd.DataFrame,
         metadata: dict,
         metrics: List[str] = None,
+        cross_learning: bool = True,
         num_repeat: int = 20,
         num_folds: int = 10,
         alpha: float = 0.05,
@@ -87,6 +90,14 @@ class Report:
             args = getfullargspec(metrics_mapping[metric_name]).args[1:]  # remove self
             metric = metrics_mapping[metric_name](*[params[arg] for arg in args])
             self._metrics.append(metric)
+
+        # Remove Cross Learning metrics that can slow down the report computation
+        if metrics is None and not cross_learning:
+            self._metrics = [
+                metric
+                for metric in self._metrics
+                if not isinstance(metric, pop.CrossLearning)
+            ]
 
         # Metrics results
         self._metrics_info = {}

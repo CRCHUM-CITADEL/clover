@@ -128,14 +128,21 @@ class Distinguishability(UtilityMetric):
         # TODO: ensure no need for imputation, normalization?
         df = pd.concat([df_real, df_synthetic], axis=0, ignore_index=True)
 
+        #   Select the columns keeping the order
+        cat_cols = [col for col in df_real.columns if col not in metadata["continuous"]]
+        cont_cols = [col for col in df_real.columns if col not in cat_cols]
+
         # ColumnTransformers
         preprocessing = ColumnTransformer(
             [
-                ("continuous", StandardScaler(), metadata["continuous"]),
+                ("continuous", StandardScaler(), cont_cols),
                 (
                     "categorical",
-                    OneHotEncoder(drop="first", handle_unknown="ignore"),
-                    metadata["categorical"],
+                    OneHotEncoder(
+                        drop="first",
+                        categories=[df_real[cat].unique() for cat in cat_cols],
+                    ),  # TODO: use infrequent categories?
+                    cat_cols,
                 ),
             ],
             verbose_feature_names_out=False,

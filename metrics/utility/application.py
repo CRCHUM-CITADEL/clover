@@ -156,8 +156,12 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
             y_synth = lb.transform(y_synth).flatten()
 
         #   Select the categorical columns to transform
-        cat_cols = list(set(metadata["categorical"]) - {var_pred})
-        cont_cols = list(set(df_real.columns) - set(cat_cols) - {var_pred})
+        cat_cols = [
+            col
+            for col in df_real.columns
+            if col not in metadata["continuous"] + [var_pred]
+        ]
+        cont_cols = [col for col in df_real.columns if col not in cat_cols + [var_pred]]
 
         # Compute the cross learning in both directions
         scores_real_real = []
@@ -346,8 +350,15 @@ class Regression(Prediction):
                 (
                     "categorical",
                     OneHotEncoder(
-                        drop="first", handle_unknown="ignore"
-                    ),  # TODO: new categories in synthetic
+                        drop="first",
+                        categories=[
+                            list(
+                                set(x_reference[cat].unique())
+                                | set(x_comparative[cat].unique())
+                            )
+                            for cat in categorical_cols
+                        ],
+                    ),  # TODO: use infrequent categories?
                     categorical_cols,
                 ),
             ],
@@ -488,8 +499,15 @@ class Classification(Prediction):
                 (
                     "categorical",
                     OneHotEncoder(
-                        drop="first", handle_unknown="ignore"
-                    ),  # TODO: new categories in synthetic
+                        drop="first",
+                        categories=[
+                            list(
+                                set(x_reference[cat].unique())
+                                | set(x_comparative[cat].unique())
+                            )
+                            for cat in categorical_cols
+                        ],
+                    ),  # TODO: use infrequent categories?
                     categorical_cols,
                 ),
             ],

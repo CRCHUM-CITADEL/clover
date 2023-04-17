@@ -131,6 +131,7 @@ class Distinguishability(UtilityMetric):
         #   Select the columns keeping the order
         cat_cols = [col for col in df_real.columns if col not in metadata["continuous"]]
         cont_cols = [col for col in df_real.columns if col not in cat_cols]
+        df[cat_cols] = df[cat_cols].astype("object")
 
         # ColumnTransformers
         preprocessing = ColumnTransformer(

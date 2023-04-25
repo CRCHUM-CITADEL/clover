@@ -25,6 +25,7 @@ class DataSynthesizerGenerator(Generator):
 
     :param df: the data to synthesize
     :param metadata: a dictionary containing the list of **continuous** and **categorical** variables
+    :param random_state: for reproducibility purposes
     :param generator_filepath: the path of the generator to sample from if it exists
     :param candidate_keys: the candidate keys of the original database
     :param epsilon: the epsilon-DP for the Differential Privacy (0 for no added noise)
@@ -37,12 +38,13 @@ class DataSynthesizerGenerator(Generator):
         self,
         df: pd.DataFrame,
         metadata: dict,
+        random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         candidate_keys: List[str] = None,
         epsilon: int = 0,
         degree: int = 5,
     ):
-        super().__init__(df, metadata, generator_filepath)
+        super().__init__(df, metadata, random_state, generator_filepath)
 
         self._attribute_to_is_categorical = {}
         self._candidate_keys = candidate_keys if candidate_keys is not None else []
@@ -80,14 +82,16 @@ class DataSynthesizerGenerator(Generator):
             datapath = Path(temp_dir) / "real_data.csv"
             self._df.to_csv(datapath, index=False)
 
-            describer = DataDescriber(category_threshold=self._threshold)
-            describer.describe_dataset_in_correlated_attribute_mode(
-                dataset_file=str(datapath),
-                epsilon=self._epsilon,
-                k=self._degree,
-                attribute_to_is_categorical=self._attribute_to_is_categorical,
-                attribute_to_is_candidate_key=self._attribute_to_is_candidate_key,
-            )
+            with ustandard.HiddenPrints():  # turn off the prints
+                describer = DataDescriber(category_threshold=self._threshold)
+                describer.describe_dataset_in_correlated_attribute_mode(
+                    dataset_file=str(datapath),
+                    epsilon=self._epsilon,
+                    k=self._degree,
+                    attribute_to_is_categorical=self._attribute_to_is_categorical,
+                    attribute_to_is_candidate_key=self._attribute_to_is_candidate_key,
+                    seed=self._random_state,
+                )
 
             self._generator_filepath = (
                 Path(save_path)
@@ -119,7 +123,9 @@ class DataSynthesizerGenerator(Generator):
         generator = DataGenerator()
         # Correlated mode: more computationally expensive but capture relations between variables
         generator.generate_dataset_in_correlated_attribute_mode(
-            n=num_samples, description_file=self._generator_filepath, seed=0
+            n=num_samples,
+            description_file=self._generator_filepath,
+            seed=self._random_state,
         )
 
         # Read the data after saving - not returned by the package

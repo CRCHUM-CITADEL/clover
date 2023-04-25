@@ -116,8 +116,9 @@ class UtilityMetric(metaclass=ABCMeta):
         """
         pass
 
+    @staticmethod
     def check_consistency_compute_parameters(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
     ) -> None:
         """
         Assert that the compute method parameters are consistent.

@@ -23,6 +23,7 @@ class SynthpopGenerator(Generator):
 
     :param df: the data to synthesize
     :param metadata: a dictionary containing the list of **continuous** and **categorical** variables
+    :param random_state: for reproducibility purposes
     :param generator_filepath: the path of the generator to sample from if it exists
     :param variable_order: the order of the variable to construct the sequential trees
     """
@@ -33,13 +34,14 @@ class SynthpopGenerator(Generator):
         self,
         df: pd.DataFrame,
         metadata: dict,
+        random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         variables_order: List[str] = None,
     ):
-        super().__init__(df, metadata, generator_filepath)
+        super().__init__(df, metadata, random_state, generator_filepath)
 
         self._gen = (
-            Synthpop(visit_sequence=variables_order)
+            Synthpop(visit_sequence=variables_order, seed=random_state)
             if generator_filepath is None
             else ustandard.load_pickle(filepath=generator_filepath)
         )

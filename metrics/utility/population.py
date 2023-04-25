@@ -141,7 +141,7 @@ class Distinguishability(UtilityMetric):
                     "categorical",
                     OneHotEncoder(
                         drop="first",
-                        categories=[df_real[cat].unique() for cat in cat_cols],
+                        categories=[df[cat].unique() for cat in cat_cols],
                     ),  # TODO: use infrequent categories?
                     cat_cols,
                 ),

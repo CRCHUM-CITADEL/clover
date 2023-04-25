@@ -9,9 +9,12 @@ import pandas as pd  # 3rd party packages
 from generators.base import Generator  # local packages
 from generators.dataSynthesizer import DataSynthesizerGenerator
 from generators.synthpop_generator import SynthpopGenerator
+from generators.smote import SmoteGenerator
 
 
-@pytest.mark.parametrize("generator", [SynthpopGenerator, DataSynthesizerGenerator])
+@pytest.mark.parametrize(
+    "generator", [SynthpopGenerator, DataSynthesizerGenerator, SmoteGenerator]
+)
 def test_generation(
     generator: Type[Generator], df_wbcd: pd.DataFrame, metadata_wbcd: dict
 ) -> None:
@@ -32,11 +35,13 @@ def test_generation(
         d = {
             "df": df_wbcd,
             "metadata": metadata_wbcd,
+            "random_state": 0,
             "generator_filepath": None,
             "variables_order": None,  # synthpop
             "candidate_keys": None,  # datasynthesizer
             "epsilon": 0,  # datasynthesizer
             "degree": 2,  # datasynthesizer
+            "k_neighbors": None,  # smote
         }
 
         # Select only the expected instance parameters

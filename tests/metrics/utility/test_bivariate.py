@@ -46,7 +46,9 @@ def bivariate_metric_results(
     return metric_class, which_data, scores
 
 
-def test_bivariate_metrics_summary(bivariate_metric_results: dict) -> None:
+def test_bivariate_metrics_summary(
+    bivariate_metric_results: Tuple[Type[UtilityMetric], str, dict]
+) -> None:
     """
     Test the bivariate metrics average scores.
 
@@ -72,7 +74,9 @@ def test_bivariate_metrics_summary(bivariate_metric_results: dict) -> None:
             assert np.isnan(diff_to_objective) or diff_to_objective < 0.01
 
 
-def test_bivariate_metrics_detailed(bivariate_metric_results: dict) -> None:
+def test_bivariate_metrics_detailed(
+    bivariate_metric_results: Tuple[Type[UtilityMetric], str, dict]
+) -> None:
     """
     Test the bivariate metrics detailed scores.
 

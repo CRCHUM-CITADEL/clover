@@ -74,7 +74,9 @@ def univariate_metric_results(
     return metric_class, which_data, scores
 
 
-def test_univariate_metrics_summary(univariate_metric_results: dict) -> None:
+def test_univariate_metrics_summary(
+    univariate_metric_results: Tuple[Type[UtilityMetric], str, dict]
+) -> None:
     """
     Test the univariate metrics average scores.
 
@@ -100,7 +102,9 @@ def test_univariate_metrics_summary(univariate_metric_results: dict) -> None:
             assert diff_to_objective < 0.01
 
 
-def test_univariate_metrics_detailed(univariate_metric_results: dict) -> None:
+def test_univariate_metrics_detailed(
+    univariate_metric_results: Tuple[Type[UtilityMetric], str, dict]
+) -> None:
     """
     Test the univariate metrics detailed scores.
 

@@ -28,6 +28,14 @@ generators.synthpop module
    :undoc-members:
    :show-inheritance:
 
+generators.smote module
+-----------------------
+
+.. automodule:: generators.smote
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

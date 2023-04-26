@@ -7,3 +7,5 @@ scikit-learn==1.1.1
 DataSynthesizer==0.1.11
 py-synthpop==0.1.2
 pymoo==0.6.0.1
+imbalanced-learn==0.10.1
+sdv==1.0.1

@@ -49,6 +49,7 @@ Current Features
 * Synthetic data generators, supporting continuous and categorical variables (unique identifiers are not handled):
    - `DataSynthesizer <https://github.com/DataResponsibly/DataSynthesizer>`_
    - `Synthpop <https://github.com/hazy/synthpop>`_ with random or Particle Swarm Optimization search to tune the variables order
+   - `SMOTE <https://imbalanced-learn.org/stable/over_sampling.html#from-random-over-sampling-to-smote-and-adasyn>`_, an oversampling method based on k-nearest neighbors
 * Utility report to assess the fidelity of the synthetic data:
    - Summary table
    - Detailed report with figures

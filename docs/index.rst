@@ -94,7 +94,7 @@ Usage
 Requirements
 ------------
 All the required packages are available in the requirements.txt file.
-Clover has been tested on a Linux system running Python 3.8.10.
+Clover has been tested on a Linux system running Python 3.8.10 and Python 3.10.
 
 .. _installation:
 

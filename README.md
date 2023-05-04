@@ -75,7 +75,7 @@ See the [documentation](#documentation) for more details.
 
 ### Requirements
 All the required packages are available in the [requirements file](requirements.txt).
-Clover has been tested on a Linux system running Python 3.8.10.
+Clover has been tested on a Linux system running Python 3.8.10 and Python 3.10.
 
 ### Installation
 The package is not yet available on pypi. You can clone the Github repository.

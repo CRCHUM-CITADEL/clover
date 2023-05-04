@@ -58,11 +58,7 @@ def population_metric_results(
     which_data = request.param["which_data"]
 
     # Instance parameters
-    d = {
-        "random_state": 0,
-        "num_repeat": 1,
-        "num_folds": 10,
-    }
+    d = {"random_state": 0, "num_repeat": 1, "num_folds": 10, "use_gpu": False}
 
     # Select only the expected instance parameters
     args = getfullargspec(metric_class).args[1:]  # remove self

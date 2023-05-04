@@ -52,6 +52,7 @@ class Report:
         cross_learning: bool = True,
         num_repeat: int = 20,
         num_folds: int = 10,
+        use_gpu: bool = False,
         alpha: float = 0.05,
         figsize: Tuple[float, float] = (8, 6),
         random_state: int = 0,
@@ -83,6 +84,7 @@ class Report:
             "alpha": alpha,
             "num_repeat": num_repeat,
             "num_folds": num_folds,
+            "use_gpu": use_gpu,
         }
 
         self._metrics = []

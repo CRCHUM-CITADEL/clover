@@ -7,12 +7,17 @@ import warnings
 import pandas as pd  # 3rd party packages
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import OneHotEncoder, LabelBinarizer, StandardScaler
+from sklearn.preprocessing import (
+    OneHotEncoder,
+    LabelBinarizer,
+    StandardScaler,
+    LabelEncoder,
+)
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 from sklearn.inspection import permutation_importance
+import xgboost as xgb
 
 import utils.draw as udraw  # local
 import utils.learning as ulearning
@@ -49,6 +54,7 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
     :param num_folds: the scores are averaged across the number of folds to account for split randomness
+    :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
     name = "Prediction"
@@ -71,10 +77,12 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
         random_state: int = None,
         num_repeat: int = 10,
         num_folds: int = 10,
+        use_gpu: bool = False,
     ):
         super().__init__(random_state)
         self._num_repeat = num_repeat
         self._num_folds = num_folds
+        self._use_gpu = use_gpu
 
     @classmethod
     def get_average_submetrics(cls) -> List[str]:
@@ -94,8 +102,8 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
         y_comparative: np.ndarray,
         continuous_cols: List[str],
         categorical_cols: List[str],
-        target: pd.Series,
         num_folds: int,
+        use_gpu: bool,
     ) -> dict:
         """
         Train a classifier or a regressor and score the predictions for the test sets
@@ -107,8 +115,8 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
         :param y_comparative: the comparative ground truth
         :param continuous_cols: the continuous columns
         :param categorical_cols: the categorical columns
-        :param target: the target to extract labels if a classifier is trained
         :param num_folds: the scores are averaged across the number of folds to account for split randomness
+        :param use_gpu: flag to use GPU computation power to accelerate the learning
         :return: a dictionary containing the average scores **score_reference** and **score_comparative** on k-folds,
           the **best_model** and the testing sets **x_test_best_model** and **y_test_best_model**
           used for the best model
@@ -148,12 +156,15 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
 
         # Transform categorical columns in one-hot format
         #   Ensure the output is binary if there are two classes
-        if var_pred in metadata["categorical"] and df_real[var_pred].nunique() == 2:
-            lb = LabelBinarizer()
+        if var_pred in metadata["categorical"]:
             y = np.concatenate([y_real, y_synth])
-            lb.fit(y)
-            y_real = lb.transform(y_real).flatten()
-            y_synth = lb.transform(y_synth).flatten()
+            if len(np.unique(y)) == 2:
+                lenc = LabelBinarizer()
+            else:
+                lenc = LabelEncoder()
+            lenc.fit(y)
+            y_real = lenc.transform(y_real).flatten()
+            y_synth = lenc.transform(y_synth).flatten()
 
         #   Select the categorical columns to transform
         cat_cols = [
@@ -182,8 +193,8 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
             y_comparative=comparative_tuple[1],
             continuous_cols=cont_cols,
             categorical_cols=cat_cols,
-            target=df_real[var_pred],
             num_folds=self._num_folds,
+            use_gpu=self._use_gpu,
         )
 
         # Compute scores several times to account for randomness
@@ -287,6 +298,7 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
 class Regression(Prediction):
     """
     Check that the synthetic data have the same behavior as the real data when performing a regression task.
+    XGBRegressor is used for the learning task.
 
     :cvar name: the name of the metric
     :vartype name: str
@@ -304,6 +316,7 @@ class Regression(Prediction):
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
     :param num_folds: the scores are averaged across the number of folds to account for split randomness
+    :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
     name = "Regression"
@@ -318,8 +331,8 @@ class Regression(Prediction):
         y_comparative: np.ndarray,
         continuous_cols: List[str],
         categorical_cols: List[str],
-        target: pd.Series,
         num_folds: int,
+        use_gpu: bool,
     ) -> dict:
         """
         Train a regressor and score the predictions for the test sets from the reference and comparative inputs.
@@ -330,8 +343,8 @@ class Regression(Prediction):
         :param y_comparative: the comparative ground truth
         :param continuous_cols: the continuous columns
         :param categorical_cols: the categorical columns
-        :param target: the target to extract labels if a classifier is trained
         :param num_folds: the scores are averaged across the number of folds to account for split randomness
+        :param use_gpu: flag to use GPU computation power to accelerate the learning
         :return: a dictionary containing the average scores **score_reference** and **score_comparative** on k-folds,
           the **best_model** and the testing sets **x_test_best_model** and **y_test_best_model**
           used for the best model
@@ -370,7 +383,15 @@ class Regression(Prediction):
             pipe = Pipeline(
                 steps=[
                     ("preprocessing", preprocessing),
-                    ("gbm", GradientBoostingRegressor()),
+                    (
+                        "xgb",
+                        xgb.XGBRegressor(
+                            n_estimators=100,
+                            eta=0.1,
+                            tree_method="auto" if not use_gpu else "gpu_hist",
+                            objective="reg:squarederror",
+                        ),
+                    ),
                 ]
             )
             scores, _ = ulearning.train_predict(
@@ -382,6 +403,7 @@ class Regression(Prediction):
                     x_comparative.iloc[test_index],
                 ],
                 y_test_list=[y_reference[test_index], y_comparative[test_index]],
+                is_classification=False,
             )
             mse_ref.append(scores[0])
             mse_comp.append(scores[1])
@@ -432,6 +454,7 @@ class Regression(Prediction):
 class Classification(Prediction):
     """
     Check that the synthetic data have the same behavior as the real data when performing a classification task.
+    XGBClassifier is used for the learning task.
 
     :cvar name: the name of the metric
     :vartype name: str
@@ -449,6 +472,7 @@ class Classification(Prediction):
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
     :param num_folds: the scores are averaged across the number of folds to account for split randomness
+    :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
     name = "Classification"
@@ -464,8 +488,8 @@ class Classification(Prediction):
         y_comparative: np.ndarray,
         continuous_cols: List[str],
         categorical_cols: List[str],
-        target: pd.Series,
         num_folds: int,
+        use_gpu: bool,
     ) -> dict:
         """
         Train a classifier and score the predictions for the test sets from the reference and comparative inputs.
@@ -476,15 +500,12 @@ class Classification(Prediction):
         :param y_comparative: the comparative ground truth
         :param continuous_cols: the continuous columns
         :param categorical_cols: the categorical columns
-        :param target: the target to extract labels if a classifier is trained
         :param num_folds: the scores are averaged across the number of folds to account for split randomness
+        :param use_gpu: flag to use GPU computation power to accelerate the learning
         :return: a dictionary containing the average scores **score_reference** and **score_comparative** on k-folds,
           the **best_model** and the testing sets **x_test_best_model** and **y_test_best_model**
           used for the best model
         """
-
-        labels = target.unique()
-        labels.sort()
 
         auc_ref = []
         auc_comp = []
@@ -514,12 +535,22 @@ class Classification(Prediction):
             verbose_feature_names_out=False,
         )
 
+        model_params = {
+            "n_estimators": 100,
+            "eta": 0.1,
+            "tree_method": "auto" if not use_gpu else "gpu_hist",
+            "objective": "binary:logistic",
+        }
+        y = np.concatenate([y_reference, y_comparative])
+        if len(np.unique(y)) > 2:
+            model_params["objective"] = "multi:softprob"
+
         kf = StratifiedKFold(n_splits=num_folds, shuffle=True)
         for train_index, test_index in kf.split(x_reference, y_reference):
             pipe = Pipeline(
                 steps=[
                     ("preprocessing", preprocessing),
-                    ("gbm", GradientBoostingClassifier()),
+                    ("xgb", xgb.XGBClassifier(**model_params)),
                 ]
             )
             scores, _ = ulearning.train_predict(
@@ -531,7 +562,7 @@ class Classification(Prediction):
                     x_comparative.iloc[test_index],
                 ],
                 y_test_list=[y_reference[test_index], y_comparative[test_index]],
-                classif_labels=labels,
+                is_classification=True,
             )
             auc_ref.append(scores[0])
             auc_comp.append(scores[1])
@@ -568,17 +599,31 @@ class Classification(Prediction):
             * **detailed** -- a dictionary containing the scores for real and synthetic test datasets
         """
 
-        if (
-            metadata["variable_to_predict"] is None
-            or metadata["variable_to_predict"] in metadata["continuous"]
-        ):
+        var_pred = metadata["variable_to_predict"]
+        if var_pred is None or var_pred in metadata["continuous"]:
             return {}
 
-        if set(df_real[metadata["variable_to_predict"]].unique()) != set(
-            df_synthetic[metadata["variable_to_predict"]].unique()
-        ):
+        if set(df_real[var_pred].unique()) != set(df_synthetic[var_pred].unique()):
             warnings.warn(
-                message=f"The datasets do not have the same labels for the variable {metadata['variable_to_predict']}. "
+                message=f"The datasets do not have the same labels for the variable {var_pred}. "
+                f"The metric {self.name} cannot be computed.",
+                category=UserWarning,
+            )
+            return {}
+
+        if (df_real[var_pred].value_counts() < self._num_folds).any() or (
+            df_synthetic[var_pred].value_counts() < self._num_folds
+        ).any():
+            warnings.warn(
+                message=f"The number of samples per category for {var_pred} should be at least equal "
+                f"to the number of folds. The metric {self.name} cannot be computed for {var_pred}.",
+                category=UserWarning,
+            )
+            return {}
+
+        if df_real[var_pred].nunique() == 1 or df_synthetic[var_pred].nunique() == 1:
+            warnings.warn(
+                message=f"There is only one class in the variable {var_pred}. "
                 f"The metric {self.name} cannot be computed.",
                 category=UserWarning,
             )

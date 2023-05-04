@@ -6,12 +6,12 @@ from copy import deepcopy
 
 import pandas as pd  # 3rd party packages
 import numpy as np
-from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
-from sklearn.model_selection import StratifiedKFold, KFold
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.model_selection import KFold
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.utils import shuffle
+import xgboost as xgb
 import matplotlib.pyplot as plt
 
 import utils.learning as ulearning  # local
@@ -54,6 +54,7 @@ class Distinguishability(UtilityMetric):
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
     :param num_folds: the scores are averaged across the number of folds to account for split randomness
         for the prediction metrics only
+    :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
     name = "Distinguishability"
@@ -63,11 +64,16 @@ class Distinguishability(UtilityMetric):
     objective = "min"
 
     def __init__(
-        self, random_state: int = None, num_repeat: int = 10, num_folds: int = 10
+        self,
+        random_state: int = None,
+        num_repeat: int = 10,
+        num_folds: int = 10,
+        use_gpu: bool = False,
     ):
         super().__init__(random_state)
         self._num_repeat = num_repeat
         self._num_folds = num_folds
+        self._use_gpu = use_gpu
 
     @classmethod
     def get_average_submetrics(cls) -> List[str]:
@@ -163,7 +169,15 @@ class Distinguishability(UtilityMetric):
             pipe = Pipeline(
                 steps=[
                     ("preprocessing", preprocessing),
-                    ("gbm", GradientBoostingClassifier()),
+                    (
+                        "xgb",
+                        xgb.XGBClassifier(
+                            n_estimators=100,
+                            eta=0.1,
+                            tree_method="auto" if not self._use_gpu else "gpu_hist",
+                            objective="binary:logistic",
+                        ),
+                    ),
                 ]
             )
             auc_score, y_pred_proba = ulearning.train_predict(
@@ -172,7 +186,7 @@ class Distinguishability(UtilityMetric):
                 y_train=y,
                 x_test_list=[df],
                 y_test_list=[y],
-                classif_labels=[0, 1],
+                is_classification=True,
             )
             propensity_score = self.propensity_mse(y_pred_proba[0])  # only one test set
 
@@ -198,7 +212,17 @@ class Distinguishability(UtilityMetric):
                     pipe = Pipeline(
                         steps=[
                             ("preprocessing", preprocessing),
-                            ("gbm", GradientBoostingClassifier()),
+                            (
+                                "xgb",
+                                xgb.XGBClassifier(
+                                    n_estimators=100,
+                                    eta=0.1,
+                                    tree_method="auto"
+                                    if not self._use_gpu
+                                    else "gpu_hist",
+                                    objective="binary:logistic",
+                                ),
+                            ),
                         ]
                     )
 
@@ -208,7 +232,7 @@ class Distinguishability(UtilityMetric):
                         y_train=y[train_index],
                         x_test_list=[df.iloc[test_index]],
                         y_test_list=[y[test_index]],
-                        classif_labels=[0, 1],
+                        is_classification=True,
                     )
 
                     y_pred_real = y_pred_proba[0][: len(test_index) // 2]
@@ -344,6 +368,7 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
     :param num_folds: the scores are averaged across the number of folds to account for split randomness
+    :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
     name = "Cross"
@@ -365,10 +390,12 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
         random_state: int = None,
         num_repeat: int = 10,
         num_folds: int = 10,
+        use_gpu: bool = False,
     ):
         super().__init__(random_state)
         self._num_repeat = num_repeat
         self._num_folds = num_folds
+        self._use_gpu = use_gpu
 
     @classmethod
     def get_average_submetrics(cls) -> List[str]:
@@ -433,7 +460,9 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
             metadata_pred["variable_to_predict"] = col
 
             pred = getattr(app, self.__class__.class_name)(
-                num_repeat=self._num_repeat, num_folds=self._num_folds
+                num_repeat=self._num_repeat,
+                num_folds=self._num_folds,
+                use_gpu=self._use_gpu,
             )
             res = pred.compute(df_real, df_synthetic, metadata_pred)
             if len(res) == 0:

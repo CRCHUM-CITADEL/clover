@@ -32,7 +32,7 @@ def train_predict(
     y_train: np.ndarray,
     x_test_list: List[np.ndarray],
     y_test_list: List[np.ndarray],
-    classif_labels: Union[List[int], np.ndarray] = None,
+    is_classification: bool,
 ) -> Tuple[List[float], List[np.ndarray]]:
     """
     Train a classifier or a regressor and score the predictions for the test sets.
@@ -42,8 +42,7 @@ def train_predict(
     :param y_train: the training ground truth
     :param x_test_list: the test sets for the prediction
     :param y_test_list: the test sets ground truth
-    :param classif_labels: list of labels if a classifier is trained,
-        must be specified even for a one-class classification
+    :param is_classification: *True* if classification task, *False* else
     :return: the predictions scores and the raw predictions
     """
     pipeline.fit(x_train, y_train)
@@ -51,16 +50,15 @@ def train_predict(
     scores = []
     preds = []
     for x_test, y_test in zip(x_test_list, y_test_list):
-        if classif_labels is not None:
+        if is_classification:
             y_pred = pipeline.predict_proba(x_test)
-            labels = classif_labels
             if y_pred.shape[1] == 2:  # binary case, y_pred needs to be (num_samples,)
                 y_pred = y_pred[:, 1]
-                labels = None
-            if len(np.unique(y_test)) != 1:  # roc auc score not defined for one class
-                score = roc_auc_score(y_test, y_pred, multi_class="ovo", labels=labels)
+                score = roc_auc_score(y_test, y_pred)
             else:
-                score = 1
+                score = roc_auc_score(
+                    y_test, y_pred, multi_class="ovo", labels=range(y_pred.shape[1])
+                )
         else:  # regression
             y_pred = pipeline.predict(x_test)
             score = mean_squared_error(y_test, y_pred)

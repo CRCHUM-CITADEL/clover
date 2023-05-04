@@ -83,11 +83,7 @@ def application_metric_results(
     metadata["variable_to_predict"] = dependent_var
 
     # Instance parameters
-    d = {
-        "random_state": 0,
-        "num_repeat": 1,
-        "num_folds": 10,
-    }
+    d = {"random_state": 0, "num_repeat": 1, "num_folds": 10, "use_gpu": False}
 
     # Select only the expected instance parameters
     args = getfullargspec(metric_class).args[1:]  # remove self

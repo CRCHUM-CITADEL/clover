@@ -1,8 +1,8 @@
-from typing import Union  # standard library
+from typing import Union # standard library
 
 import pandas as pd
 from pathlib import Path
-from sdv.single_table import CTGANSynthesizer
+from sdv.single_table import TVAESynthesizer
 from sdv.metadata import SingleTableMetadata
 from bayes_opt import BayesianOptimization
 
@@ -11,9 +11,10 @@ import utils.standard as ustandard
 from metrics.utility.population import Distinguishability
 
 
-class CTGANGenerator(Generator):
+class TVAEGenerator(Generator):
     """
-    Wrapper of the GAN-based Deep Learning data synthesizer developped by Xu & al (Conditional Tabular GAN).
+    Also a wrapper of a data synthesizer available in the SDV package.
+    The synthesizer is TVAE, a VAE for tabular data.
     https://github.com/sdv-dev
 
     See article for more information:
@@ -23,7 +24,7 @@ class CTGANGenerator(Generator):
     https://arxiv.org/abs/1907.00503
     """
 
-    name = "CTGAN"
+    name = "TVAE"
 
     def __init__(
         self,
@@ -31,15 +32,15 @@ class CTGANGenerator(Generator):
         metadata: dict,
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
-        discriminator_steps=4,
         epochs=300,
-        pac=1,
         batch_size=100,
+        compress_dims=(249, 249),
+        decompress_dims=(249, 249),
     ):
         """
         Initialize the class.
 
-        :param df: DataFrame containing the original data.
+        :param df: DataFrame containing the original data to be synthesized.
         :type df: pd.DataFrame
         :param metadata: Metadata describing the variables.
         :type metadata: dict
@@ -47,31 +48,29 @@ class CTGANGenerator(Generator):
         :type random_state: int, optional
         :param generator_filepath: File path to a generator object, defaults to None.
         :type generator_filepath: Union[Path, str], optional
-        :param discriminator_steps: The number of discriminator updates to do for each generator update.
-        Defaults to 4.
-        :type discriminator_steps: int, optional
         :param epochs: Number of training epochs, defaults to 300.
         :type epochs: int, optional
-        :param pac: The number of concatenated samples from one class (real or generated) fed to
-        the discriminator and receiving one label (goal is to mitigate mode collapse). Defaults to 1.
-        :type pac: int, optional
         :param batch_size: Batch size for training, defaults to 100.
         :type batch_size: int, optional
+        :param compress_dims: Size of the hidden layers in the encoder, defaults to (249, 249).
+        :type compress_dims: tuple, optional
+        :param decompress_dims: Size of the hidden layers in the decoder, defaults to (249, 249).
+        :type decompress_dims: tuple, optional
         """
         super().__init__(df, metadata, random_state, generator_filepath)
 
         self._params = {
-            "discriminator_steps": discriminator_steps,
             "epochs": epochs,
-            "pac": pac,
             "batch_size": batch_size,
+            "compress_dims": compress_dims,
+            "decompress_dims": decompress_dims,
         }
-        self._ctgan_metadata = None
+        self._tvae_metadata = None
 
         self.preprocess()
 
         self._gen = (
-            CTGANSynthesizer(self._ctgan_metadata, **self._params)
+            TVAESynthesizer(self._tvae_metadata, **self._params)
             if generator_filepath is None
             else ustandard.load_pickle(filepath=generator_filepath)
         )
@@ -92,7 +91,7 @@ class CTGANGenerator(Generator):
             temp_dict[col] = {"sdtype": "categorical"}
         final_dict["columns"] = temp_dict
 
-        self._ctgan_metadata = SingleTableMetadata.load_from_dict(final_dict)
+        self._tvae_metadata = SingleTableMetadata.load_from_dict(final_dict)
 
     def fit(self, save_path: Union[Path, str]) -> None:
         """
@@ -105,7 +104,7 @@ class CTGANGenerator(Generator):
         self._gen.fit(self._df)
 
         ustandard.save_pickle(
-            obj=self._gen, path=save_path, filename=CTGANGenerator.name
+            obj=self._gen, path=save_path, filename=TVAEGenerator.name
         )
 
     def display(self) -> None:
@@ -114,7 +113,7 @@ class CTGANGenerator(Generator):
 
         :return: *None*
         """
-        print("CTGAN synthesizer parameters: ")
+        print("TVAE synthesizer parameters: ")
         print(self._gen.get_parameters())
 
     def sample(self, save_path: Union[Path, str], num_samples: int = 1) -> pd.DataFrame:
@@ -130,7 +129,7 @@ class CTGANGenerator(Generator):
 
         samples.to_csv(
             Path(save_path)
-            / f"{ustandard.get_date()}_{CTGANGenerator.name}_{num_samples}samples.csv",
+            / f"{ustandard.get_date()}_{TVAEGenerator.name}_{num_samples}samples.csv",
             index=False,
         )
 
@@ -170,8 +169,8 @@ class CTGANGenerator(Generator):
         # Default dictionary
         params_to_explore = {
             "batch_size": (100, 500),
-            "discriminator_steps": (1, 8),
             "epochs": (200, 400),
+            "coder_dims": (32, 256),
         }
 
         # If other ranges are provided, they replace the default dictionary values.
@@ -186,31 +185,31 @@ class CTGANGenerator(Generator):
             print("Parameters to explore: ", params_to_explore)
 
         # The Bayesian Optimization object is created, and the optimization performed.
-        ctgan_bo = BayesianOptimization(
+        tvae_bo = BayesianOptimization(
             self.dist_function, params_to_explore, random_state=9
         )
-        ctgan_bo.maximize(init_points=init_points, n_iter=n_iter)
+        tvae_bo.maximize(init_points=init_points, n_iter=n_iter)
 
         # The best parameters are converted to the actual values (instead of the floats).
+
         optim_params = {
-            "discriminator_steps": round(ctgan_bo.max["params"]["discriminator_steps"]),
-            "epochs": round(ctgan_bo.max["params"]["epochs"]),
-            "batch_size": round(
-                round(self._params["pac"])
-                * (
-                    (ctgan_bo.max["params"]["batch_size"] // round(self._params["pac"]))
-                    + 1
-                )
+            "epochs": round(tvae_bo.max["params"]["epochs"]),
+            "batch_size": round(tvae_bo.max["params"]["batch_size"]),
+            "compress_dims": (
+                round(tvae_bo.max["params"]["coder_dims"]),
+                round(tvae_bo.max["params"]["coder_dims"]),
+            ),
+            "decompress_dims": (
+                round(tvae_bo.max["params"]["coder_dims"]),
+                round(tvae_bo.max["params"]["coder_dims"]),
             ),
         }
         if optim_params["batch_size"] % 2 != 0:
-            optim_params["batch_size"] = optim_params["batch_size"] + round(
-                self._params["pac"]
-            )
+            optim_params["batch_size"] = optim_params["batch_size"] + 1
 
         return optim_params
 
-    def dist_function(self, batch_size, epochs, discriminator_steps):
+    def dist_function(self, batch_size, epochs, coder_dims):
         """
         The metric optimized here is the distinguishability.
         TO DO: allow the loss rather than a metric to be optimized. For that, the fit function
@@ -222,26 +221,21 @@ class CTGANGenerator(Generator):
         :param epochs: the number of training epochs
         :type epochs: float
 
-        :param discriminator_steps: the number of discriminator updates to do for each generator updates
-        :type discriminator_steps: float
+        :param coder_dims: the size of each hidden layer in the encoder and decoder
+        :type coder_dims: float
         """
-        # Note that the batch size must be divisible by 2 and by pac
+        # Note that the batch size must be divisible by 2
         params_to_explore = {
-            "discriminator_steps": round(discriminator_steps),
             "epochs": round(epochs),
-            "batch_size": round(
-                round(self._params["pac"])
-                * ((batch_size // round(self._params["pac"])) + 1)
-            ),
-            "pac": self._params["pac"],
+            "batch_size": round(batch_size),
+            "compress_dims": (round(coder_dims), round(coder_dims)),
+            "decompress_dims": (round(coder_dims), round(coder_dims)),
         }
         if params_to_explore["batch_size"] % 2 != 0:
-            params_to_explore["batch_size"] = params_to_explore["batch_size"] + round(
-                self._params["pac"]
-            )
+            params_to_explore["batch_size"] = params_to_explore["batch_size"] + 1
 
         # run synthesizer training again with given params and get synthetic data
-        synthesizer = CTGANSynthesizer(self._ctgan_metadata, **params_to_explore)
+        synthesizer = TVAESynthesizer(self._tvae_metadata, **params_to_explore)
         synthesizer.fit(self._df)
         df_synthetic = synthesizer.sample(num_rows=len(self._df))
 

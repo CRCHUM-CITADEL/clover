@@ -1,0 +1,147 @@
+# Standard library
+from typing import Type, Callable
+
+# 3rd party packages
+import pandas as pd
+import numpy as np
+from pymoo.core.problem import ElementwiseProblem
+
+# Local
+from optimization.base import HyperparametersSearch
+from generators.base import Generator
+import utils.optimization as uoptimization
+
+
+class DiscreteParticleSwarmOptimizationSearch(HyperparametersSearch):
+    """
+    Uses a discrete swarm of particles to search the hyperparameters space.
+
+    :cvar name: the name of the hyperparameters search
+    :vartype name: str
+
+    :param df: the data to synthesize
+    :param metadata: a dictionary containing the list of **continuous** and **categorical** variables
+    :param hyperparams: a dictionary with the parameters to optimize and their distribution
+    :param hyperparams_type: a dictionary with the parameters to optimize and
+        their type (should be int, float or sequence)
+    :param generator: the generator class to optimize
+    :param objective_function: the cost function (must be positive and 0 the target value)
+    :param random_state: for reproducibility purposes
+    :param use_gpu: flag to use GPU computation power to accelerate the learning
+    :param num_iter: the number of iterations to run the search
+    """
+
+    name = "Discrete Particle Swarm Optimization Search"
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        metadata: dict,
+        hyperparams: dict,
+        hyperparams_type: dict,
+        generator: Type[Generator],
+        objective_function: Callable,
+        random_state: int = None,
+        use_gpu: bool = False,
+        population_size=50,
+        num_iter: int = 100,
+    ):
+        super().__init__(
+            df,
+            metadata,
+            hyperparams,
+            hyperparams_type,
+            generator,
+            objective_function,
+            random_state,
+            use_gpu,
+        )
+        self._num_iter = num_iter
+        self._population_size = population_size
+
+        assert (
+            len(hyperparams) == 1
+        ), "This optimization only works with a unique sequence."
+        self._sequence_name = list(self._hyperparams.keys())[0]
+        assert (
+            len(hyperparams_type) == 1
+            and hyperparams_type[self._sequence_name] == "sequence"
+        ), "The sequence type must be 'sequence'"
+        self._default_sequence = self._hyperparams[self._sequence_name]
+
+    def fit(self) -> None:
+        """
+        Find the best hyperparameters for the generator.
+
+        :return: *None*
+        """
+
+        fit_generator = lambda sequence: self._fit_generator(
+            params={self._sequence_name: sequence}
+        )
+        objective_function = lambda df_synthetic: self._objective_function(
+            df=self._df,
+            df_to_compare=df_synthetic,
+            metadata=self._metadata,
+            minimize=True,
+            use_gpu=self._use_gpu,
+        )
+
+        problem = SequenceOrderingProblem(
+            default_sequence=self._default_sequence,
+            objective_function=objective_function,
+            fit_generator=fit_generator,
+        )
+
+        (
+            best_sequence,
+            self._best_cost,
+        ) = uoptimization.discrete_particle_swarm_optimization(
+            problem=problem,
+            population_size=self._population_size,
+            num_epochs=self._num_iter,
+        )
+
+        self._best_params = {
+            self._sequence_name: list(np.array(self._default_sequence)[best_sequence])
+        }
+
+
+class SequenceOrderingProblem(ElementwiseProblem):
+    """
+    A sequence ordering problem with the Distinguishability score as objective function.
+
+    :param default_sequence: the default sequence to optimize
+    :param fit_generator: the function that fits a generator and generates samples
+    :param objective_function: the cost function
+    :param kwargs: for compatibility purposes only
+    """
+
+    def __init__(self, default_sequence, fit_generator, objective_function, **kwargs):
+        super().__init__(
+            n_var=len(default_sequence),
+            n_obj=1,
+            xl=0,
+            xu=len(default_sequence) - 1,
+            vtype=int,
+            **kwargs
+        )
+        self._default_sequence = default_sequence
+        self._fit_generator = fit_generator
+        self._objective_function = objective_function
+
+    def _evaluate(self, x: np.ndarray, out: dict, *args, **kwargs) -> None:
+        """
+        The function called to compute the fitness function.
+
+        :param x: the solution to evaluate
+        :param out: the output dictionary containing the cost
+        :param args: for compatibility purposes only
+        :param kwargs: for compatibility purposes only
+        :return: *None*
+        """
+
+        sequence = list(np.array(self._default_sequence)[x])
+
+        _, df_synth = self._fit_generator(sequence)
+        out["F"] = self._objective_function(df_synth)

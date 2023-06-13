@@ -9,7 +9,7 @@ class Generator(metaclass=ABCMeta):
     """
     Abstract class providing the template to follow for each generator.
 
-    :cvar name: the name of the metric
+    :cvar name: the name of the generator
     :vartype name: str
 
     :param df: the data to synthesize
@@ -107,15 +107,5 @@ class Generator(metaclass=ABCMeta):
         :param save_path: the path to save the generated samples
         :param num_samples: the number of samples to generate
         :return: the generated samples
-        """
-        pass
-
-    @abstractmethod
-    def search_hyperparameters(self, **kwargs) -> dict:
-        """
-        Find the best hyperparameters for the generator.
-
-        :param kwargs: a dict containing the parameters of the search algorithm
-        :return: a dict with the best hyperparameters
         """
         pass

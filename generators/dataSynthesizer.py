@@ -137,6 +137,3 @@ class DataSynthesizerGenerator(Generator):
         samples = pd.read_csv(filepath)
 
         return samples
-
-    def search_hyperparameters(self, **kwargs) -> dict:
-        return {}

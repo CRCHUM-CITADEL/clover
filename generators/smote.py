@@ -175,13 +175,3 @@ class SmoteGenerator(Generator):
         )
 
         return samples
-
-    def search_hyperparameters(self, **kwargs) -> dict:
-        """
-        Find the best hyperparameters for the generator.
-
-        :param kwargs: to be defined
-        :return: a dictionary with the **k_neighbors** and the **cost** as keys
-        """
-
-        return {}

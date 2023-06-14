@@ -21,7 +21,7 @@ class SmoteGenerator(Generator):
     :param metadata: a dictionary containing the list of **continuous** and **categorical** variables
     :param random_state: for reproducibility purposes
     :param generator_filepath: the path of the generator to sample from if it exists
-    :param variable_order: the order of the variable to construct the sequential trees
+    :param k_neighbors: the number of neighbors used to find the avatar
     """
 
     name = "SMOTE"
@@ -32,7 +32,7 @@ class SmoteGenerator(Generator):
         metadata: dict,
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
-        k_neighbors: int = None,
+        k_neighbors: int = 5,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 

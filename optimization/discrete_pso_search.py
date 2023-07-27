@@ -21,13 +21,14 @@ class DiscreteParticleSwarmOptimizationSearch(HyperparametersSearch):
 
     :param df: the data to synthesize
     :param metadata: a dictionary containing the list of **continuous** and **categorical** variables
-    :param hyperparams: a dictionary with the parameters to optimize and their distribution
-    :param hyperparams_type: a dictionary with the parameters to optimize and
-        their type (should be int, float or sequence)
+    :param hyperparams: a dictionary with the parameters to optimize and their distribution or
+        a function returning the dictionary
     :param generator: the generator class to optimize
-    :param objective_function: the cost function (must be positive and 0 the target value)
+    :param objective_function: the cost function
     :param random_state: for reproducibility purposes
-    :param use_gpu: flag to use GPU computation power to accelerate the learning
+    :param use_gpu: flag to use GPU computation power if available to accelerate the learning
+    :param direction: the direction of optimization (**min** or **max**)
+    :param population_size: the swarm population size
     :param num_iter: the number of iterations to run the search
     """
 
@@ -38,35 +39,32 @@ class DiscreteParticleSwarmOptimizationSearch(HyperparametersSearch):
         df: pd.DataFrame,
         metadata: dict,
         hyperparams: dict,
-        hyperparams_type: dict,
         generator: Type[Generator],
         objective_function: Callable,
         random_state: int = None,
         use_gpu: bool = False,
-        population_size=50,
+        direction: str = "min",
+        population_size: int = 50,
         num_iter: int = 100,
     ):
         super().__init__(
             df,
             metadata,
             hyperparams,
-            hyperparams_type,
             generator,
             objective_function,
             random_state,
             use_gpu,
         )
-        self._num_iter = num_iter
+
+        self._direction = direction
         self._population_size = population_size
+        self._num_iter = num_iter
 
         assert (
             len(hyperparams) == 1
         ), "This optimization only works with a unique sequence."
         self._sequence_name = list(self._hyperparams.keys())[0]
-        assert (
-            len(hyperparams_type) == 1
-            and hyperparams_type[self._sequence_name] == "sequence"
-        ), "The sequence type must be 'sequence'"
         self._default_sequence = self._hyperparams[self._sequence_name]
 
     def fit(self) -> None:
@@ -76,21 +74,15 @@ class DiscreteParticleSwarmOptimizationSearch(HyperparametersSearch):
         :return: *None*
         """
 
-        fit_generator = lambda sequence: self._fit_generator(
-            params={self._sequence_name: sequence}
-        )
-        objective_function = lambda df_synthetic: self._objective_function(
-            df=self._df,
-            df_to_compare=df_synthetic,
-            metadata=self._metadata,
-            minimize=True,
-            use_gpu=self._use_gpu,
-        )
+        def objective_function(sequence: list):
+            cost = self._fit(params={self._sequence_name: sequence})
+            if self._direction == "max":
+                cost *= -1
 
         problem = SequenceOrderingProblem(
             default_sequence=self._default_sequence,
-            objective_function=objective_function,
-            fit_generator=fit_generator,
+            sequence_name=self._sequence_name,
+            objective=objective_function,
         )
 
         (
@@ -109,15 +101,17 @@ class DiscreteParticleSwarmOptimizationSearch(HyperparametersSearch):
 
 class SequenceOrderingProblem(ElementwiseProblem):
     """
-    A sequence ordering problem with the Distinguishability score as objective function.
+    A sequence ordering problem.
 
     :param default_sequence: the default sequence to optimize
-    :param fit_generator: the function that fits a generator and generates samples
-    :param objective_function: the cost function
+    :param sequence_name: the name of the sequence hyperparameter
+    :param objective: the cost function, also fitting a generator and generating samples
     :param kwargs: for compatibility purposes only
     """
 
-    def __init__(self, default_sequence, fit_generator, objective_function, **kwargs):
+    def __init__(
+        self, default_sequence: list, sequence_name: str, objective: Callable, **kwargs
+    ):
         super().__init__(
             n_var=len(default_sequence),
             n_obj=1,
@@ -127,8 +121,8 @@ class SequenceOrderingProblem(ElementwiseProblem):
             **kwargs
         )
         self._default_sequence = default_sequence
-        self._fit_generator = fit_generator
-        self._objective_function = objective_function
+        self._sequence_name = sequence_name
+        self._objective = objective
 
     def _evaluate(self, x: np.ndarray, out: dict, *args, **kwargs) -> None:
         """
@@ -142,6 +136,6 @@ class SequenceOrderingProblem(ElementwiseProblem):
         """
 
         sequence = list(np.array(self._default_sequence)[x])
+        sequence = {self._sequence_name: sequence}
 
-        _, df_synth = self._fit_generator(sequence)
-        out["F"] = self._objective_function(df_synth)
+        out["F"] = self._objective(sequence)

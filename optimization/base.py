@@ -1,6 +1,6 @@
 # Standard library
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, Type, Callable
+from typing import Union, Type, Callable
 import inspect
 import tempfile
 
@@ -20,13 +20,12 @@ class HyperparametersSearch(metaclass=ABCMeta):
 
     :param df: the data to synthesize
     :param metadata: a dictionary containing the list of **continuous** and **categorical** variables
-    :param hyperparams: a dictionary with the parameters to optimize and their distribution
-    :param hyperparams_type: a dictionary with the parameters to optimize and
-        their type (should be int, float or sequence)
+    :param hyperparams: a dictionary with the parameters to optimize and their distribution or
+        a function returning the dictionary
     :param generator: the generator class to optimize
-    :param objective_function: the cost function (must be positive and 0 the target value)
+    :param objective_function: the cost function
     :param random_state: for reproducibility purposes
-    :param use_gpu: flag to use GPU computation power to accelerate the learning
+    :param use_gpu: flag to use GPU computation power if available to accelerate the learning
     """
 
     name: str
@@ -79,8 +78,7 @@ class HyperparametersSearch(metaclass=ABCMeta):
         self,
         df: pd.DataFrame,
         metadata: dict,
-        hyperparams: dict,
-        hyperparams_type: dict,
+        hyperparams: Union[dict, Callable],
         generator: Type[Generator],
         objective_function: Callable,
         random_state: int = None,
@@ -89,13 +87,15 @@ class HyperparametersSearch(metaclass=ABCMeta):
         self._df = df
         self._metadata = metadata
         self._hyperparams = hyperparams
-        self._hyperparams_type = hyperparams_type
         self._generator = generator
         self._objective_function = objective_function
         self._random_state = random_state
         self._use_gpu = use_gpu
 
-        self._check_hyperparameters()
+        if isinstance(
+            hyperparams, dict
+        ):  # TODO: see how to check the hyperparameters for optuna
+            self._check_hyperparameters()
 
         # Parameters available after the search
         self._results = {}
@@ -110,12 +110,6 @@ class HyperparametersSearch(metaclass=ABCMeta):
         :return: *None*
         """
         assert len(self._hyperparams) != 0, "No parameter to optimize"
-        assert set(self._hyperparams.keys()) == set(
-            self._hyperparams_type.keys()
-        ), "The hyperparameters keys should match the hyperparameters type keys"
-        assert set(self._hyperparams_type.values()).issubset(
-            ["int", "float", "sequence"]
-        ), "The hyperparameters type must be int, float or sequence. Not yet implemented for other types."
 
         generator_parameters = set(inspect.signature(self._generator).parameters)
         assert set(self._hyperparams.keys()).issubset(
@@ -131,12 +125,13 @@ class HyperparametersSearch(metaclass=ABCMeta):
         """
         pass
 
-    def _fit_generator(self, params: dict) -> Tuple[Generator, pd.DataFrame]:
+    def _fit(self, params: dict) -> float:
         """
-        Invoked repeatedly during optimization to fit the generator and generate samples.
+        Invoked repeatedly during optimization to fit the generator, generate samples and
+        compute the objective function.
 
         :param params: the hyperparameters to test
-        :return: the fitted generator and the generated samples
+        :return: the cost
         """
 
         gen = self._generator(df=self._df, metadata=self._metadata, **params)
@@ -144,6 +139,13 @@ class HyperparametersSearch(metaclass=ABCMeta):
 
         with tempfile.TemporaryDirectory() as temp_dir:  # no need to keep the generated samples
             gen.fit(save_path=temp_dir)
-            samples = gen.sample(save_path=temp_dir, num_samples=len(self._df))
+            df_synth = gen.sample(save_path=temp_dir, num_samples=len(self._df))
 
-        return gen, samples
+        cost = self._objective_function(
+            df=self._df,
+            df_to_compare=df_synth,
+            metadata=self._metadata,
+            use_gpu=self._use_gpu,
+        )
+
+        return cost

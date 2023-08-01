@@ -46,7 +46,6 @@ class Classifier(Module):
         self.seq = Sequential(*seq)
 
     def forward(self, input):
-
         label = None
 
         if (self.str_end[1] - self.str_end[0]) == 1:
@@ -126,12 +125,10 @@ def maximum_interval(output_info):
 
 class Cond(object):
     def __init__(self, data, output_info):
-
         self.model = []
         st = 0
         counter = 0
         for item in output_info:
-
             if item[1] == "tanh":
                 st += item[0]
                 continue
@@ -402,7 +399,6 @@ class CTABGANSynthesizer:
         batch_size=500,
         epochs=150,
     ):
-
         self.random_dim = random_dim
         self.class_dim = class_dim
         self.num_channels = num_channels
@@ -422,7 +418,6 @@ class CTABGANSynthesizer:
         non_categorical=[],
         type={},
     ):
-
         problem_type = None
         target_index = None
         if type:
@@ -492,7 +487,6 @@ class CTABGANSynthesizer:
         steps_per_epoch = max(1, len(train_data) // self.batch_size)
         for i in tqdm(range(self.epochs)):
             for id_ in range(steps_per_epoch):
-
                 for _ in range(ci):
                     noisez = torch.randn(
                         self.batch_size, self.random_dim, device=self.device
@@ -598,7 +592,6 @@ class CTABGANSynthesizer:
                 optimizerG.step()
 
                 if problem_type:
-
                     fake = self.generator(noisez)
 
                     faket = self.Gtransformer.inverse_transform(fake)
@@ -636,7 +629,6 @@ class CTABGANSynthesizer:
             epoch += 1
 
     def sample(self, n):
-
         self.generator.eval()
 
         output_info = self.transformer.output_info

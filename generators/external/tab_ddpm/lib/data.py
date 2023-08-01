@@ -524,7 +524,6 @@ def prepare_dataloader(
     split: str,
     batch_size: int,
 ):
-
     torch_dataset = TabDataset(dataset, split)
     loader = torch.utils.data.DataLoader(
         torch_dataset,
@@ -542,7 +541,6 @@ def prepare_torch_dataloader(
     shuffle: bool,
     batch_size: int,
 ) -> torch.utils.data.DataLoader:
-
     torch_dataset = TabDataset(dataset, split)
     loader = torch.utils.data.DataLoader(
         torch_dataset, batch_size=batch_size, shuffle=shuffle, num_workers=1

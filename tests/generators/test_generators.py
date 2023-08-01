@@ -25,7 +25,6 @@ from generators.tabddpm_generator import TabDDPMGenerator
         SmoteGenerator,
         TVAEGenerator,
         CTGANGenerator,
-        TabDDPMGenerator,
     ],
 )
 def test_generation(

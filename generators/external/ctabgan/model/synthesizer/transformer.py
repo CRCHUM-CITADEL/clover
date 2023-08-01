@@ -25,7 +25,6 @@ class DataTransformer:
         self.non_categorical_columns = non_categorical_list
 
     def get_metadata(self):
-
         meta = []
 
         for index in range(self.train_data.shape[1]):
@@ -117,7 +116,6 @@ class DataTransformer:
                     self.output_dim += 1
 
             elif info["type"] == "mixed":
-
                 gm1 = BayesianGaussianMixture(
                     n_components=self.n_clusters,
                     weight_concentration_prior_type="dirichlet_process",
@@ -226,7 +224,6 @@ class DataTransformer:
                     values += [features, re_ordered_phot]
 
                 else:
-
                     self.ordering.append(None)
 
                     if id_ in self.non_categorical_columns:
@@ -239,7 +236,6 @@ class DataTransformer:
                     values.append(current)
 
             elif info["type"] == "mixed":
-
                 means_0 = self.model[id_][0].means_.reshape([-1])
                 stds_0 = np.sqrt(self.model[id_][0].covariances_).reshape([-1])
 
@@ -375,7 +371,6 @@ class DataTransformer:
                             invalid_ids.append(idx)
 
                     if id_ in self.non_categorical_columns:
-
                         tmp = np.round(tmp)
 
                     data_t[:, id_] = tmp
@@ -393,7 +388,6 @@ class DataTransformer:
                     st += 1
 
             elif info["type"] == "mixed":
-
                 u = data[:, st]
                 full_v = data[
                     :,
@@ -456,13 +450,10 @@ class DataTransformer:
 
 class ImageTransformer:
     def __init__(self, side):
-
         self.height = side
 
     def transform(self, data):
-
         if self.height * self.height > len(data[0]):
-
             padding = torch.zeros(
                 (len(data), self.height * self.height - len(data[0]))
             ).to(data.device)
@@ -471,7 +462,6 @@ class ImageTransformer:
         return data.view(-1, 1, self.height, self.height)
 
     def inverse_transform(self, data):
-
         data = data.view(-1, self.height * self.height)
 
         return data

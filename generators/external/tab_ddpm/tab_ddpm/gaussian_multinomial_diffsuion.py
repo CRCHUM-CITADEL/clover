@@ -75,7 +75,6 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         scheduler="cosine",
         device=torch.device("cpu"),
     ):
-
         super(GaussianMultinomialDiffusion, self).__init__()
         assert multinomial_loss_type in ("vb_stochastic", "vb_all")
         assert parametrization in ("x0", "direct")
@@ -419,7 +418,6 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         return log_probs
 
     def predict_start(self, model_out, log_x_t, t, out_dict):
-
         # model_out = self._denoise_fn(x_t, t.to(x_t.device), **out_dict)
 
         assert model_out.size(0) == log_x_t.size(0)
@@ -617,7 +615,6 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             raise ValueError
 
     def _multinomial_loss(self, model_out, log_x_start, log_x_t, t, pt, out_dict):
-
         if self.multinomial_loss_type == "vb_stochastic":
             kl = self.compute_Lt(model_out, log_x_start, log_x_t, t, out_dict)
             kl_prior = self.kl_prior(log_x_start)

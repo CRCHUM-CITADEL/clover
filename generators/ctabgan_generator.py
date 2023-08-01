@@ -58,7 +58,6 @@ class CTABGANGenerator(Generator):
         batch_size: int = 500,
         epochs: int = 150,
     ):
-
         super().__init__(df, metadata, random_state, generator_filepath)
         self._extra_metadata = {
             "mixed_columns": mixed_columns,

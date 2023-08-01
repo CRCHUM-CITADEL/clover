@@ -34,7 +34,6 @@ class DataPrep(object):
         integer: list,
         type: dict,
     ):
-
         self.categorical_columns = categorical
         self.log_columns = log
         self.mixed_columns = mixed
@@ -103,7 +102,6 @@ class DataPrep(object):
 
         # Encoding categorical column using label encoding to assign each category within a column with an integer value
         for column_index, column in enumerate(self.df.columns):
-
             if column in self.categorical_columns:
                 label_encoder = preprocessing.LabelEncoder()
                 self.df[column] = self.df[column].astype(str)
@@ -122,7 +120,6 @@ class DataPrep(object):
         super().__init__()
 
     def inverse_prep(self, data, eps=1):
-
         # Converting generated data into a dataframe and assign column names as per original dataset
         df_sample = pd.DataFrame(data, columns=self.df.columns)
 

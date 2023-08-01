@@ -36,6 +36,38 @@ generators.smote module
    :undoc-members:
    :show-inheritance:
 
+generators.ctgan_generator module
+---------------------------------
+
+.. automodule:: generators.ctgan_generator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+generators.tvae_generator module
+--------------------------------
+
+.. automodule:: generators.tvae_generator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+generators.ctabgan_generator module
+-----------------------------------
+
+.. automodule:: generators.ctabgan_generator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+generators.tabddpm_generator module
+-----------------------------------
+
+.. automodule:: generators.tabddpm_generator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

@@ -81,6 +81,7 @@ About This Repository
 
    generators/modules
    metrics/modules
+   optimization/modules
    utils/modules
    tests/modules
 

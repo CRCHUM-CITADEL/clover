@@ -112,13 +112,16 @@ class ContinuousConsistency(Consistency):
     alias = "cont_" + Consistency.alias
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Compute the number of synthetic data samples between the minimum and maximum of the real data.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -132,8 +135,8 @@ class ContinuousConsistency(Consistency):
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
 
         # Defined for continuous variables only
-        df_real_cont = df_real.drop(columns=metadata["categorical"])
-        df_synth_cont = df_synthetic.drop(columns=metadata["categorical"])
+        df_real_cont = df_real["train"].drop(columns=metadata["categorical"])
+        df_synth_cont = df_synthetic["train"].drop(columns=metadata["categorical"])
 
         if df_real_cont.shape[1] == 0:
             return {}
@@ -182,13 +185,16 @@ class CategoricalConsistency(Consistency):
     alias = "cat_" + Consistency.alias
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Compute the number of synthetic data samples within the categories of the real data.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -202,8 +208,8 @@ class CategoricalConsistency(Consistency):
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
 
         # Defined for categorical variables only
-        df_real_cat = df_real.drop(columns=metadata["continuous"])
-        df_synth_cat = df_synthetic.drop(columns=metadata["continuous"])
+        df_real_cat = df_real["train"].drop(columns=metadata["continuous"])
+        df_synth_cat = df_synthetic["train"].drop(columns=metadata["continuous"])
 
         if df_real_cat.shape[1] == 0:
             return {}
@@ -269,13 +275,16 @@ class ContinuousStatistics(UtilityMetric):
         return ["median_l1_distance", "iqr_l1_distance"]
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Compare the median and IQR of the synthetic versus real data by computing the *L1* distance.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -288,8 +297,8 @@ class ContinuousStatistics(UtilityMetric):
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
 
         # Defined for continuous variables only
-        df_real_cont = df_real.drop(columns=metadata["categorical"])
-        df_synth_cont = df_synthetic.drop(columns=metadata["categorical"])
+        df_real_cont = df_real["train"].drop(columns=metadata["categorical"])
+        df_synth_cont = df_synthetic["train"].drop(columns=metadata["categorical"])
 
         if df_real_cont.shape[1] == 0:
             return {}
@@ -407,13 +416,16 @@ class CategoricalStatistics(UtilityMetric):
         return ["support_coverage", "frequency_coverage"]
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Measure the coverage of each categorical variable of the synthetic data with reference to the real data.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -427,8 +439,8 @@ class CategoricalStatistics(UtilityMetric):
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
 
         # Defined for categorical variables only
-        df_real_cat = df_real.drop(columns=metadata["continuous"])
-        df_synth_cat = df_synthetic.drop(columns=metadata["continuous"])
+        df_real_cat = df_real["train"].drop(columns=metadata["continuous"])
+        df_synth_cat = df_synthetic["train"].drop(columns=metadata["continuous"])
 
         if df_real_cat.shape[1] == 0:
             return {}
@@ -611,14 +623,17 @@ class UnivariateDiscreteDistance(UtilityMetric, metaclass=ABCMeta):
         pass
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Measure the discrete distance between the real and the synthetic data for each variable.
         All variables must be categorical.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -632,9 +647,9 @@ class UnivariateDiscreteDistance(UtilityMetric, metaclass=ABCMeta):
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
 
         distance = {}
-        for col in df_real.columns:
-            real_table = ustats.frequency_table(df_real[col], "real")
-            synth_table = ustats.frequency_table(df_synthetic[col], "synth")
+        for col in df_real["train"].columns:
+            real_table = ustats.frequency_table(df_real["train"][col], "real")
+            synth_table = ustats.frequency_table(df_synthetic["train"][col], "synth")
             # Account for all categories since the distance is defined for
             # probability distributions summing up to 1
             df_counts = pd.merge(
@@ -703,14 +718,17 @@ class ContinuousUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMeta
     alias = "cont_" + UnivariateDiscreteDistance.alias
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Estimate the distance between the real and the synthetic data
         for each continuous variable by binning them.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -724,8 +742,8 @@ class ContinuousUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMeta
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
 
         # Defined for continuous variables only
-        df_real_cont = df_real.drop(columns=metadata["categorical"])
-        df_synth_cont = df_synthetic.drop(columns=metadata["categorical"])
+        df_real_cont = df_real["train"].drop(columns=metadata["categorical"])
+        df_synth_cont = df_synthetic["train"].drop(columns=metadata["categorical"])
         metadata_cont = {
             "continuous": metadata["continuous"],
             "categorical": [],
@@ -738,6 +756,9 @@ class ContinuousUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMeta
         df_real_bin, df_synthetic_bin = upreprocessing.bin_per_column(
             df_ref=df_real_cont, df_tobin=df_synth_cont, bin_size=10
         )
+
+        df_real_bin = {"train": df_real_bin, "test": None}
+        df_synthetic_bin = {"train": df_synthetic_bin, "test": None}
 
         res = super().compute(df_real_bin, df_synthetic_bin, metadata_cont)
 
@@ -768,14 +789,17 @@ class CategoricalUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMet
     alias = "cat_" + UnivariateDiscreteDistance.alias
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Measure the discrete distance between the real and the synthetic data for each variable.
         All variables must be categorical.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -788,8 +812,8 @@ class CategoricalUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMet
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
 
         # Defined for categorical variables only
-        df_real_cat = df_real.drop(columns=metadata["continuous"])
-        df_synth_cat = df_synthetic.drop(columns=metadata["continuous"])
+        df_real_cat = df_real["train"].drop(columns=metadata["continuous"])
+        df_synth_cat = df_synthetic["train"].drop(columns=metadata["continuous"])
         metadata_cat = {
             "continuous": [],
             "categorical": metadata["categorical"],
@@ -798,6 +822,9 @@ class CategoricalUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMet
 
         if df_real_cat.shape[1] == 0:
             return {}
+
+        df_real_cat = {"train": df_real_cat, "test": None}
+        df_synth_cat = {"train": df_synth_cat, "test": None}
 
         res = super().compute(df_real_cat, df_synth_cat, metadata_cat)
 

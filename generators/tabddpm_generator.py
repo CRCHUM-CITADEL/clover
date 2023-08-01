@@ -179,7 +179,7 @@ class TabDDPMGenerator(Generator):
         :return: *None*
         """
 
-        self._config["parent_dir"] = save_path
+        self._config["parent_dir"] = Path(save_path)
 
         with ustandard.HiddenPrints():
             tabddpm_train(

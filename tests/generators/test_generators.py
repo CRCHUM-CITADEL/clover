@@ -4,36 +4,50 @@ import tempfile
 from pathlib import Path
 from inspect import getfullargspec
 
-import pandas as pd  # 3rd party packages
+# 3rd party packages
+import pandas as pd
 
-from generators.base import Generator  # local packages
+# Local packages
+from generators.base import Generator
 from generators.dataSynthesizer import DataSynthesizerGenerator
 from generators.synthpop_generator import SynthpopGenerator
 from generators.smote import SmoteGenerator
+from generators.tvae_generator import TVAEGenerator
+from generators.ctgan_generator import CTGANGenerator
+from generators.tabddpm_generator import TabDDPMGenerator
 
 
 @pytest.mark.parametrize(
-    "generator", [SynthpopGenerator, DataSynthesizerGenerator, SmoteGenerator]
+    "generator",
+    [
+        SynthpopGenerator,
+        DataSynthesizerGenerator,
+        SmoteGenerator,
+        TVAEGenerator,
+        CTGANGenerator,
+        TabDDPMGenerator,
+    ],
 )
 def test_generation(
-    generator: Type[Generator], df_wbcd: pd.DataFrame, metadata_wbcd: dict
+    generator: Type[Generator], df_wbcd: dict[str, pd.DataFrame], metadata_wbcd: dict
 ) -> None:
     """
     Check the generation process.
 
     :param generator: the class of the generator to test
-    :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture
+    :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
     :param metadata_wbcd: the wbcd metadata fixture
     :return: *None*
     """
 
     # Instance parameters
     with tempfile.TemporaryDirectory() as temp_dir:  # no need to keep the generated files
-        datapath = Path(temp_dir) / "real_data.csv"
-        df_wbcd.to_csv(datapath, index=False)
+        temp_dir = Path(temp_dir)
+        datapath = temp_dir / "real_data.csv"
+        df_wbcd["train"].to_csv(datapath, index=False)
 
         d = {
-            "df": df_wbcd,
+            "df": df_wbcd["train"],
             "metadata": metadata_wbcd,
             "random_state": 0,
             "generator_filepath": None,
@@ -42,6 +56,15 @@ def test_generation(
             "epsilon": 0,  # datasynthesizer
             "degree": 2,  # datasynthesizer
             "k_neighbors": None,  # smote
+            "epochs": 1,  # tvae / ctgan
+            "batch_size": 100,  # tvae / ctgan / tabDDPM
+            "compress_dims": (249, 249),  # tvae
+            "decompress_dims": (249, 249),  # tvae
+            "discriminator_steps": 2,  # ctgan
+            "learning_rate": 1e-5,  # tabDDPM
+            "num_timesteps": 2,  # tabDDPM
+            "num_iter": 2,  # tabDDPM
+            "layers": None,  # tabDDPM
         }
 
         # Select only the expected instance parameters
@@ -53,45 +76,20 @@ def test_generation(
         gen.fit(save_path=temp_dir)
 
         # Check that the generator is saved
-        num_files = len(list(Path(temp_dir).glob("*")))
+        num_files = len(list(temp_dir.glob("*")))
         assert (
-            num_files == 2
+            num_files >= 2
         ), "The generator should have been saved"  # with the datafile
 
         # Generate the samples
-        df_synth = gen.sample(save_path=temp_dir, num_samples=len(df_wbcd))
+        df_synth = gen.sample(save_path=temp_dir, num_samples=len(df_wbcd["train"]))
 
         # Check that the generated samples are consistent
-        num_files = len(list(Path(temp_dir).glob("*")))
-        assert num_files == 3, "The samples should have been saved"
-        assert df_wbcd.shape == df_synth.shape, "Datasets must have the same shape"
-        assert set(df_wbcd.columns) == set(
+        num_files_plusone = len(list(Path(temp_dir).glob("*")))
+        assert num_files_plusone > num_files, "The samples should have been saved"
+        assert (
+            df_wbcd["train"].shape == df_synth.shape
+        ), "Datasets must have the same shape"
+        assert set(df_wbcd["train"].columns) == set(
             df_synth.columns
         ), "Datasets must have the same columns"
-
-
-@pytest.mark.parametrize("search_method", ["random", "pso"])
-def test_search_hyperparameters_synthpop(
-    search_method: str, df_wbcd: pd.DataFrame, metadata_wbcd: dict
-) -> None:
-    """
-    Check the search for hyperparameters for the sequential trees.
-
-    :param search_method: the search method, "pso" for Particle Swarm Optimization or "random"
-    :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture
-    :param metadata_wbcd: the wbcd metadata fixture
-    :return: *None*
-    """
-
-    # Create the generator
-    gen = SynthpopGenerator(df=df_wbcd, metadata=metadata_wbcd)
-
-    # Check the hyperparameters search method
-    hyper = gen.search_hyperparameters(
-        search=search_method, num_iter=1, population_size=5
-    )
-
-    assert isinstance(hyper, dict)
-    assert {"variables_order", "cost"} <= hyper.keys()
-    assert len(hyper["variables_order"]) == len(df_wbcd.columns)
-    assert set(hyper["variables_order"]) == set(df_wbcd.columns)

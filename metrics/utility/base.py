@@ -103,13 +103,16 @@ class UtilityMetric(metaclass=ABCMeta):
 
     @abstractmethod
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Compute the metric. To be reimplemented for each metric.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary containing two keys: the **average** metric values and the **detailed** ones
@@ -118,39 +121,51 @@ class UtilityMetric(metaclass=ABCMeta):
 
     @staticmethod
     def check_consistency_compute_parameters(
-        df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> None:
         """
         Assert that the compute method parameters are consistent.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: *None*
         """
 
-        assert df_real.shape == df_synthetic.shape, "Datasets must have the same shape"
+        assert (
+            df_real["train"].shape == df_synthetic["train"].shape
+        ), "Train sets must have the same shape"
+        assert (df_real["test"] is None and df_synthetic["test"] is None) or (
+            df_real["test"].shape == df_synthetic["test"].shape
+        ), "Test sets must have the same shape"
 
-        assert set(df_real.columns) == set(
-            df_synthetic.columns
-        ), "Datasets must have the same columns"
+        assert set(df_real["train"].columns) == set(
+            df_synthetic["train"].columns
+        ), "Train sets must have the same columns"
+
+        assert df_real["test"] is None or set(df_real["test"].columns) == set(
+            df_synthetic["test"].columns
+        ), "Test sets must have the same columns"
 
         assert {"continuous", "categorical", "variable_to_predict"} == set(
             metadata.keys()
         ), "Missing keys in the metadata dictionary"
 
         assert set(metadata["continuous"] + metadata["categorical"]) == set(
-            df_real.columns
+            df_real["train"].columns
         ), "All columns should be specified in the metadata"
 
         assert (
-            len(metadata["continuous"] + metadata["categorical"]) == df_real.shape[1]
+            len(metadata["continuous"] + metadata["categorical"])
+            == df_real["train"].shape[1]
         ), "All columns should be specified once in the metadata"
 
         assert (
             metadata["variable_to_predict"] is None
-            or metadata["variable_to_predict"] in df_real.columns
+            or metadata["variable_to_predict"] in df_real["train"].columns
         ), "The variable to predict should be in the dataset"
 
     @classmethod

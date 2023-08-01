@@ -25,6 +25,8 @@ class DiscreteParticleSwarmOptimizationSearch(HyperparametersSearch):
         a function returning the dictionary
     :param generator: the generator class to optimize
     :param objective_function: the cost function
+    :param cv_num_folds: the number of folds for the cross-validation.
+        Set to 0 or 1 for deactivating the cross-validation.
     :param random_state: for reproducibility purposes
     :param use_gpu: flag to use GPU computation power if available to accelerate the learning
     :param direction: the direction of optimization (**min** or **max**)
@@ -41,6 +43,7 @@ class DiscreteParticleSwarmOptimizationSearch(HyperparametersSearch):
         hyperparams: dict,
         generator: Type[Generator],
         objective_function: Callable,
+        cv_num_folds: int = 1,
         random_state: int = None,
         use_gpu: bool = False,
         direction: str = "min",
@@ -53,6 +56,7 @@ class DiscreteParticleSwarmOptimizationSearch(HyperparametersSearch):
             hyperparams,
             generator,
             objective_function,
+            cv_num_folds,
             random_state,
             use_gpu,
         )
@@ -78,10 +82,10 @@ class DiscreteParticleSwarmOptimizationSearch(HyperparametersSearch):
             cost = self._fit(params={self._sequence_name: sequence})
             if self._direction == "max":
                 cost *= -1
+            return cost
 
         problem = SequenceOrderingProblem(
             default_sequence=self._default_sequence,
-            sequence_name=self._sequence_name,
             objective=objective_function,
         )
 
@@ -97,6 +101,8 @@ class DiscreteParticleSwarmOptimizationSearch(HyperparametersSearch):
         self._best_params = {
             self._sequence_name: list(np.array(self._default_sequence)[best_sequence])
         }
+        if self._direction == "max":
+            self._best_cost *= -1
 
 
 class SequenceOrderingProblem(ElementwiseProblem):
@@ -109,9 +115,7 @@ class SequenceOrderingProblem(ElementwiseProblem):
     :param kwargs: for compatibility purposes only
     """
 
-    def __init__(
-        self, default_sequence: list, sequence_name: str, objective: Callable, **kwargs
-    ):
+    def __init__(self, default_sequence: list, objective: Callable, **kwargs):
         super().__init__(
             n_var=len(default_sequence),
             n_obj=1,
@@ -121,7 +125,6 @@ class SequenceOrderingProblem(ElementwiseProblem):
             **kwargs
         )
         self._default_sequence = default_sequence
-        self._sequence_name = sequence_name
         self._objective = objective
 
     def _evaluate(self, x: np.ndarray, out: dict, *args, **kwargs) -> None:
@@ -136,6 +139,5 @@ class SequenceOrderingProblem(ElementwiseProblem):
         """
 
         sequence = list(np.array(self._default_sequence)[x])
-        sequence = {self._sequence_name: sequence}
 
         out["F"] = self._objective(sequence)

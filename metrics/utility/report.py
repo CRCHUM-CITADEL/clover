@@ -28,8 +28,8 @@ class Report:
     Create a report of the utility metrics.
 
     :param dataset_name: the name of the dataset
-    :param df_real: the real dataset
-    :param df_synthetic: the synthetic dataset
+    :param df_real: the real dataset, split into **train** and **test** sets
+    :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
     :param metadata: dictionary with two entries: the **continuous** and **categorical** lists of variables.
         Must be specified by the user since the variable type might be equivocal.
     :param metrics: list of the metrics to compute. If not specified, all the metrics are computed.
@@ -45,13 +45,13 @@ class Report:
     def __init__(
         self,
         dataset_name: str,
-        df_real: pd.DataFrame,
-        df_synthetic: pd.DataFrame,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
         metadata: dict,
         metrics: List[str] = None,
         cross_learning: bool = True,
         num_repeat: int = 20,
-        num_folds: int = 10,
+        num_folds: int = 10,  # TODO: add a loop
         use_gpu: bool = False,
         alpha: float = 0.05,
         figsize: Tuple[float, float] = (8, 6),
@@ -73,8 +73,8 @@ class Report:
         self._metadata = metadata
         self._df_real = df_real
         self._df_synthetic = df_synthetic
-        self._num_instances = len(df_real)
-        self._num_variables = df_real.shape[1]
+        self._num_instances = [len(df_real["train"]), len(df_real["test"])]
+        self._num_variables = df_real["train"].shape[1]
         self._num_continuous_variables = len(metadata["continuous"])
         self._num_categorical_variables = len(metadata["categorical"])
 
@@ -83,7 +83,6 @@ class Report:
             "random_state": None,
             "alpha": alpha,
             "num_repeat": num_repeat,
-            "num_folds": num_folds,
             "use_gpu": use_gpu,
         }
 
@@ -144,8 +143,7 @@ class Report:
             self._metrics_info[class_vars["name"]] = class_vars
 
             res = {}
-            if not self._df_real.empty:
-                res = metric.compute(self._df_real, self._df_synthetic, self._metadata)
+            res = metric.compute(self._df_real, self._df_synthetic, self._metadata)
 
             # Append the submetrics name and value as a dict
             if len(res) != 0:
@@ -163,7 +161,8 @@ class Report:
         """
         print(f"----- {self._dataset_name} -----")
         print("Contains:")
-        print(f"    - {self._num_instances} instances,")
+        print(f"    - {self._num_instances[0]} instances in the train set,")
+        print(f"    - {self._num_instances[1]} instances in the test set,")
         print(
             f"    - {self._num_variables} variables, "
             f"{self._num_continuous_variables} continuous and "

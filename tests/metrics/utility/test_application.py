@@ -57,16 +57,16 @@ test_ids = [f"{d['metric_class'].name}-{d['which_data']}" for d in test_params]
 @pytest.fixture(scope="module", params=test_params, ids=test_ids)
 def application_metric_results(
     request,
-    df_wbcd: pd.DataFrame,
-    df_mock_wbcd: pd.DataFrame,
+    df_wbcd: dict[str, pd.DataFrame],
+    df_mock_wbcd: dict[str, pd.DataFrame],
     metadata_wbcd: dict,
 ) -> Tuple[Type[UtilityMetric], str, dict]:
     """
     Compute the application metrics in different settings.
 
     :param request: the number of continuous and categorical columns to test
-    :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture
-    :param df_mock_wbcd: the mock wbcd dataset fixture
+    :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
+    :param df_mock_wbcd: the mock wbcd dataset fixture, split into **train** and **test** sets
     :param metadata_wbcd: the wbcd metadata fixture
     :return: a tuple containing the metric class, the dataset type and a dictionary containing
       the **average** scores of the metric and the **detailed** scores
@@ -83,7 +83,7 @@ def application_metric_results(
     metadata["variable_to_predict"] = dependent_var
 
     # Instance parameters
-    d = {"random_state": 0, "num_repeat": 1, "num_folds": 10, "use_gpu": False}
+    d = {"random_state": 0, "num_repeat": 1, "use_gpu": False}
 
     # Select only the expected instance parameters
     args = getfullargspec(metric_class).args[1:]  # remove self

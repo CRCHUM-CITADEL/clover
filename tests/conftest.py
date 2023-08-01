@@ -5,30 +5,36 @@ import config  # local packages
 
 
 @pytest.fixture(scope="package")
-def df_wbcd() -> pd.DataFrame:
+def df_wbcd() -> dict[str, pd.DataFrame]:
     """
     Load the continuous Wisconsin Breast Cancer Dataset wbcd and delete ids.
 
-    :return: the dataframe containing the wbcd dataset
+    :return: the dataframe containing the wbcd dataset, split into **train** and **test** sets
     """
 
-    df = pd.read_csv(config.WBCD_DATASET_FILEPATH)
+    data = pd.read_csv(config.WBCD_DATASET_FILEPATH)
+    data = data.drop(columns="Sample_code_number")  # identifier not needed
+    data["Class"] = (data["Class"] / 2 - 1).astype(
+        "int"
+    )  # Class 0 or 1 instead of 2 and 4
+    data["Normal_Nucleoli"] = data["Normal_Nucleoli"].astype(
+        str
+    )  # Categorical variable
 
-    df = df.drop(columns="Sample_code_number")  # identifier not needed
-
-    df["Class"] = (df["Class"] / 2 - 1).astype("int")  # Class 0 or 1 instead of 2 and 4
-
-    df["Normal_Nucleoli"] = df["Normal_Nucleoli"].astype(str)  # Categorical variable
+    # Split train / test
+    df = {}
+    df["train"] = data.sample(frac=0.8, replace=False, random_state=66)
+    df["test"] = data.drop(index=df["train"].index).reset_index(drop=True)
+    df["train"] = df["train"].reset_index(drop=True)
 
     return df
 
 
 @pytest.fixture(scope="package")
-def metadata_wbcd(df_wbcd: pd.DataFrame) -> dict:
+def metadata_wbcd() -> dict:
     """
     Return the metadata associating with the Wisconsin Breast Cancer Dataset wbcd dataset.
 
-    :param df_wbcd: the wbcd dataset fixture
     :return: a dict containing the metadata with the following keys:
       **continuous**, **categorical** and **variable_to_predict**
     """

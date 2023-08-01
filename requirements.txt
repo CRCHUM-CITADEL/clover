@@ -5,7 +5,6 @@ matplotlib==3.7.1
 seaborn==0.12.2
 scikit-learn==1.2.2
 DataSynthesizer==0.1.11
-py-synthpop==0.1.2
 pymoo==0.6.0.1
 imbalanced-learn==0.10.1
 xgboost==1.7.5

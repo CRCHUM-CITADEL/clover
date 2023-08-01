@@ -1,10 +1,13 @@
-from pathlib import Path  # standard library
+# Standard library
+from pathlib import Path
 import pytest
 import tempfile
 
-import pandas as pd  # 3rd party packages
+# 3rd party packages
+import pandas as pd
 
-from metrics.utility.report import Report  # local packages
+# Local packages
+from metrics.utility.report import Report
 
 
 test_params = [
@@ -16,15 +19,15 @@ test_ids = [("-").join([f"{k}{v}" for k, v in d.items()]) for d in test_params]
 @pytest.fixture(scope="module", params=test_params, ids=test_ids)
 def report(
     request,
-    df_wbcd: pd.DataFrame,
-    df_mock_wbcd: pd.DataFrame,
+    df_wbcd: dict[str, pd.DataFrame],
+    df_mock_wbcd: dict[str, pd.DataFrame],
 ) -> Report:
     """
     Compute the report in different settings.
 
     :param request: the number of continuous and categorical columns to test
-    :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture
-    :param df_mock_wbcd: the mock wbcd dataset fixture
+    :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
+    :param df_mock_wbcd: the mock wbcd dataset fixture, split into **train** and **test** sets
     :return: an instance of the report
     """
 
@@ -38,8 +41,15 @@ def report(
     if request.param["nb_cat_columns"] == 0:
         metadata["variable_to_predict"] = None
 
-    df_wbcd_mix = df_wbcd[metadata["continuous"] + metadata["categorical"]]
-    df_mock_wbcd_mix = df_mock_wbcd[metadata["continuous"] + metadata["categorical"]]
+    df_wbcd_mix = {}
+    df_mock_wbcd_mix = {}
+    for set in ["train", "test"]:
+        df_wbcd_mix[set] = df_wbcd[set][
+            metadata["continuous"] + metadata["categorical"]
+        ]
+        df_mock_wbcd_mix[set] = df_mock_wbcd[set][
+            metadata["continuous"] + metadata["categorical"]
+        ]
 
     report = Report(
         dataset_name="Wisconsin Breast Cancer Dataset",

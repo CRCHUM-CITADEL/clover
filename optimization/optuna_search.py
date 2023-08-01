@@ -35,6 +35,8 @@ class OptunaSearch(HyperparametersSearch):
         a function returning the dictionary
     :param generator: the generator class to optimize
     :param objective_function: the cost function
+    :param cv_num_folds: the number of folds for the cross-validation.
+        Set to 0 or 1 for deactivating the cross-validation.
     :param random_state: for reproducibility purposes
     :param use_gpu: flag to use GPU computation power if available to accelerate the learning
     :param sampler: the algorithm suggesting hyperparameters values. Default to TPESampler.
@@ -53,6 +55,7 @@ class OptunaSearch(HyperparametersSearch):
         hyperparams: Union[dict, Callable],
         generator: Type[Generator],
         objective_function: Callable,
+        cv_num_folds: int = 1,
         random_state: int = None,
         use_gpu: bool = False,
         sampler: samplers.BaseSampler = None,
@@ -67,6 +70,7 @@ class OptunaSearch(HyperparametersSearch):
             hyperparams,
             generator,
             objective_function,
+            cv_num_folds,
             random_state,
             use_gpu,
         )
@@ -89,7 +93,8 @@ class OptunaSearch(HyperparametersSearch):
         # Optuna-specific objective function
         def objective(trial):
             params_to_explore = self._hyperparams(trial)
-            cost = self._fit(params_to_explore)
+            callback = lambda cost, step: trial.report(cost, step=step)
+            cost = self._fit(params_to_explore, callback=callback)
             return cost
 
         self._study.optimize(func=objective, n_trials=self._num_iter)

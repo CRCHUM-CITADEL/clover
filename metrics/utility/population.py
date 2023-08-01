@@ -1,20 +1,19 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*
-from typing import Union, List, Tuple, Type  # standard library
+# Standard library
+from typing import Union, List, Tuple, Type
 from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 
-import pandas as pd  # 3rd party packages
+# 3rd party packages
+import pandas as pd
 import numpy as np
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.model_selection import KFold
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 import xgboost as xgb
 import matplotlib.pyplot as plt
 
-import utils.learning as ulearning  # local
+# Local
+import utils.learning as ulearning
 import utils.draw as udraw
 from metrics.utility.base import UtilityMetric
 import metrics.utility.application as app
@@ -52,8 +51,6 @@ class Distinguishability(UtilityMetric):
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
-    :param num_folds: the scores are averaged across the number of folds to account for split randomness
-        for the prediction metrics only
     :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
@@ -67,12 +64,10 @@ class Distinguishability(UtilityMetric):
         self,
         random_state: int = None,
         num_repeat: int = 10,
-        num_folds: int = 10,
         use_gpu: bool = False,
     ):
         super().__init__(random_state)
         self._num_repeat = num_repeat
-        self._num_folds = num_folds
         self._use_gpu = use_gpu
 
     @classmethod
@@ -83,7 +78,7 @@ class Distinguishability(UtilityMetric):
         :return: the list of the average submetrics
         """
         return [
-            "propensity_mse",
+            "prediction_mse",
             "prediction_mse_real",
             "prediction_mse_synth",
             "prediction_auc",
@@ -106,15 +101,18 @@ class Distinguishability(UtilityMetric):
         return pmse
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Compute three distinguishability metrics between real and synthetic datasets:
         the propensity mean squared error (all data), the prediction mean squared error (test only) and
         the prediction auc score (test only).
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -129,15 +127,24 @@ class Distinguishability(UtilityMetric):
         """
 
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
+        if df_real["train"].shape[1] <= 1:
+            return {}
 
         # Transform original dataframes into input and output arrays for the training stage
-        # TODO: ensure no need for imputation, normalization?
-        df = pd.concat([df_real, df_synthetic], axis=0, ignore_index=True)
+        df_train = pd.concat(
+            [df_real["train"], df_synthetic["train"]], axis=0, ignore_index=True
+        )
+        df_test = pd.concat(
+            [df_real["test"], df_synthetic["test"]], axis=0, ignore_index=True
+        )
 
         #   Select the columns keeping the order
-        cat_cols = [col for col in df_real.columns if col not in metadata["continuous"]]
-        cont_cols = [col for col in df_real.columns if col not in cat_cols]
-        df[cat_cols] = df[cat_cols].astype("object")
+        cat_cols = [
+            col for col in df_real["train"].columns if col not in metadata["continuous"]
+        ]
+        cont_cols = [col for col in df_real["train"].columns if col not in cat_cols]
+        df_train[cat_cols] = df_train[cat_cols].astype("object")
+        df_test[cat_cols] = df_test[cat_cols].astype("object")
 
         # ColumnTransformers
         preprocessing = ColumnTransformer(
@@ -146,9 +153,10 @@ class Distinguishability(UtilityMetric):
                 (
                     "categorical",
                     OneHotEncoder(
-                        drop="first",
-                        categories=[df[cat].unique() for cat in cat_cols],
-                    ),  # TODO: use infrequent categories?
+                        # drop="first", not used since the first category and the unknown would be the same.
+                        categories=[df_train[cat].unique() for cat in cat_cols],
+                        handle_unknown="ignore",
+                    ),
                     cat_cols,
                 ),
             ],
@@ -156,7 +164,10 @@ class Distinguishability(UtilityMetric):
         )
 
         #   Label 1 for real records and 0 for synthetic ones
-        y = np.array([1] * len(df_real) + [0] * len(df_synthetic))
+        y_train = np.array(
+            [1] * len(df_real["train"]) + [0] * len(df_synthetic["train"])
+        )
+        y_test = np.array([1] * len(df_real["test"]) + [0] * len(df_synthetic["test"]))
 
         # Compute the distinguishability score in three different settings
         dist_scores = []
@@ -165,7 +176,6 @@ class Distinguishability(UtilityMetric):
 
         # Compute scores several times to account for randomness
         for _ in range(self._num_repeat):
-            # Propensity MSE - no train test split
             pipe = Pipeline(
                 steps=[
                     ("preprocessing", preprocessing),
@@ -180,90 +190,42 @@ class Distinguishability(UtilityMetric):
                     ),
                 ]
             )
-            auc_score, y_pred_proba = ulearning.train_predict(
+
+            scores, y_pred_proba = ulearning.train_predict(
                 pipeline=pipe,
-                x_train=df,
-                y_train=y,
-                x_test_list=[df],
-                y_test_list=[y],
+                x_train=df_train,
+                y_train=y_train,
+                x_test_list=[df_test],
+                y_test_list=[y_test],
                 is_classification=True,
             )
-            propensity_score = self.propensity_mse(y_pred_proba[0])  # only one test set
 
-            # Prediction MSE and AUC score on the test set with kfolds
-            prediction_mse_real = []
-            prediction_mse_synth = []
-            prediction_auc = []
-
-            if self._num_folds < 2:  # test data is equal to training data
-                prediction_mse_real.append(propensity_score)
-                prediction_mse_synth.append(propensity_score)
-                prediction_auc.append(
-                    max(0.5, auc_score[0]) * 2 - 1
-                )  # scale between 0 and 1
-            else:
-                kf = KFold(n_splits=self._num_folds, shuffle=True)
-                for tr_ind, te_ind in kf.split(df_real, y[: len(df_real)]):
-                    # Add the synthetic indices and shuffle training indices
-                    train_index = np.hstack([tr_ind, tr_ind + len(df_real)])
-                    np.random.shuffle(train_index)
-                    test_index = np.hstack([te_ind, te_ind + len(df_real)])
-
-                    pipe = Pipeline(
-                        steps=[
-                            ("preprocessing", preprocessing),
-                            (
-                                "xgb",
-                                xgb.XGBClassifier(
-                                    n_estimators=100,
-                                    eta=0.1,
-                                    tree_method="auto"
-                                    if not self._use_gpu
-                                    else "gpu_hist",
-                                    objective="binary:logistic",
-                                ),
-                            ),
-                        ]
-                    )
-
-                    scores, y_pred_proba = ulearning.train_predict(
-                        pipeline=pipe,
-                        x_train=df.iloc[train_index],
-                        y_train=y[train_index],
-                        x_test_list=[df.iloc[test_index]],
-                        y_test_list=[y[test_index]],
-                        is_classification=True,
-                    )
-
-                    y_pred_real = y_pred_proba[0][: len(test_index) // 2]
-                    mse_real = self.propensity_mse(y_pred_real)  # only one test set
-                    y_pred_synth = y_pred_proba[0][len(test_index) // 2 :]
-                    mse_synth = self.propensity_mse(y_pred_synth)  # only one test set
-                    auc = (
-                        max(0.5, scores[0]) * 2 - 1
-                    )  # only one test set and scale between 0 and 1
-
-                    prediction_mse_real.append(mse_real)
-                    prediction_mse_synth.append(mse_synth)
-                    prediction_auc.append(auc)
-                    prediction_real.extend(y_pred_real)
-                    prediction_synth.extend(y_pred_synth)
+            mse = self.propensity_mse(y_pred_proba[0])  # only one test set
+            y_pred_real = y_pred_proba[0][: len(df_test) // 2]
+            mse_real = self.propensity_mse(y_pred_real)
+            y_pred_synth = y_pred_proba[0][len(df_test) // 2 :]
+            mse_synth = self.propensity_mse(y_pred_synth)
+            auc = (
+                max(0.5, scores[0]) * 2 - 1
+            )  # only one test set and scale between 0 and 1
 
             # Average scores on kfolds
             dist_scores.append(
                 [
-                    propensity_score,
-                    np.mean(prediction_mse_real),
-                    np.mean(prediction_mse_synth),
-                    np.mean(prediction_auc),
+                    mse,
+                    mse_real,
+                    mse_synth,
+                    auc,
                 ]
             )
+            prediction_real.extend(y_pred_real)
+            prediction_synth.extend(y_pred_synth)
 
         dist_scores = np.array(dist_scores)
 
         # Average scores on repetitions
         (
-            propensity_score,
+            prediction_mse,
             prediction_mse_real,
             prediction_mse_synth,
             prediction_auc,
@@ -271,13 +233,13 @@ class Distinguishability(UtilityMetric):
 
         res = {
             "average": {
-                "propensity_mse": propensity_score,
+                "prediction_mse": prediction_mse,
                 "prediction_mse_real": prediction_mse_real,
                 "prediction_mse_synth": prediction_mse_synth,
                 "prediction_auc": prediction_auc,
             },
             "detailed": {
-                "propensity_mse": dist_scores[:, 0],
+                "prediction_mse": dist_scores[:, 0],
                 "prediction_mse_real": dist_scores[:, 1],
                 "prediction_mse_synth": dist_scores[:, 2],
                 "prediction_auc": dist_scores[:, 3],
@@ -301,7 +263,7 @@ class Distinguishability(UtilityMetric):
         assert all(
             key in report
             for key in [
-                "propensity_mse",
+                "prediction_mse",
                 "prediction_mse_real",
                 "prediction_mse_synth",
                 "prediction_auc",
@@ -315,7 +277,7 @@ class Distinguishability(UtilityMetric):
 
         data = pd.DataFrame(
             {
-                "propensity_mse": report["propensity_mse"],
+                "prediction_mse": report["prediction_mse"],
                 "prediction_mse_real": report["prediction_mse_real"],
                 "prediction_mse_synth": report["prediction_mse_synth"],
                 "prediction_auc": report["prediction_auc"],
@@ -367,7 +329,6 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
-    :param num_folds: the scores are averaged across the number of folds to account for split randomness
     :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
@@ -389,12 +350,10 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
         self,
         random_state: int = None,
         num_repeat: int = 10,
-        num_folds: int = 10,
         use_gpu: bool = False,
     ):
         super().__init__(random_state)
         self._num_repeat = num_repeat
-        self._num_folds = num_folds
         self._use_gpu = use_gpu
 
     @classmethod
@@ -404,20 +363,20 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
 
         :return: the list of the average submetrics
         """
-        return ["real_train", "synth_train"]
+        return ["diff_real_synth"]
 
     def compute(
         self,
-        df_real: pd.DataFrame,
-        df_synthetic: pd.DataFrame,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
         metadata: dict,
     ) -> dict:
         """
         Compare the real and synthetic test sets predictions
         when the model is trained on the real dataset or the synthetic one.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -445,15 +404,12 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
 
         if len(dependent_vars) == 0:
             return {}
-        if df_real.shape[1] <= 1:
+        if df_real["train"].shape[1] <= 1:
             return {}
 
         dic_realtrain_realtest = {}
-        dic_realtrain_synthtest = {}
         dic_synthtrain_realtest = {}
-        dic_synthtrain_synthtest = {}
-        diff_realtrain = []
-        diff_synthtrain = []
+        diff_real_synth = []
 
         for col in dependent_vars:
             metadata_pred = deepcopy(metadata)
@@ -461,7 +417,6 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
 
             pred = getattr(app, self.__class__.class_name)(
                 num_repeat=self._num_repeat,
-                num_folds=self._num_folds,
                 use_gpu=self._use_gpu,
             )
             res = pred.compute(df_real, df_synthetic, metadata_pred)
@@ -471,16 +426,11 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
                 res = res["detailed"]
 
             dic_realtrain_realtest[col] = res["score_real_real"]
-            dic_realtrain_synthtest[col] = res["score_real_synth"]
-            dic_synthtrain_synthtest[col] = res["score_synth_synth"]
             dic_synthtrain_realtest[col] = res["score_synth_real"]
 
             # Absolute difference for the average report
-            diff_realtrain.append(
-                abs(dic_realtrain_realtest[col] - dic_realtrain_synthtest[col])
-            )
-            diff_synthtrain.append(
-                abs(dic_synthtrain_realtest[col] - dic_synthtrain_synthtest[col])
+            diff_real_synth.append(
+                abs(dic_realtrain_realtest[col] - dic_synthtrain_realtest[col])
             )
 
         if len(dic_realtrain_realtest) == 0:
@@ -488,14 +438,11 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
 
         res = {
             "average": {
-                "real_train": np.mean(diff_realtrain),
-                "synth_train": np.mean(diff_synthtrain),
+                "diff_real_synth": np.mean(diff_real_synth),
             },
             "detailed": {
                 "real_real": dic_realtrain_realtest,
-                "real_synth": dic_realtrain_synthtest,
                 "synth_real": dic_synthtrain_realtest,
-                "synth_synth": dic_synthtrain_synthtest,
             },
         }
 
@@ -517,9 +464,7 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
             key in report
             for key in [
                 "real_real",
-                "real_synth",
                 "synth_real",
-                "synth_synth",
             ]
         )
 
@@ -541,32 +486,21 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
         for i, col in enumerate(report["real_real"]):
             df = pd.DataFrame(
                 np.column_stack((report["real_real"][col], report["synth_real"][col])),
-                columns=["Real", "Synthetic"],
-            )
-            df_nested = pd.DataFrame(
-                np.column_stack(
-                    (report["real_synth"][col], report["synth_synth"][col])
-                ),
-                columns=["Real", "Synthetic"],
+                columns=[
+                    "Trained real test real",
+                    "Trained synthetic test real",
+                ],
             )
 
-            udraw.bar_plot_per_column_hue(
-                df=df,
-                df_nested=df_nested,
-                original_name="Real",
-                nested_name="Synthetic",
-                hue_name="Tested on",
+            udraw.bar_plot(
+                data=df,
                 orient="v",
-                title=col,
-                order=["Real", "Synthetic"],
+                title="",
                 value_name=getattr(app, cls.class_name).score_name,
                 xrotation=True,
                 ax=axes[i],
             )
-
-            axes[i].set_xlabel("Trained on")
-            if i % max_plot_per_window != 0:
-                axes[i].get_legend().remove()
+            axes[i].set_title(col)
 
 
 class CrossRegression(CrossLearning):
@@ -593,7 +527,6 @@ class CrossRegression(CrossLearning):
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
-    :param num_folds: the scores are averaged across the number of folds to account for split randomness
     """
 
     name = CrossLearning.name + " Regression"
@@ -626,7 +559,6 @@ class CrossClassification(CrossLearning):
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
-    :param num_folds: the scores are averaged across the number of folds to account for split randomness
     """
 
     name = CrossLearning.name + " Classification"

@@ -1,9 +1,10 @@
-from typing import Tuple, List, Union  # standard library
+from typing import Tuple, Union  # standard library
 
 import numpy as np  # 3rd party packages
 from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import confusion_matrix
+import pandas as pd
 
 
 def sklearn_confusion_matrix(
@@ -28,17 +29,17 @@ def sklearn_confusion_matrix(
 
 def train_predict(
     pipeline: Pipeline,
-    x_train: np.ndarray,
-    y_train: np.ndarray,
-    x_test_list: List[np.ndarray],
-    y_test_list: List[np.ndarray],
+    x_train: Union[np.ndarray, pd.DataFrame],
+    y_train: Union[np.ndarray, pd.DataFrame],
+    x_test_list: list[Union[np.ndarray, pd.DataFrame]],
+    y_test_list: list[Union[np.ndarray, pd.DataFrame]],
     is_classification: bool,
-) -> Tuple[List[float], List[np.ndarray]]:
+) -> Tuple[list[float], list[np.ndarray]]:
     """
     Train a classifier or a regressor and score the predictions for the test sets.
 
     :param pipeline: a sequence of the data transformations to apply with a final estimator
-    :param x_train: the training inputs
+    :param x_train: the training input
     :param y_train: the training ground truth
     :param x_test_list: the test sets for the prediction
     :param y_test_list: the test sets ground truth

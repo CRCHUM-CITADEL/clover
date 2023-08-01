@@ -58,13 +58,16 @@ class PairwiseCorrelationDifference(UtilityMetric):
         return ["norm"]
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Compute the Frobenius norm of the difference between the Pearson Correlation matrices of each dataset.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -79,8 +82,8 @@ class PairwiseCorrelationDifference(UtilityMetric):
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
 
         # PCD is defined for continuous variables only
-        df_real_cont = df_real.drop(columns=metadata["categorical"])
-        df_synth_cont = df_synthetic.drop(columns=metadata["categorical"])
+        df_real_cont = df_real["train"].drop(columns=metadata["categorical"])
+        df_synth_cont = df_synthetic["train"].drop(columns=metadata["categorical"])
 
         if df_real_cont.shape[1] <= 1:
             return {}
@@ -184,15 +187,18 @@ class PairwiseChiSquareDifference(UtilityMetric):
         return ["sensitivity", "specificity"]
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Compute the sensitivity and specificity of the chi square H0 rejection (no relationship between the two
         variables) of the real variables pairwise dependencies (*y_true*) and
         the synthetic variables pairwise dependencies (*y_pred*).
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -207,8 +213,8 @@ class PairwiseChiSquareDifference(UtilityMetric):
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
 
         # PCSD is defined for categorical variables only
-        df_real_cat = df_real.drop(columns=metadata["continuous"])
-        df_synth_cat = df_synthetic.drop(columns=metadata["continuous"])
+        df_real_cat = df_real["train"].drop(columns=metadata["continuous"])
+        df_synth_cat = df_synthetic["train"].drop(columns=metadata["continuous"])
 
         if df_real_cat.shape[1] <= 1:
             return {}

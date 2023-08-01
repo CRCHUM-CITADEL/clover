@@ -1,10 +1,13 @@
-from typing import Union, List  # standard library
+# Standard library
+from typing import Union, List
 from pathlib import Path
 
-from synthpop import Synthpop  # 3rd party packages
+# 3rd party packages
 import pandas as pd
 
-from generators.base import Generator  # local
+# Local
+from .external.synthpop.synthpop import Synthpop
+from .base import Generator
 import utils.standard as ustandard
 
 

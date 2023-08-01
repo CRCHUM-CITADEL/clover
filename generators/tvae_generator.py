@@ -31,8 +31,8 @@ class TVAEGenerator(Generator):
     :param discriminator_steps: the number of discriminator updates to do for each generator update.
     :param epochs: the number of training epochs.
     :param batch_size: the batch size for training.
-    :param compress_dims: the ize of the hidden layers in the encoder.
-    :param decompress_dims: the ize of the hidden layers in the decoder.
+    :param compress_dims: the size of the hidden layers in the encoder.
+    :param decompress_dims: the size of the hidden layers in the decoder.
     """
 
     name = "TVAE"

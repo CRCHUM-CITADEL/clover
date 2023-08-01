@@ -6,6 +6,8 @@ import tempfile
 
 # 3rd party packages
 import pandas as pd
+import numpy as np
+from sklearn.model_selection import StratifiedKFold, KFold
 
 # Local
 from generators.base import Generator
@@ -24,6 +26,8 @@ class HyperparametersSearch(metaclass=ABCMeta):
         a function returning the dictionary
     :param generator: the generator class to optimize
     :param objective_function: the cost function
+    :param cv_num_folds: the number of folds for the cross-validation.
+        Set to 0 or 1 for deactivating the cross-validation.
     :param random_state: for reproducibility purposes
     :param use_gpu: flag to use GPU computation power if available to accelerate the learning
     """
@@ -81,6 +85,7 @@ class HyperparametersSearch(metaclass=ABCMeta):
         hyperparams: Union[dict, Callable],
         generator: Type[Generator],
         objective_function: Callable,
+        cv_num_folds: int = 1,
         random_state: int = None,
         use_gpu: bool = False,
     ):
@@ -89,6 +94,7 @@ class HyperparametersSearch(metaclass=ABCMeta):
         self._hyperparams = hyperparams
         self._generator = generator
         self._objective_function = objective_function
+        self._cv_num_folds = cv_num_folds
         self._random_state = random_state
         self._use_gpu = use_gpu
 
@@ -125,27 +131,61 @@ class HyperparametersSearch(metaclass=ABCMeta):
         """
         pass
 
-    def _fit(self, params: dict) -> float:
+    def _fit(self, params: dict, callback: Callable = None) -> float:
         """
         Invoked repeatedly during optimization to fit the generator, generate samples and
         compute the objective function.
 
         :param params: the hyperparameters to test
+        :param callback: the callback to report the intermediate results
         :return: the cost
         """
 
-        gen = self._generator(df=self._df, metadata=self._metadata, **params)
-        gen.preprocess()
+        def objective(df):
+            gen = self._generator(df=df["train"], metadata=self._metadata, **params)
+            gen.preprocess()
 
-        with tempfile.TemporaryDirectory() as temp_dir:  # no need to keep the generated samples
-            gen.fit(save_path=temp_dir)
-            df_synth = gen.sample(save_path=temp_dir, num_samples=len(self._df))
+            df_synth = {}
+            with tempfile.TemporaryDirectory() as temp_dir:  # no need to keep the generated samples
+                gen.fit(save_path=temp_dir)
+                df_synth["train"] = gen.sample(
+                    save_path=temp_dir, num_samples=len(df["train"])
+                )
+                df_synth["test"] = gen.sample(
+                    save_path=temp_dir, num_samples=len(df["test"])
+                )
 
-        cost = self._objective_function(
-            df=self._df,
-            df_to_compare=df_synth,
-            metadata=self._metadata,
-            use_gpu=self._use_gpu,
-        )
+            cost = self._objective_function(
+                df=df,
+                df_to_compare=df_synth,
+                metadata=self._metadata,
+                use_gpu=self._use_gpu,
+            )
 
-        return cost
+            return cost
+
+        if self._cv_num_folds < 2:  # no cross-validation
+            return objective({"train": self._df, "test": self._df})
+
+        X = self._df.drop(columns=self._metadata["variable_to_predict"])
+        y = self._df[self._metadata["variable_to_predict"]]
+
+        if self._metadata["variable_to_predict"] in self._metadata["categorical"]:
+            kf = StratifiedKFold(n_splits=self._cv_num_folds, shuffle=True)
+        else:
+            kf = KFold(n_splits=self._cv_num_folds, shuffle=True)
+
+        costs = []
+
+        for step, (train_index, test_index) in enumerate(kf.split(X, y)):
+            cost = objective(
+                {"train": self._df.iloc[train_index], "test": self._df.iloc[test_index]}
+            )
+            costs.append(cost)
+
+            if callback is not None:
+                callback(cost, step)
+
+        loss = np.mean(costs)
+
+        return loss

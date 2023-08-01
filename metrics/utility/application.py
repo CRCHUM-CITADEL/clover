@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*
-from typing import List, Tuple, Type  # standard library
+# Standard library
+from typing import List, Tuple, Type
 from abc import ABCMeta, abstractmethod
 import warnings
 
-import pandas as pd  # 3rd party packages
+# 3rd party packages
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import (
@@ -14,12 +14,12 @@ from sklearn.preprocessing import (
     LabelEncoder,
 )
 from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.pipeline import Pipeline
 from sklearn.inspection import permutation_importance
 import xgboost as xgb
 
-import utils.draw as udraw  # local
+# Local
+import utils.draw as udraw
 import utils.learning as ulearning
 from metrics.utility.base import UtilityMetric
 
@@ -53,7 +53,6 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
-    :param num_folds: the scores are averaged across the number of folds to account for split randomness
     :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
@@ -76,12 +75,10 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
         self,
         random_state: int = None,
         num_repeat: int = 10,
-        num_folds: int = 10,
         use_gpu: bool = False,
     ):
         super().__init__(random_state)
         self._num_repeat = num_repeat
-        self._num_folds = num_folds
         self._use_gpu = use_gpu
 
     @classmethod
@@ -91,23 +88,21 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
 
         :return: the list of the average submetrics
         """
-        return ["diff_real_train", "diff_synth_train", "diff_real_synth"]
+        return ["diff_real_synth"]
 
-    @staticmethod
-    @abstractmethod
+    @classmethod
     def _learning(
+        cls,
         x_reference: pd.DataFrame,
         y_reference: np.ndarray,
         x_comparative: pd.DataFrame,
         y_comparative: np.ndarray,
         continuous_cols: List[str],
         categorical_cols: List[str],
-        num_folds: int,
         use_gpu: bool,
     ) -> dict:
         """
-        Train a classifier or a regressor and score the predictions for the test sets
-        from the reference and comparative inputs. To be reimplemented.
+        Train a classifier and score the predictions for the test sets from the reference and comparative inputs.
 
         :param x_reference: the reference inputs
         :param y_reference: the reference ground truth
@@ -115,23 +110,83 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
         :param y_comparative: the comparative ground truth
         :param continuous_cols: the continuous columns
         :param categorical_cols: the categorical columns
-        :param num_folds: the scores are averaged across the number of folds to account for split randomness
         :param use_gpu: flag to use GPU computation power to accelerate the learning
         :return: a dictionary containing the average scores **score_reference** and **score_comparative** on k-folds,
           the **best_model** and the testing sets **x_test_best_model** and **y_test_best_model**
           used for the best model
         """
-        pass
+
+        # ColumnTransformers
+        preprocessing = ColumnTransformer(
+            [
+                ("continuous", StandardScaler(), continuous_cols),
+                (
+                    "categorical",
+                    OneHotEncoder(
+                        # drop="first", not used since the first category and the unknown would be the same.
+                        categories=[
+                            x_reference[cat].unique() for cat in categorical_cols
+                        ],
+                        handle_unknown="ignore",
+                    ),
+                    categorical_cols,
+                ),
+            ],
+            verbose_feature_names_out=False,
+        )
+
+        if cls.name == "Regression":
+            xgbPredictor = xgb.XGBRegressor
+            objective = "reg:squarederror"
+        else:
+            xgbPredictor = xgb.XGBClassifier
+            objective = (
+                "multi:softprob"
+                if len(np.unique(y_reference)) > 2
+                else "binary:logistic"
+            )
+
+        model_params = {
+            "n_estimators": 100,
+            "eta": 0.1,
+            "tree_method": "auto" if not use_gpu else "gpu_hist",
+            "objective": objective,
+        }
+
+        pipe = Pipeline(
+            steps=[
+                ("preprocessing", preprocessing),
+                ("xgb", xgbPredictor(**model_params)),
+            ]
+        )
+        scores, _ = ulearning.train_predict(
+            pipeline=pipe,
+            x_train=x_reference,
+            y_train=y_reference,
+            x_test_list=[x_comparative],
+            y_test_list=[y_comparative],
+            is_classification=cls.name == "Classification",
+        )
+
+        res = {
+            "score_real_test": scores[0],
+            "best_model": pipe,
+        }
+
+        return res
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Compare the real and synthetic test sets predictions
         when the model is trained on the real dataset and the synthetic one respectively.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -145,111 +200,92 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
         var_pred = metadata["variable_to_predict"]
         if var_pred is None:
             return {}
-        if df_real.shape[1] <= 1:
+        if df_real["train"].shape[1] <= 1:
             return {}
 
         # Create x and y data
-        df_real_x = df_real.drop(columns=var_pred)
-        df_synthetic_x = df_synthetic.drop(columns=var_pred)
-        y_real = df_real[var_pred].to_numpy()
-        y_synth = df_synthetic[var_pred].to_numpy()
+        df_train_real = df_real["train"].drop(columns=var_pred)
+        df_train_synth = df_synthetic["train"].drop(columns=var_pred)
+        df_test_real = df_real["test"].drop(columns=var_pred)
+        y_train_real = df_real["train"][var_pred].to_numpy()
+        y_train_synth = df_synthetic["train"][var_pred].to_numpy()
+        y_test_real = df_real["test"][var_pred].to_numpy()
 
         # Transform categorical columns in one-hot format
         #   Ensure the output is binary if there are two classes
         if var_pred in metadata["categorical"]:
-            y = np.concatenate([y_real, y_synth])
-            if len(np.unique(y)) == 2:
+            if len(np.unique(y_train_real)) == 2:
                 lenc = LabelBinarizer()
             else:
                 lenc = LabelEncoder()
-            lenc.fit(y)
-            y_real = lenc.transform(y_real).flatten()
-            y_synth = lenc.transform(y_synth).flatten()
+            lenc.fit(y_train_real)
+            y_train_real = lenc.transform(y_train_real).flatten()
+            y_train_synth = lenc.transform(y_train_synth).flatten()
+            y_test_real = lenc.transform(y_test_real).flatten()
 
         #   Select the categorical columns to transform
         cat_cols = [
             col
-            for col in df_real.columns
+            for col in df_real["train"].columns
             if col not in metadata["continuous"] + [var_pred]
         ]
-        cont_cols = [col for col in df_real.columns if col not in cat_cols + [var_pred]]
+        cont_cols = [
+            col for col in df_real["train"].columns if col not in cat_cols + [var_pred]
+        ]
+        df_train_real[cat_cols] = df_train_real[cat_cols].astype("object")
+        df_train_synth[cat_cols] = df_train_synth[cat_cols].astype("object")
+        df_test_real[cat_cols] = df_test_real[cat_cols].astype("object")
 
         # Compute the cross learning in both directions
         scores_real_real = []
-        scores_real_synth = []
-        scores_synth_synth = []
         scores_synth_real = []
         best_model_real = None
-        x_test_best_model_real = None
-        y_test_best_model_real = None
         best_model_synth = None
-        x_test_best_model_synth = None
-        y_test_best_model_synth = None
-
-        learning = lambda reference_tuple, comparative_tuple: self._learning(
-            x_reference=reference_tuple[0],
-            y_reference=reference_tuple[1],
-            x_comparative=comparative_tuple[0],
-            y_comparative=comparative_tuple[1],
-            continuous_cols=cont_cols,
-            categorical_cols=cat_cols,
-            num_folds=self._num_folds,
-            use_gpu=self._use_gpu,
-        )
 
         # Compute scores several times to account for randomness
         for i in range(self._num_repeat):
             # Prediction MSE and AUC score on the test set with kfolds
-            state = np.random.get_state()
-            real_dict = learning(
-                reference_tuple=(df_real_x, y_real),
-                comparative_tuple=(df_synthetic_x, y_synth),
+            real_dict = self._learning(
+                x_reference=df_train_real,
+                y_reference=y_train_real,
+                x_comparative=df_test_real,
+                y_comparative=y_test_real,
+                continuous_cols=cont_cols,
+                categorical_cols=cat_cols,
+                use_gpu=self._use_gpu,
             )
 
-            np.random.set_state(state)  # ensure same beginning
-            synth_dict = learning(
-                reference_tuple=(df_synthetic_x, y_synth),
-                comparative_tuple=(df_real_x, y_real),
+            synth_dict = self._learning(
+                x_reference=df_train_synth,
+                y_reference=y_train_synth,
+                x_comparative=df_test_real,
+                y_comparative=y_test_real,
+                continuous_cols=cont_cols,
+                categorical_cols=cat_cols,
+                use_gpu=self._use_gpu,
             )
 
-            #  TODO: remove repetitions and use ref/comp
-            scores_real_real.append(real_dict["score_reference"])
-            scores_real_synth.append(real_dict["score_comparative"])
-            scores_synth_synth.append(synth_dict["score_reference"])
-            scores_synth_real.append(synth_dict["score_comparative"])
+            scores_real_real.append(real_dict["score_real_test"])
+            scores_synth_real.append(synth_dict["score_real_test"])
 
-            if real_dict["score_reference"] >= np.max(scores_real_real):
+            if real_dict["score_real_test"] >= np.max(scores_real_real):
                 best_model_real = real_dict["best_model"]
-                x_test_best_model_real = real_dict["x_test_best_model"]
-                y_test_best_model_real = real_dict["y_test_best_model"]
-            if synth_dict["score_reference"] >= np.max(scores_synth_synth):
+            if synth_dict["score_real_test"] >= np.max(scores_synth_real):
                 best_model_synth = synth_dict["best_model"]
-                x_test_best_model_synth = synth_dict["x_test_best_model"]
-                y_test_best_model_synth = synth_dict["y_test_best_model"]
 
-        diff_real_train = abs(np.array(scores_real_real) - np.array(scores_real_synth))
-        diff_synth_train = abs(
-            np.array(scores_synth_real) - np.array(scores_synth_synth)
-        )
-        diff_real_synth = abs(np.array(scores_real_real) - np.array(scores_synth_synth))
+        diff_real_synth = abs(np.array(scores_real_real) - np.array(scores_synth_real))
 
         res = {
             "average": {
-                "diff_real_train": np.mean(diff_real_train),
-                "diff_synth_train": np.mean(diff_synth_train),
                 "diff_real_synth": np.mean(diff_real_synth),
             },
             "detailed": {
                 "score_real_real": np.array(scores_real_real),
-                "score_real_synth": np.array(scores_real_synth),
                 "score_synth_real": np.array(scores_synth_real),
-                "score_synth_synth": np.array(scores_synth_synth),
                 "best_model_real": best_model_real,
                 "best_model_synth": best_model_synth,
-                "x_test_best_model_real": x_test_best_model_real,
-                "y_test_best_model_real": y_test_best_model_real,
-                "x_test_best_model_synth": x_test_best_model_synth,
-                "y_test_best_model_synth": y_test_best_model_synth,
+                "x_test_best_model": df_test_real,
+                "y_test_best_model": y_test_real,
             },
         }
 
@@ -266,7 +302,7 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
         """
 
         assert report is not None
-        assert all(key in report for key in ["score_real_real", "score_synth_synth"])
+        assert all(key in report for key in ["score_real_real", "score_synth_real"])
 
         plt.figure(figsize=figsize, layout="constrained")
 
@@ -274,15 +310,11 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
             np.column_stack(
                 (
                     report["score_real_real"],
-                    report["score_synth_synth"],
-                    report["score_real_synth"],
                     report["score_synth_real"],
                 )
             ),
             columns=[
                 "Trained real test real",
-                "Trained synthetic test synthetic",
-                "Trained real test synthetic",
                 "Trained synthetic test real",
             ],
         )
@@ -315,7 +347,6 @@ class Regression(Prediction):
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
-    :param num_folds: the scores are averaged across the number of folds to account for split randomness
     :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
@@ -323,115 +354,18 @@ class Regression(Prediction):
     alias = "regression"
     score_name = "Mean Squared Error"
 
-    @staticmethod
-    def _learning(
-        x_reference: pd.DataFrame,
-        y_reference: np.ndarray,
-        x_comparative: pd.DataFrame,
-        y_comparative: np.ndarray,
-        continuous_cols: List[str],
-        categorical_cols: List[str],
-        num_folds: int,
-        use_gpu: bool,
-    ) -> dict:
-        """
-        Train a regressor and score the predictions for the test sets from the reference and comparative inputs.
-
-        :param x_reference: the reference inputs
-        :param y_reference: the reference ground truth
-        :param x_comparative: the comparative input
-        :param y_comparative: the comparative ground truth
-        :param continuous_cols: the continuous columns
-        :param categorical_cols: the categorical columns
-        :param num_folds: the scores are averaged across the number of folds to account for split randomness
-        :param use_gpu: flag to use GPU computation power to accelerate the learning
-        :return: a dictionary containing the average scores **score_reference** and **score_comparative** on k-folds,
-          the **best_model** and the testing sets **x_test_best_model** and **y_test_best_model**
-          used for the best model
-        """
-
-        mse_ref = []
-        mse_comp = []
-        best_pipe = None
-        x_test_best_model = None
-        y_test_best_model = None
-
-        # ColumnTransformers
-        preprocessing = ColumnTransformer(
-            [
-                ("continuous", StandardScaler(), continuous_cols),
-                (
-                    "categorical",
-                    OneHotEncoder(
-                        drop="first",
-                        categories=[
-                            list(
-                                set(x_reference[cat].unique())
-                                | set(x_comparative[cat].unique())
-                            )
-                            for cat in categorical_cols
-                        ],
-                    ),  # TODO: use infrequent categories?
-                    categorical_cols,
-                ),
-            ],
-            verbose_feature_names_out=False,
-        )
-
-        kf = KFold(n_splits=num_folds, shuffle=True)
-        for train_index, test_index in kf.split(x_reference, y_reference):
-            pipe = Pipeline(
-                steps=[
-                    ("preprocessing", preprocessing),
-                    (
-                        "xgb",
-                        xgb.XGBRegressor(
-                            n_estimators=100,
-                            eta=0.1,
-                            tree_method="auto" if not use_gpu else "gpu_hist",
-                            objective="reg:squarederror",
-                        ),
-                    ),
-                ]
-            )
-            scores, _ = ulearning.train_predict(
-                pipeline=pipe,
-                x_train=x_reference.iloc[train_index],
-                y_train=y_reference[train_index],
-                x_test_list=[
-                    x_reference.iloc[test_index],
-                    x_comparative.iloc[test_index],
-                ],
-                y_test_list=[y_reference[test_index], y_comparative[test_index]],
-                is_classification=False,
-            )
-            mse_ref.append(scores[0])
-            mse_comp.append(scores[1])
-
-            if scores[0] >= np.max(mse_ref):
-                best_pipe = pipe
-                x_test_best_model = x_reference.iloc[test_index]
-                y_test_best_model = y_reference[test_index]
-
-        res = {
-            "score_reference": np.mean(mse_ref),
-            "score_comparative": np.mean(mse_comp),
-            "best_model": best_pipe,
-            "x_test_best_model": x_test_best_model,
-            "y_test_best_model": y_test_best_model,
-        }
-
-        return res
-
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Compare the real and synthetic test sets predictions
         when the model is trained on the real dataset and the synthetic one respectively.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -471,7 +405,6 @@ class Classification(Prediction):
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
-    :param num_folds: the scores are averaged across the number of folds to account for split randomness
     :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
@@ -480,117 +413,18 @@ class Classification(Prediction):
     max = 1
     score_name = "AUC score"
 
-    @staticmethod
-    def _learning(
-        x_reference: pd.DataFrame,
-        y_reference: np.ndarray,
-        x_comparative: pd.DataFrame,
-        y_comparative: np.ndarray,
-        continuous_cols: List[str],
-        categorical_cols: List[str],
-        num_folds: int,
-        use_gpu: bool,
-    ) -> dict:
-        """
-        Train a classifier and score the predictions for the test sets from the reference and comparative inputs.
-
-        :param x_reference: the reference inputs
-        :param y_reference: the reference ground truth
-        :param x_comparative: the comparative input
-        :param y_comparative: the comparative ground truth
-        :param continuous_cols: the continuous columns
-        :param categorical_cols: the categorical columns
-        :param num_folds: the scores are averaged across the number of folds to account for split randomness
-        :param use_gpu: flag to use GPU computation power to accelerate the learning
-        :return: a dictionary containing the average scores **score_reference** and **score_comparative** on k-folds,
-          the **best_model** and the testing sets **x_test_best_model** and **y_test_best_model**
-          used for the best model
-        """
-
-        auc_ref = []
-        auc_comp = []
-        best_pipe = None
-        x_test_best_model = None
-        y_test_best_model = None
-
-        # ColumnTransformers
-        preprocessing = ColumnTransformer(
-            [
-                ("continuous", StandardScaler(), continuous_cols),
-                (
-                    "categorical",
-                    OneHotEncoder(
-                        drop="first",
-                        categories=[
-                            list(
-                                set(x_reference[cat].unique())
-                                | set(x_comparative[cat].unique())
-                            )
-                            for cat in categorical_cols
-                        ],
-                    ),  # TODO: use infrequent categories?
-                    categorical_cols,
-                ),
-            ],
-            verbose_feature_names_out=False,
-        )
-
-        model_params = {
-            "n_estimators": 100,
-            "eta": 0.1,
-            "tree_method": "auto" if not use_gpu else "gpu_hist",
-            "objective": "binary:logistic",
-        }
-        y = np.concatenate([y_reference, y_comparative])
-        if len(np.unique(y)) > 2:
-            model_params["objective"] = "multi:softprob"
-
-        kf = StratifiedKFold(n_splits=num_folds, shuffle=True)
-        for train_index, test_index in kf.split(x_reference, y_reference):
-            pipe = Pipeline(
-                steps=[
-                    ("preprocessing", preprocessing),
-                    ("xgb", xgb.XGBClassifier(**model_params)),
-                ]
-            )
-            scores, _ = ulearning.train_predict(
-                pipeline=pipe,
-                x_train=x_reference.iloc[train_index],
-                y_train=y_reference[train_index],
-                x_test_list=[
-                    x_reference.iloc[test_index],
-                    x_comparative.iloc[test_index],
-                ],
-                y_test_list=[y_reference[test_index], y_comparative[test_index]],
-                is_classification=True,
-            )
-            auc_ref.append(scores[0])
-            auc_comp.append(scores[1])
-
-            if scores[0] >= np.max(auc_ref):
-                best_pipe = pipe
-                x_test_best_model = x_reference.iloc[test_index]
-                y_test_best_model = y_reference[test_index]
-
-        res = {
-            "score_reference": np.mean(auc_ref),
-            "score_comparative": np.mean(auc_comp),
-            "best_model": best_pipe,
-            "x_test_best_model": x_test_best_model,
-            "y_test_best_model": y_test_best_model,
-        }
-
-        return res
-
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Compare the real and synthetic test sets predictions
         when the model is trained on the real dataset and the synthetic one respectively.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -603,7 +437,9 @@ class Classification(Prediction):
         if var_pred is None or var_pred in metadata["continuous"]:
             return {}
 
-        if set(df_real[var_pred].unique()) != set(df_synthetic[var_pred].unique()):
+        if set(df_real["train"][var_pred].unique()) != set(
+            df_synthetic["train"][var_pred].unique()
+        ):
             warnings.warn(
                 message=f"The datasets do not have the same labels for the variable {var_pred}. "
                 f"The metric {self.name} cannot be computed.",
@@ -611,17 +447,10 @@ class Classification(Prediction):
             )
             return {}
 
-        if (df_real[var_pred].value_counts() < self._num_folds).any() or (
-            df_synthetic[var_pred].value_counts() < self._num_folds
-        ).any():
-            warnings.warn(
-                message=f"The number of samples per category for {var_pred} should be at least equal "
-                f"to the number of folds. The metric {self.name} cannot be computed for {var_pred}.",
-                category=UserWarning,
-            )
-            return {}
-
-        if df_real[var_pred].nunique() == 1 or df_synthetic[var_pred].nunique() == 1:
+        if (
+            df_real["train"][var_pred].nunique() == 1
+            or df_synthetic["train"][var_pred].nunique() == 1
+        ):
             warnings.warn(
                 message=f"There is only one class in the variable {var_pred}. "
                 f"The metric {self.name} cannot be computed.",
@@ -715,13 +544,16 @@ class FScore(UtilityMetric):
         return fscore
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Measure the F-Score for each variable for each dataset.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -737,19 +569,22 @@ class FScore(UtilityMetric):
         var_pred = metadata["variable_to_predict"]
         if var_pred is None or len(metadata["continuous"]) == 0:
             return {}
+        if var_pred not in metadata["categorical"]:
+            return {}
+        if df_real["test"][var_pred].nunique() != 2:
+            return {}
 
-        assert (
-            df_real[var_pred].nunique() == 2
-        ), "The variable to predict must be binary"
-        assert set(df_real[var_pred].unique()) == set(
-            df_synthetic[var_pred].unique()
+        assert set(df_real["test"][var_pred].unique()) == set(
+            df_synthetic["test"][var_pred].unique()
         ), "Datasets must have the same classes"
 
         # Convert the predicted variable to binary 0/1
-        classes = df_real[var_pred].unique()
+        classes = df_real["test"][var_pred].unique()
         classes.sort()
-        df_real_trans = df_real.replace({var_pred: {classes[0]: 0, classes[1]: 1}})
-        df_synth_trans = df_synthetic.replace(
+        df_real_trans = df_real["test"].replace(
+            {var_pred: {classes[0]: 0, classes[1]: 1}}
+        )
+        df_synth_trans = df_synthetic["test"].replace(
             {var_pred: {classes[0]: 0, classes[1]: 1}}
         )
 
@@ -820,7 +655,6 @@ class FeatureImportance(UtilityMetric):
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
-    :param num_folds: the scores are averaged across the number of folds to account for split randomness
     """
 
     name = "Feature Importance"
@@ -833,11 +667,9 @@ class FeatureImportance(UtilityMetric):
         self,
         random_state: int = None,
         num_repeat: int = 10,
-        num_folds: int = 10,
     ):
         super().__init__(random_state)
         self._num_repeat = num_repeat
-        self._num_folds = num_folds
 
     @classmethod
     def get_average_submetrics(cls) -> List[str]:
@@ -849,13 +681,16 @@ class FeatureImportance(UtilityMetric):
         return ["diff_permutation_importance"]
 
     def compute(
-        self, df_real: pd.DataFrame, df_synthetic: pd.DataFrame, metadata: dict
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
     ) -> dict:
         """
         Measure the Permutation Importance score for each variable for each dataset.
 
-        :param df_real: the real dataset
-        :param df_synthetic: the synthetic dataset
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
@@ -867,17 +702,17 @@ class FeatureImportance(UtilityMetric):
         """
 
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
-        if df_real.shape[1] <= 1:
+        if df_real["train"].shape[1] <= 1:
             return {}
 
         var_pred = metadata["variable_to_predict"]
-        independent_vars = list(set(df_real.columns) - {var_pred})
+        independent_vars = list(set(df_real["train"].columns) - {var_pred})
 
         prediction_class = (
             Regression if var_pred in metadata["continuous"] else Classification
         )
 
-        pred = prediction_class(num_repeat=self._num_repeat, num_folds=self._num_folds)
+        pred = prediction_class(num_repeat=self._num_repeat)
         res = pred.compute(df_real, df_synthetic, metadata)
         if len(res) == 0:
             return {}
@@ -885,8 +720,8 @@ class FeatureImportance(UtilityMetric):
 
         compute_permutation_importance = lambda dataset: permutation_importance(
             estimator=res[f"best_model_{dataset}"],
-            X=res[f"x_test_best_model_{dataset}"],
-            y=res[f"y_test_best_model_{dataset}"],
+            X=res[f"x_test_best_model"],
+            y=res[f"y_test_best_model"],
             scoring=None,  # the one used by the estimator
             n_repeats=20,
         )

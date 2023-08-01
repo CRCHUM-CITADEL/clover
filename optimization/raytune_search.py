@@ -57,6 +57,7 @@ class RayTuneSearch(HyperparametersSearch):
         hyperparams: Union[dict, Callable],
         generator: Type[Generator],
         objective_function: Callable,
+        cv_num_folds: int = 1,
         random_state: int = None,
         use_gpu: bool = False,
         resources: dict = None,
@@ -71,6 +72,7 @@ class RayTuneSearch(HyperparametersSearch):
             hyperparams,
             generator,
             objective_function,
+            cv_num_folds,
             random_state,
             use_gpu,
         )
@@ -121,6 +123,7 @@ class RayTuneSearch(HyperparametersSearch):
         :return: *None*
         """
 
-        cost = self._fit(config)
+        callback = lambda cost, _: session.report({"score": cost})
+        cost = self._fit(config, callback=callback)
 
         session.report({"score": cost})

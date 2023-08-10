@@ -20,23 +20,20 @@ class CTABGANGenerator(Generator):
     https://arxiv.org/abs/2204.00401
 
     :param df: the data to synthesize
-    :param metadata: a dictionary containing the list of **continuous** and **categorical** variables
-    These should comprehend all the columns to synthesize, including the columns in "mixed", "log", and
-    "integer".
+    :param metadata: a dictionary containing the list of **continuous** and **categorical** variables.
+        These should comprehend all the columns to synthesize, including the columns in "mixed", "log", and
+        "integer".
     :param random_state: for reproducibility purposes
     :param generator_filepath: the path of the generator to sample from if it exists
     :param mixed_columns: dictionary of "mixed" column names with corresponding categorical modes
     :param log_columns: list of skewed exponential numerical columns
     :param integer_columns: list of numeric columns without floating numbers
-    :param problem_type: dictionary where the key is "Regression", "Classification" or None, and the value is
-    the target column. The dimensions of the target column actually determines the loss function (CrossEntropy,
-    BinaryCrossEntropy or SmoothL1).
-    :param  class_dim: size of each desired linear layer for the auxiliary classifier
+    :param class_dim: size of each desired linear layer for the auxiliary classifier
     :param random_dim: dimension of the noise vector fed to the generator
     :param num_channels: number of channels in the convolutional layers of both the generator and the discriminator
     :param l2scale: rate of weight decay used in the optimizer of the generator, discriminator and auxiliary classifier
     :param batch_size: batch size for training
-    :param epochs: number of traianing epochs
+    :param epochs: number of training epochs
     """
 
     name = "CTABGAN"
@@ -47,10 +44,9 @@ class CTABGANGenerator(Generator):
         metadata: dict,
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
-        mixed_columns: dict = {},
-        log_columns: list = [],
-        integer_columns: list = [],
-        problem_type: dict = {},
+        mixed_columns: dict = None,
+        log_columns: list = None,
+        integer_columns: list = None,
         class_dim: tuple[int, ...] = (256, 256, 256, 256),
         random_dim: int = 100,
         num_channels: int = 64,
@@ -60,11 +56,20 @@ class CTABGANGenerator(Generator):
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
         self._extra_metadata = {
-            "mixed_columns": mixed_columns,
-            "log_columns": log_columns,
-            "integer_columns": integer_columns,
+            "mixed_columns": mixed_columns if mixed_columns is not None else {},
+            "log_columns": log_columns if log_columns is not None else [],
+            "integer_columns": integer_columns if integer_columns is not None else [],
         }
-        self._problem_type = problem_type
+
+        prediction = (
+            "Classification"
+            if metadata["variable_to_predict"] in metadata["categorical"]
+            else "Regression"
+        )
+        # The dimensions of the target column actually determines the loss function
+        # (CrossEntropy, BinaryCrossEntropy or SmoothL1).
+        self._problem_type = {prediction: metadata["variable_to_predict"]}
+
         self._data_prep = None
 
         self._params = {
@@ -136,10 +141,16 @@ class CTABGANGenerator(Generator):
         :return: the generated samples
         """
 
-        sample = self._gen.sample(num_samples)
-        sample_df = self._data_prep.inverse_prep(sample)
+        samples = self._gen.sample(num_samples)
+        samples = self._data_prep.inverse_prep(samples)
 
-        return sample_df
+        samples.to_csv(
+            Path(save_path)
+            / f"{ustandard.get_date()}_{CTABGANGenerator.name}_{num_samples}samples.csv",
+            index=False,
+        )
+
+        return samples
 
     def display(self) -> None:
         """

@@ -14,7 +14,9 @@ from generators.synthpop_generator import SynthpopGenerator
 from generators.smote import SmoteGenerator
 from generators.tvae_generator import TVAEGenerator
 from generators.ctgan_generator import CTGANGenerator
-from generators.tabddpm_generator import TabDDPMGenerator
+from generators.tabddpm_generator import TabDDPMGenerator  # cannot run without GPUs
+from generators.mst_generator import MSTGenerator
+from generators.ctabgan_generator import CTABGANGenerator
 
 
 @pytest.mark.parametrize(
@@ -25,6 +27,8 @@ from generators.tabddpm_generator import TabDDPMGenerator
         SmoteGenerator,
         TVAEGenerator,
         CTGANGenerator,
+        MSTGenerator,
+        CTABGANGenerator,
     ],
 )
 def test_generation(
@@ -52,11 +56,11 @@ def test_generation(
             "generator_filepath": None,
             "variables_order": None,  # synthpop
             "candidate_keys": None,  # datasynthesizer
-            "epsilon": 0,  # datasynthesizer
+            "epsilon": 1,  # datasynthesizer / MST
             "degree": 2,  # datasynthesizer
             "k_neighbors": None,  # smote
-            "epochs": 1,  # tvae / ctgan
-            "batch_size": 100,  # tvae / ctgan / tabDDPM
+            "epochs": 1,  # tvae / ctgan / ctabganplus
+            "batch_size": 100,  # tvae / ctgan / tabDDPM / ctabganplus
             "compress_dims": (249, 249),  # tvae
             "decompress_dims": (249, 249),  # tvae
             "discriminator_steps": 2,  # ctgan
@@ -64,6 +68,14 @@ def test_generation(
             "num_timesteps": 2,  # tabDDPM
             "num_iter": 2,  # tabDDPM
             "layers": None,  # tabDDPM
+            "delta": 1e-9,  # MST
+            "mixed_columns": None,  # ctabganplus
+            "log_columns": None,  # ctabganplus
+            "integer_columns": None,  # ctabganplus
+            "class_dim": (256, 256, 256, 256),  # ctabganplus
+            "random_dim": 100,  # ctabganplus
+            "num_channels": 64,  # ctabganplus
+            "l2scale": 1e-5,  # ctabganplus
         }
 
         # Select only the expected instance parameters

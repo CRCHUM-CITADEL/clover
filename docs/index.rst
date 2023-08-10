@@ -48,8 +48,13 @@ Current Features
 
 * Synthetic data generators, supporting continuous and categorical variables (unique identifiers are not handled):
    - `DataSynthesizer <https://github.com/DataResponsibly/DataSynthesizer>`_
-   - `Synthpop <https://github.com/hazy/synthpop>`_ with random or Particle Swarm Optimization search to tune the variables order
-   - `SMOTE <https://imbalanced-learn.org/stable/over_sampling.html#from-random-over-sampling-to-smote-and-adasyn>`_, an oversampling method based on k-nearest neighbors
+   - `Synthpop <https://github.com/hazy/synthpop>`_
+   - `SMOTE (Synthetic Minority Oversampling TEchnique) <https://imbalanced-learn.org/stable/over_sampling.html#from-random-over-sampling-to-smote-and-adasyn>`_
+   - `MST (Maximum Spanning Tree) <https://github.com/ryan112358/private-pgm/tree/master>`_
+   - `CTGAN <https://github.com/sdv-dev>`_
+   - `TVAE <https://github.com/sdv-dev>`_
+   - `CTAB-GAN+ <https://github.com/Team-TUD/CTAB-GAN-Plus>`_
+   - `TabDDPM <https://github.com/hazy/synthpop>`_
 * Utility report to assess the fidelity of the synthetic data:
    - Summary table
    - Detailed report with figures
@@ -68,6 +73,7 @@ Current Features
    - Application metrics
       + Prediction (regression & classification)
       + F-Score for binary classification with continuous variables only
+      + Feature importance
 
 See the documentation of each component in :ref:`about` for more details.
 
@@ -108,8 +114,8 @@ The branch 'main' contains the latest development version.
 
 Quickstart
 ==========
-To get started, we created two notebooks to guide you through the generation of synthetic data
-and their associated utility report.
+To get started, we created three notebooks to guide you through the generation of synthetic data,
+their associated utility report and the hyperparameters tuning.
 
 The notebooks are based on the `Breast Wisconsin Cancer WBCD dataset
 <https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Original%29>`_.
@@ -134,8 +140,6 @@ We also welcome any contribution to the project.
 
 Ongoing Work - Next Steps
 =========================
-* Implement more generators
-* Optimise the generators with hyperparameters search
 * Integrate Differential Privacy in to each generator
 * Implement privacy metrics
 * Improve data coverage (direct identifiers, missing data, etc.)

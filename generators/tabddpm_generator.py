@@ -202,12 +202,12 @@ class TabDDPMGenerator(Generator):
 
     def display(self) -> None:
         """
-        Print the constructed sequential trees.
+        Print the parameters of TabDDPM.
 
         :return: *None*
         """
-
-        pass
+        print("Generator: TabDDPM")
+        print("Parameters: ", self._config)
 
     def sample(self, save_path: Union[Path, str], num_samples: int = 1) -> pd.DataFrame:
         """

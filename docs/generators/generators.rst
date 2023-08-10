@@ -68,6 +68,14 @@ generators.tabddpm_generator module
    :undoc-members:
    :show-inheritance:
 
+generators.mst_generator module
+-------------------------------
+
+.. automodule:: generators.mst_generator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

@@ -512,3 +512,117 @@ def kde_plot_hue_plot_per_col(
         )
 
     plt.suptitle(title)
+
+
+def histplot_hue(
+    s: pd.Series,
+    s_nested: pd.Series,
+    original_name: str,
+    nested_name: str,
+    hue_name: str,
+    title: str,
+    value_name: str = "",
+    xrotation: bool = True,
+    counts: bool = False,
+    ax: Axes = None,
+) -> Axes:
+    """
+    Plot a seaborn nested histplot.
+
+    :param s: the original series
+    :param s_nested: the nested series
+    :param original_name: the name of the original dataframe
+    :param nested_name: the name of the nested dataframe
+    :param hue_name: the name of the nested group
+    :param title: the title of the plot
+    :param value_name: the name of the value axis
+    :param xrotation: if True, the xlabels are rotated
+    :param counts: display counts on top of the bars
+    :param ax: the *Axes* object to draw the plot onto, otherwise use the current *Axes*
+    :return: the *Axes* object with the plot drawn into it
+    """
+
+    df_concat = (
+        pd.concat([s, s_nested], axis=0)
+        .to_frame(value_name)
+        .assign(
+            **{
+                hue_name: [original_name for _ in range(len(s))]
+                + [nested_name for _ in range(len(s_nested))]
+            }
+        )
+    )
+
+    colors = sns.color_palette(config.SEABORN_PALETTE, n_colors=10).as_hex()
+    colors = [colors[3], colors[-1]]
+
+    axis = sns.histplot(
+        data=df_concat,
+        x=value_name,
+        bins="auto",
+        hue=hue_name,
+        hue_order=[original_name, nested_name],
+        multiple="layer",
+        palette=colors,
+        kde=True,
+        ax=ax,
+    )
+
+    # Display counts on top of the bars
+    if counts:
+        for container in axis.containers:
+            axis.bar_label(container, fmt="%0.1f")
+
+    axis.set_title(title)
+
+    if xrotation:
+        plt.setp(
+            axis.get_xticklabels(), rotation=30, ha="right", rotation_mode="anchor"
+        )
+
+    return axis
+
+
+def histplot_plot(
+    s: pd.Series,
+    title: str,
+    value_name: str = "",
+    xrotation: bool = True,
+    counts: bool = False,
+    ax: Axes = None,
+) -> Axes:
+    """
+    Plot a seaborn histplot.
+
+    :param s: the original series
+    :param title: the title of the plot
+    :param value_name: the name of the value axis
+    :param xrotation: if True, the xlabels are rotated
+    :param counts: display counts on top of the bars
+    :param ax: the *Axes* object to draw the plot onto, otherwise use the current *Axes*
+    :return: the *Axes* object with the plot drawn into it
+    """
+
+    axis = sns.histplot(
+        x=s,
+        bins="auto",
+        alpha=0.5,
+        color=sns.color_palette(config.SEABORN_PALETTE, n_colors=10).as_hex()[0],
+        kde=True,
+        ax=ax,
+    )
+
+    # Display counts on top of the bars
+    if counts:
+        for container in axis.containers:
+            axis.bar_label(container, fmt="%0.1f")
+
+    axis.set_title(title)
+    axis.set_xlabel(value_name)
+
+    if xrotation:
+        plt.setp(
+            axis.get_xticklabels(), rotation=30, ha="right", rotation_mode="anchor"
+        )
+
+    return axis

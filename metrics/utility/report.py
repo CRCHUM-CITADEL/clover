@@ -142,7 +142,6 @@ class Report:
             class_vars = metric.get_class_variables()
             self._metrics_info[class_vars["name"]] = class_vars
 
-            res = {}
             res = metric.compute(self._df_real, self._df_synthetic, self._metadata)
 
             # Append the submetrics name and value as a dict

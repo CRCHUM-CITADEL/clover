@@ -1,13 +1,16 @@
-import pytest  # standard library
+# Standard library
+import pytest
 from typing import Type, Tuple
 from inspect import getfullargspec
 from copy import deepcopy
 
-import pandas as pd  # 3rd party packages
+# 3rd party packages
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from metrics.utility.base import UtilityMetric  # local packages
+# Local packages
+from metrics.base import Metric
 from metrics.utility import application as app
 
 
@@ -55,12 +58,12 @@ test_ids = [f"{d['metric_class'].name}-{d['which_data']}" for d in test_params]
 
 
 @pytest.fixture(scope="module", params=test_params, ids=test_ids)
-def application_metric_results(
+def application_metrics_results(
     request,
     df_wbcd: dict[str, pd.DataFrame],
     df_mock_wbcd: dict[str, pd.DataFrame],
     metadata_wbcd: dict,
-) -> Tuple[Type[UtilityMetric], str, dict]:
+) -> Tuple[Type[Metric], str, dict]:
     """
     Compute the application metrics in different settings.
 
@@ -96,27 +99,29 @@ def application_metric_results(
 
 
 def test_application_metrics_summary(
-    application_metric_results: Tuple[Type[UtilityMetric], str, dict]
+    application_metrics_results: Tuple[Type[Metric], str, dict]
 ) -> None:
     """
     Test the application metrics average scores.
 
-    :param application_metric_results: a tuple containing the metric class, the dataset type and a dictionary containing
+    :param application_metrics_results: a tuple containing the metric class, the dataset type and a dictionary containing
       the **average** scores of the metric and the **detailed** scores
 
     :return: None
     """
 
-    metric, which_data, scores = application_metric_results
+    metric, which_data, scores = application_metrics_results
     scores = scores["average"]
 
     for submetric in metric.get_average_submetrics():
         # Check the boundaries
-        assert scores[submetric] >= metric.min
-        assert scores[submetric] <= metric.max
+        assert scores[submetric["submetric"]] >= submetric["min"]
+        assert scores[submetric["submetric"]] <= submetric["max"]
 
         # Check the target
-        diff_to_objective = abs(scores[submetric] - getattr(metric, metric.objective))
+        diff_to_objective = abs(
+            scores[submetric["submetric"]] - submetric[submetric["objective"]]
+        )
         if which_data == "different_datasets":
             assert diff_to_objective > 0.01
         else:
@@ -124,18 +129,18 @@ def test_application_metrics_summary(
 
 
 def test_application_metrics_detailed(
-    application_metric_results: Tuple[Type[UtilityMetric], str, dict]
+    application_metrics_results: Tuple[Type[Metric], str, dict]
 ) -> None:
     """
     Test the application metrics detailed scores.
 
-    :param application_metric_results: a tuple containing the metric class, the dataset type and a dictionary containing
+    :param application_metrics_results: a tuple containing the metric class, the dataset type and a dictionary containing
       the **average** scores of the metric and the **detailed** scores
 
     :return: None
     """
 
-    metric, which_data, scores = application_metric_results
+    metric, which_data, scores = application_metrics_results
     report = scores["detailed"]
 
     metric.draw(report=report, figsize=(8, 6))

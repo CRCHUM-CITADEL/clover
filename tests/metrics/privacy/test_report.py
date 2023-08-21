@@ -7,7 +7,7 @@ import tempfile
 import pandas as pd
 
 # Local packages
-from metrics.utility.report import UtilityReport
+from metrics.privacy.report import PrivacyReport
 
 
 test_params = [
@@ -17,13 +17,13 @@ test_ids = [("-").join([f"{k}{v}" for k, v in d.items()]) for d in test_params]
 
 
 @pytest.fixture(scope="module", params=test_params, ids=test_ids)
-def utility_report(
+def privacy_report(
     request,
     df_wbcd: dict[str, pd.DataFrame],
     df_mock_wbcd: dict[str, pd.DataFrame],
-) -> UtilityReport:
+) -> PrivacyReport:
     """
-    Compute the utility report in different settings.
+    Compute the privacy report in different settings.
 
     :param request: the number of continuous and categorical columns to test
     :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
@@ -51,14 +51,12 @@ def utility_report(
             metadata["continuous"] + metadata["categorical"]
         ]
 
-    report = UtilityReport(
+    report = PrivacyReport(
         dataset_name="Wisconsin Breast Cancer Dataset",
         df_real=df_wbcd_mix,
         df_synthetic=df_mock_wbcd_mix,
         metadata=metadata,
-        num_repeat=2,
-        num_folds=10,
-        alpha=0.05,
+        sampling_frac=0.5,
     )
 
     report.compute()
@@ -66,33 +64,33 @@ def utility_report(
     return report
 
 
-def test_summary_report(utility_report: UtilityReport) -> None:
+def test_summary_report(privacy_report: PrivacyReport) -> None:
     """
     Test the summary report.
 
-    :param utility_report: the computed report fixture
+    :param privacy_report: the computed report fixture
     :return: *None*
     """
-    df_summary = utility_report.summary()
+    df_summary = privacy_report.summary()
 
     assert df_summary.shape[1] == 6  # name, objective, min, max, submetric, value
 
 
-def test_detailed_report(utility_report: UtilityReport) -> None:
+def test_detailed_report(privacy_report: PrivacyReport) -> None:
     """
     Test the detailed report.
 
-    :param utility_report: the computed report fixture
+    :param privacy_report: the computed report fixture
     :return: *None*
     """
 
     with tempfile.TemporaryDirectory() as temp_dir:  # no need to keep the generated figures
         # Save the figures and check their numbers
-        utility_report.detailed(show=False, save_folder=temp_dir, figure_format="png")
+        privacy_report.detailed(show=False, save_folder=temp_dir, figure_format="png")
         num_figures = len(list(Path(temp_dir).glob("*")))
 
-    num_cont_vars = utility_report.get_num_continuous_variables()
-    num_cat_vars = utility_report.get_num_categorical_variables()
+    num_cont_vars = privacy_report.get_num_continuous_variables()
+    num_cat_vars = privacy_report.get_num_categorical_variables()
     thresh = (
         0 if (num_cont_vars == 0 or num_cat_vars in [0, 1]) else 1
     )  # no figure if there is nothing to report

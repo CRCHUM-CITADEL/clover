@@ -1,20 +1,21 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# Standard library
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, List, Type  # standard library
+from typing import Tuple, List, Type
 
-import pandas as pd  # 3rd party packages
+# 3rd party packages
+import pandas as pd
 import numpy as np
 import scipy.special
 import matplotlib.pyplot as plt
 
-import utils.stats as ustats  # local
+# Local
+from ..base import Metric
+import utils.stats as ustats
 import utils.draw as udraw
 import utils.preprocessing as upreprocessing
-from metrics.utility.base import UtilityMetric
 
 
-def get_metrics() -> List[Type[UtilityMetric]]:
+def get_metrics() -> List[Type[Metric]]:
     """
     List all the available metrics in this module.
 
@@ -33,7 +34,7 @@ def get_metrics() -> List[Type[UtilityMetric]]:
     ]
 
 
-class Consistency(UtilityMetric, metaclass=ABCMeta):
+class Consistency(Metric, metaclass=ABCMeta):
     """
     Check that the synthetic data are within values of the real data.
 
@@ -53,18 +54,22 @@ class Consistency(UtilityMetric, metaclass=ABCMeta):
 
     name = "Consistency"
     alias = "consis"
-    min = 0
-    max = 1
-    objective = "max"
 
     @classmethod
-    def get_average_submetrics(cls) -> List[str]:
+    def get_average_submetrics(cls) -> List[dict]:
         """
-        Get the average submetrics of the current metric.
+        Get the average submetrics of the current metric with their target and min/max values.
 
         :return: the list of the average submetrics
         """
-        return ["within_ratio"]
+        return [
+            {
+                "submetric": "within_ratio",
+                "min": 0,
+                "max": 1,
+                "objective": "max",
+            }
+        ]
 
     @classmethod
     def draw(cls, report: dict, figsize: Tuple[float, float] = None) -> None:
@@ -79,6 +84,9 @@ class Consistency(UtilityMetric, metaclass=ABCMeta):
         assert report is not None
         assert "within_ratio" in report
 
+        info = cls.get_average_submetrics()[0]
+        assert info["submetric"] == "within_ratio"
+
         plt.figure(figsize=figsize, layout="constrained")
 
         udraw.bar_plot(
@@ -86,7 +94,7 @@ class Consistency(UtilityMetric, metaclass=ABCMeta):
             title=f"Metric: {cls.name}\n",
             value_name="Within the real data ratio",
             orient="v",
-            lim=(cls.min, cls.max),
+            lim=(info["min"], info["max"]),
         )
 
 
@@ -241,7 +249,7 @@ class CategoricalConsistency(Consistency):
         return res
 
 
-class ContinuousStatistics(UtilityMetric):
+class ContinuousStatistics(Metric):
     """
     Check that the synthetic data match the median and IQR statistics for continuous variables of the real data.
 
@@ -261,18 +269,28 @@ class ContinuousStatistics(UtilityMetric):
 
     name = "Continuous Statistics"
     alias = "cont_stats"
-    min = 0
-    max = np.inf
-    objective = "min"
 
     @classmethod
-    def get_average_submetrics(cls) -> List[str]:
+    def get_average_submetrics(cls) -> List[dict]:
         """
-        Get the average submetrics of the current metric.
+        Get the average submetrics of the current metric with their target and min/max values.
 
         :return: the list of the average submetrics
         """
-        return ["median_l1_distance", "iqr_l1_distance"]
+        return [
+            {
+                "submetric": "median_l1_distance",
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            },
+            {
+                "submetric": "iqr_l1_distance",
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            },
+        ]
 
     def compute(
         self,
@@ -382,7 +400,7 @@ class ContinuousStatistics(UtilityMetric):
                 axes[i].get_legend().remove()
 
 
-class CategoricalStatistics(UtilityMetric):
+class CategoricalStatistics(Metric):
     """
     Check that the synthetic data match the support and frequency coverage for categorical variables of the real data.
 
@@ -402,18 +420,28 @@ class CategoricalStatistics(UtilityMetric):
 
     name = "Categorical Statistics"
     alias = "cat_stats"
-    min = 0
-    max = 1
-    objective = "max"
 
     @classmethod
-    def get_average_submetrics(cls) -> List[str]:
+    def get_average_submetrics(cls) -> List[dict]:
         """
-        Get the average submetrics of the current metric.
+        Get the average submetrics of the current metric with their target and min/max values.
 
         :return: the list of the average submetrics
         """
-        return ["support_coverage", "frequency_coverage"]
+        return [
+            {
+                "submetric": "support_coverage",
+                "min": 0,
+                "max": 1,
+                "objective": "max",
+            },
+            {
+                "submetric": "frequency_coverage",
+                "min": 0,
+                "max": 1,
+                "objective": "max",
+            },
+        ]
 
     def compute(
         self,
@@ -533,7 +561,7 @@ class CategoricalStatistics(UtilityMetric):
                 axes[i].get_legend().remove()
 
 
-class UnivariateDiscreteDistance(UtilityMetric, metaclass=ABCMeta):
+class UnivariateDiscreteDistance(Metric, metaclass=ABCMeta):
     """
     Check the similarities between real and synthetic data with discrete distance.
 
@@ -564,15 +592,6 @@ class UnivariateDiscreteDistance(UtilityMetric, metaclass=ABCMeta):
         """
         :return: the name of the distance computed by the metric
         """
-
-    @classmethod
-    def get_average_submetrics(cls) -> List[str]:
-        """
-        Get the average submetrics of the current metric.
-
-        :return: the list of the average submetrics
-        """
-        return [cls.distance_name]
 
     @staticmethod
     def hellinger_distance(p: np.ndarray, q: np.ndarray) -> float:
@@ -682,6 +701,9 @@ class UnivariateDiscreteDistance(UtilityMetric, metaclass=ABCMeta):
         assert report is not None
         assert f"{cls.distance_name}" in report
 
+        info = cls.get_average_submetrics()[0]
+        assert info["submetric"] == cls.distance_name
+
         plt.figure(figsize=figsize, layout="constrained")
 
         udraw.bar_plot(
@@ -689,7 +711,7 @@ class UnivariateDiscreteDistance(UtilityMetric, metaclass=ABCMeta):
             title=f"Metric: {cls.name}",
             value_name=f"{cls.distance_name}",
             orient="v",
-            lim=(cls.min, cls.max),
+            lim=(info["min"], info["max"]),
         )
 
 
@@ -854,10 +876,23 @@ class ContinuousUnivariateHellingerDistance(ContinuousUnivariateDistance):
 
     name = "Hellinger " + ContinuousUnivariateDistance.name
     alias = "hell_" + ContinuousUnivariateDistance.alias
-    min = 0
-    max = 1
-    objective = "min"
     distance_name = "hellinger_distance"
+
+    @classmethod
+    def get_average_submetrics(cls) -> List[dict]:
+        """
+        Get the average submetrics of the current metric with their target and min/max values.
+
+        :return: the list of the average submetrics
+        """
+        return [
+            {
+                "submetric": cls.distance_name,
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            }
+        ]
 
     @staticmethod
     def compute_distance(p: np.ndarray, q: np.ndarray) -> float:
@@ -894,10 +929,23 @@ class CategoricalUnivariateHellingerDistance(CategoricalUnivariateDistance):
 
     name = "Hellinger " + CategoricalUnivariateDistance.name
     alias = "hell_" + CategoricalUnivariateDistance.alias
-    min = 0
-    max = 1
-    objective = "min"
     distance_name = "hellinger_distance"
+
+    @classmethod
+    def get_average_submetrics(cls) -> List[dict]:
+        """
+        Get the average submetrics of the current metric with their target and min/max values.
+
+        :return: the list of the average submetrics
+        """
+        return [
+            {
+                "submetric": cls.distance_name,
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            }
+        ]
 
     @staticmethod
     def compute_distance(p: np.ndarray, q: np.ndarray) -> float:
@@ -934,10 +982,23 @@ class ContinuousUnivariateKLDivergence(ContinuousUnivariateDistance):
 
     name = "KL Divergence " + ContinuousUnivariateDistance.name
     alias = "kl_div_" + ContinuousUnivariateDistance.alias
-    min = 0
-    max = np.inf
-    objective = "min"
     distance_name = "kl_divergence"
+
+    @classmethod
+    def get_average_submetrics(cls) -> List[dict]:
+        """
+        Get the average submetrics of the current metric with their target and min/max values.
+
+        :return: the list of the average submetrics
+        """
+        return [
+            {
+                "submetric": cls.distance_name,
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            }
+        ]
 
     @staticmethod
     def compute_distance(p: np.ndarray, q: np.ndarray) -> float:
@@ -974,10 +1035,23 @@ class CategoricalUnivariateKLDivergence(CategoricalUnivariateDistance):
 
     name = "KL Divergence " + CategoricalUnivariateDistance.name
     alias = "kl_div_" + CategoricalUnivariateDistance.alias
-    min = 0
-    max = np.inf
-    objective = "min"
     distance_name = "kl_divergence"
+
+    @classmethod
+    def get_average_submetrics(cls) -> List[dict]:
+        """
+        Get the average submetrics of the current metric with their target and min/max values.
+
+        :return: the list of the average submetrics
+        """
+        return [
+            {
+                "submetric": cls.distance_name,
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            }
+        ]
 
     @staticmethod
     def compute_distance(p: np.ndarray, q: np.ndarray) -> float:

@@ -564,7 +564,6 @@ def histplot_hue(
         hue_order=[original_name, nested_name],
         multiple="layer",
         palette=colors,
-        kde=True,
         ax=ax,
     )
 
@@ -608,7 +607,6 @@ def histplot_plot(
         bins="auto",
         alpha=0.5,
         color=sns.color_palette(config.SEABORN_PALETTE, n_colors=10).as_hex()[0],
-        kde=True,
         ax=ax,
     )
 

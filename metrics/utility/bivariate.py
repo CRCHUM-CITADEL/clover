@@ -1,20 +1,20 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-from itertools import combinations  # Standard library
+# Standard library
+from itertools import combinations
 from typing import Tuple, List, Type
 
-import pandas as pd  # 3rd party packages
+# 3rd party packages
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from metrics.utility.base import UtilityMetric  # local
+# Local
+from ..base import Metric
 import utils.draw as udraw
 import utils.stats as ustats
 import utils.learning as ulearning
 
 
-def get_metrics() -> List[Type[UtilityMetric]]:
+def get_metrics() -> List[Type[Metric]]:
     """
     List all the available metrics in this module.
 
@@ -24,7 +24,7 @@ def get_metrics() -> List[Type[UtilityMetric]]:
     return [PairwiseCorrelationDifference, PairwiseChiSquareDifference]
 
 
-class PairwiseCorrelationDifference(UtilityMetric):
+class PairwiseCorrelationDifference(Metric):
     """
     Check the preservation of the pairwise Pearson correlations between continuous variables.
 
@@ -44,18 +44,22 @@ class PairwiseCorrelationDifference(UtilityMetric):
 
     name = "Pairwise Correlation Difference"
     alias = "pcd"
-    min = 0
-    max = np.inf
-    objective = "min"
 
     @classmethod
-    def get_average_submetrics(cls) -> List[str]:
+    def get_average_submetrics(cls) -> List[dict]:
         """
-        Get the average submetrics of the current metric.
+        Get the average submetrics of the current metric with their target and min/max values.
 
         :return: the list of the average submetrics
         """
-        return ["norm"]
+        return [
+            {
+                "submetric": "norm",
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            }
+        ]
 
     def compute(
         self,
@@ -148,7 +152,7 @@ class PairwiseCorrelationDifference(UtilityMetric):
         udraw.identity_line(ax=axes[1], c="g")
 
 
-class PairwiseChiSquareDifference(UtilityMetric):
+class PairwiseChiSquareDifference(Metric):
     """
     Check the preservation of the pairwise relationships between categorical variables.
 
@@ -169,22 +173,32 @@ class PairwiseChiSquareDifference(UtilityMetric):
 
     name = "Pairwise Chi Square Difference"
     alias = "pcsd"
-    min = 0
-    max = 1
-    objective = "max"
 
     def __init__(self, random_state: int = None, alpha: float = 0.05):
         super().__init__(random_state)
         self._alpha = alpha
 
     @classmethod
-    def get_average_submetrics(cls) -> List[str]:
+    def get_average_submetrics(cls) -> List[dict]:
         """
-        Get the average submetrics of the current metric.
+        Get the average submetrics of the current metric with their target and min/max values.
 
         :return: the list of the average submetrics
         """
-        return ["sensitivity", "specificity"]
+        return [
+            {
+                "submetric": "sensitivity",
+                "min": 0,
+                "max": 1,
+                "objective": "max",
+            },
+            {
+                "submetric": "specificity",
+                "min": 0,
+                "max": 1,
+                "objective": "max",
+            },
+        ]
 
     def compute(
         self,

@@ -2,6 +2,7 @@
 import pytest
 from typing import Type, Tuple
 from inspect import getfullargspec
+import math
 
 # 3rd party packages
 import pandas as pd
@@ -10,44 +11,26 @@ import matplotlib.pyplot as plt
 
 # Local packages
 from metrics.base import Metric
-from metrics.utility import population as pop
-
-
-def test_propensity_score() -> None:
-    """
-    Test the propensity score function.
-
-    :return: None
-    """
-
-    size = 100
-    p_random = 0.5 * np.ones(size)
-    p_minmax = np.array([0] * size + [1] * size)
-
-    dist = pop.Distinguishability()
-
-    assert dist.propensity_mse(p_random) == 0
-    assert dist.propensity_mse(p_minmax) == 1
-    assert dist.propensity_mse(list(p_random)) == 0
+from metrics.privacy import reidentification as reid
 
 
 test_params = [
     {"metric_class": metric, "which_data": data}
-    for metric in pop.get_metrics()
+    for metric in reid.get_metrics()
     for data in ["different_datasets", "identical_datasets"]
 ]
 test_ids = [f"{d['metric_class'].name}-{d['which_data']}" for d in test_params]
 
 
 @pytest.fixture(scope="module", params=test_params, ids=test_ids)
-def population_metrics_results(
+def reidentification_metrics_results(
     request,
     df_wbcd: dict[str, pd.DataFrame],
     df_mock_wbcd: dict[str, pd.DataFrame],
     metadata_wbcd: dict,
 ) -> Tuple[Type[Metric], str, dict]:
     """
-    Compute the population metrics in different settings.
+    Compute the reidentification metrics in different settings.
 
     :param request: the number of continuous and categorical columns to test
     :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
@@ -61,7 +44,7 @@ def population_metrics_results(
     which_data = request.param["which_data"]
 
     # Instance parameters
-    d = {"random_state": 0, "num_repeat": 1, "use_gpu": False}
+    d = {"random_state": 0, "sampling_frac": 1}
 
     # Select only the expected instance parameters
     args = getfullargspec(metric_class).args[1:]  # remove self
@@ -73,19 +56,19 @@ def population_metrics_results(
     return metric_class, which_data, scores
 
 
-def test_population_metrics_summary(
-    population_metrics_results: Tuple[Type[Metric], str, dict]
+def test_reidentification_metrics_summary(
+    reidentification_metrics_results: Tuple[Type[Metric], str, dict]
 ) -> None:
     """
-    Test the population metrics average scores.
+    Test the reidentification metrics average scores.
 
-    :param population_metrics_results: a tuple containing the metric class, the dataset type and a dictionary containing
+    :param reidentification_metrics_results: a tuple containing the metric class, the dataset type and a dictionary containing
       the **average** scores of the metric and the **detailed** scores
 
     :return: None
     """
 
-    metric, which_data, scores = population_metrics_results
+    metric, which_data, scores = reidentification_metrics_results
     scores = scores["average"]
 
     for submetric in metric.get_average_submetrics():
@@ -97,25 +80,32 @@ def test_population_metrics_summary(
         diff_to_objective = abs(
             scores[submetric["submetric"]] - submetric[submetric["objective"]]
         )
+        inv_obj = "min" if submetric["objective"] == "max" else "max"
+        diff_to_inv_objective = abs(scores[submetric["submetric"]] - submetric[inv_obj])
+
         if which_data == "different_datasets":
-            assert diff_to_objective > 0.01
+            assert (
+                not math.isinf(diff_to_objective) and diff_to_objective < 0.01
+            ) or diff_to_inv_objective > 0.01
         else:
-            assert diff_to_objective < 0.01
+            assert (
+                not math.isinf(diff_to_objective) and diff_to_objective > 0.01
+            ) or diff_to_inv_objective < 0.01
 
 
-def test_population_metrics_detailed(
-    population_metrics_results: Tuple[Type[Metric], str, dict]
+def test_reidentification_metrics_detailed(
+    reidentification_metrics_results: Tuple[Type[Metric], str, dict]
 ) -> None:
     """
-    Test the population metrics detailed scores.
+    Test the reidentification metrics detailed scores.
 
-    :param population_metrics_results: a tuple containing the metric class, the dataset type and a dictionary containing
+    :param reidentification_metrics_results: a tuple containing the metric class, the dataset type and a dictionary containing
       the **average** scores of the metric and the **detailed** scores
 
     :return: None
     """
 
-    metric, which_data, scores = population_metrics_results
+    metric, which_data, scores = reidentification_metrics_results
     report = scores["detailed"]
 
     metric.draw(report=report, figsize=(8, 6))

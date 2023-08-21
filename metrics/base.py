@@ -1,34 +1,27 @@
-from abc import ABCMeta, abstractmethod  # Standard library
+# Standard library
+from abc import ABCMeta, abstractmethod
 from typing import Tuple, List
 import random
 
-import pandas as pd  # 3rd party packages
+# 3rd party packages
+import pandas as pd
 import numpy as np
 
 
-class UtilityMetric(metaclass=ABCMeta):
+class Metric(metaclass=ABCMeta):
     """
-    Abstract utility metric class providing the template to follow for each metric.
+    Abstract metric class providing the template to follow for each metric.
 
     :cvar name: the name of the metric
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
 
     :param random_state: for reproducibility purposes
     """
 
     name: str
     alias: str
-    min: float
-    max: float
-    objective: str
 
     @classmethod
     @property
@@ -46,43 +39,10 @@ class UtilityMetric(metaclass=ABCMeta):
         :return: the alias of the metric
         """
 
-    @classmethod
-    @property
-    @abstractmethod
-    def min(cls) -> float:
-        """
-        :return: the minimum value taken by the metric
-        """
-
-    @classmethod
-    @property
-    @abstractmethod
-    def max(cls) -> float:
-        """
-        :return: the maximal value taken by the metric
-        """
-
-    @classmethod
-    @property
-    @abstractmethod
-    def objective(cls) -> str:
-        """
-        :return: the target value of the metric, can be "min" or "max"
-        """
-
     def __init__(self, random_state: int = None):
         if random_state is not None:
             random.seed(random_state)
             np.random.seed(random_state)
-
-    @classmethod
-    @abstractmethod
-    def get_average_submetrics(cls) -> List[str]:
-        """
-        Get the average submetrics of the current metric.
-
-        :return: the list of the average submetrics
-        """
 
     @classmethod
     def get_class_variables(cls) -> dict:
@@ -95,11 +55,30 @@ class UtilityMetric(metaclass=ABCMeta):
         class_variables = {
             "name": cls.name,
             "alias": cls.alias,
-            "min": cls.min,
-            "max": cls.max,
-            "objective": cls.objective,
         }
         return class_variables
+
+    @classmethod
+    def get_submetrics_info(cls) -> pd.DataFrame:
+        """
+        Get the average submetrics information.
+
+        :return: the submetrics information as a dataframe
+        """
+
+        df = pd.DataFrame(cls.get_average_submetrics())
+        df["name"] = cls.name
+
+        return df
+
+    @classmethod
+    @abstractmethod
+    def get_average_submetrics(cls) -> List[dict]:
+        """
+        Get the average submetrics of the current metric with their target and min/max values.
+
+        :return: the list of the average submetrics
+        """
 
     @abstractmethod
     def compute(

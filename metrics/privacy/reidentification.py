@@ -1,20 +1,18 @@
-from itertools import combinations  # Standard library
+# Standard library
 from typing import Tuple, List, Type
 
 # 3rd party packages
-import gower
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
 # Local
-from .base import PrivacyMetric
+from ..base import Metric
+import utils.external.gower.gower_dist as gower
 import utils.draw as udraw
-import utils.stats as ustats
-import utils.learning as ulearning
 
 
-def get_metrics() -> List[Type[PrivacyMetric]]:
+def get_metrics() -> List[Type[Metric]]:
     """
     List all the available metrics in this module.
 
@@ -26,7 +24,7 @@ def get_metrics() -> List[Type[PrivacyMetric]]:
     ]
 
 
-class DistanceToClosestRecord(PrivacyMetric):
+class DistanceToClosestRecord(Metric):
     """
     Check that synthetic data are not copies of real data by ensuring that the Distance to Closest Record (DCR)
     and the Nearest Neighbour Distance Ratio (NNDR) are high.
@@ -67,37 +65,13 @@ class DistanceToClosestRecord(PrivacyMetric):
 
         submetrics = [
             {
-                "name": "dcr_5th_percent_synthreal",
+                "submetric": "dcr_5th_percent_synthreal",
                 "min": 0,
                 "max": np.inf,
                 "objective": "max",
             },
             {
-                "name": "dcr_5th_percent_real",
-                "min": 0,
-                "max": np.inf,
-                "objective": "max",
-            },
-            {
-                "name": "dcr_5th_percent_synth",
-                "min": 0,
-                "max": np.inf,
-                "objective": "max",
-            },
-            {
-                "name": "nndr_5th_percent_synthreal",
-                "min": 0,
-                "max": 1,
-                "objective": "max",
-            },
-            {
-                "name": "nndr_5th_percent_real",
-                "min": 0,
-                "max": 1,
-                "objective": "max",
-            },
-            {
-                "name": "nndr_5th_percent_synth",
+                "submetric": "nndr_5th_percent_synthreal",
                 "min": 0,
                 "max": 1,
                 "objective": "max",
@@ -122,8 +96,7 @@ class DistanceToClosestRecord(PrivacyMetric):
         :return: a dictionary with two keys pointing to dictionaries
 
             * **average** -- the 5th percentile DCR and NNDR between synthetic and real
-                **dcr(nndr)_5th_percent_synthreal** , as well as within real **dcr(nndr)_5th_percent_real** and
-                synthetic **dcr(nndr)_5th_percent_synth** datasets
+                **dcr_5th_percent_synthreal** and **nndr_5th_percent_synthreal**
             * **detailed** -- the DCR and NNDR for each synthetic sample to the closest real sample
                 **dcr(nndr)_synthreal**, within real **dcr(nndr)_real** and synthetic **dcr(nndr)_synth** samples
         """
@@ -131,8 +104,14 @@ class DistanceToClosestRecord(PrivacyMetric):
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
 
         # Sample a fraction of the datasets for computation performance
-        real = df_real["test"].sample(frac=self._sampling_frac, replace=False)
-        synth = df_synthetic["test"].sample(frac=self._sampling_frac, replace=False)
+        real = df_real["test"].sample(
+            frac=self._sampling_frac, replace=False, ignore_index=True
+        )
+        synth = df_synthetic["test"].sample(
+            frac=self._sampling_frac, replace=False, ignore_index=True
+        )
+        if real.shape[1] == 0:
+            return {}
 
         # Compute the gower distance (adapted to mixed data)
         cat_features = [  # boolean array instead of column names
@@ -175,20 +154,12 @@ class DistanceToClosestRecord(PrivacyMetric):
 
         # Compute the 5th percentile for the average results
         dcr_percent_synthreal = np.percentile(dist_synthreal[:, 0], q=5)
-        dcr_percent_real = np.percentile(dist_real[:, 0], q=5)
-        dcr_percent_synth = np.percentile(dist_synth[:, 0], q=5)
         nndr_percent_synthreal = np.percentile(ratio_synthreal, q=5)
-        nndr_percent_real = np.percentile(ratio_real, q=5)
-        nndr_percent_synth = np.percentile(ratio_synth, q=5)
 
         res = {
             "average": {
                 "dcr_5th_percent_synthreal": dcr_percent_synthreal,
-                "dcr_5th_percent_real": dcr_percent_real,
-                "dcr_5th_percent_synth": dcr_percent_synth,
                 "nndr_5th_percent_synthreal": nndr_percent_synthreal,
-                "nndr_5th_percent_real": nndr_percent_real,
-                "nndr_5th_percent_synth": nndr_percent_synth,
             },
             "detailed": {
                 "dcr_synthreal": dist_synthreal[:, 0],

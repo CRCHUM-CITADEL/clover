@@ -13,13 +13,13 @@ import xgboost as xgb
 import matplotlib.pyplot as plt
 
 # Local
+from ..base import Metric
+from . import application as app
 import utils.learning as ulearning
 import utils.draw as udraw
-from metrics.utility.base import UtilityMetric
-import metrics.utility.application as app
 
 
-def get_metrics() -> List[Type[UtilityMetric]]:
+def get_metrics() -> List[Type[Metric]]:
     """
     List all the available metrics in this module.
 
@@ -29,7 +29,7 @@ def get_metrics() -> List[Type[UtilityMetric]]:
     return [Distinguishability, CrossRegression, CrossClassification]
 
 
-class Distinguishability(UtilityMetric):
+class Distinguishability(Metric):
     """
     Check the similarity between the real and synthetic data by training a model to distinguish between them
     and measuring its performance.
@@ -56,9 +56,6 @@ class Distinguishability(UtilityMetric):
 
     name = "Distinguishability"
     alias = "dist"
-    min = 0
-    max = 1
-    objective = "min"
 
     def __init__(
         self,
@@ -71,17 +68,37 @@ class Distinguishability(UtilityMetric):
         self._use_gpu = use_gpu
 
     @classmethod
-    def get_average_submetrics(cls) -> List[str]:
+    def get_average_submetrics(cls) -> List[dict]:
         """
-        Get the average submetrics of the current metric.
+        Get the average submetrics of the current metric with their target and min/max values.
 
         :return: the list of the average submetrics
         """
         return [
-            "prediction_mse",
-            "prediction_mse_real",
-            "prediction_mse_synth",
-            "prediction_auc",
+            {
+                "submetric": "prediction_mse",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            },
+            {
+                "submetric": "prediction_mse_real",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            },
+            {
+                "submetric": "prediction_mse_synth",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            },
+            {
+                "submetric": "prediction_auc",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            },
         ]
 
     @staticmethod
@@ -305,7 +322,7 @@ class Distinguishability(UtilityMetric):
         )
 
 
-class CrossLearning(UtilityMetric, metaclass=ABCMeta):
+class CrossLearning(Metric, metaclass=ABCMeta):
     """
     Check the preservation of all the relationship between the variables by generating predictions
     for a variable based on the others.
@@ -334,8 +351,6 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
 
     name = "Cross"
     alias = "cross"
-    min = 0
-    objective = "min"
     class_name: str
 
     @classmethod
@@ -355,15 +370,6 @@ class CrossLearning(UtilityMetric, metaclass=ABCMeta):
         super().__init__(random_state)
         self._num_repeat = num_repeat
         self._use_gpu = use_gpu
-
-    @classmethod
-    def get_average_submetrics(cls) -> List[str]:
-        """
-        Get the average submetrics of the current metric.
-
-        :return: the list of the average submetrics
-        """
-        return ["diff_real_synth"]
 
     def compute(
         self,
@@ -531,8 +537,23 @@ class CrossRegression(CrossLearning):
 
     name = CrossLearning.name + " Regression"
     alias = CrossLearning.alias + "_reg"
-    max = np.inf
     class_name = "Regression"
+
+    @classmethod
+    def get_average_submetrics(cls) -> List[dict]:
+        """
+        Get the average submetrics of the current metric with their target and min/max values.
+
+        :return: the list of the average submetrics
+        """
+        return [
+            {
+                "submetric": "diff_real_synth",
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            }
+        ]
 
 
 class CrossClassification(CrossLearning):
@@ -563,5 +584,20 @@ class CrossClassification(CrossLearning):
 
     name = CrossLearning.name + " Classification"
     alias = CrossLearning.alias + "_classif"
-    max = 1
     class_name = "Classification"
+
+    @classmethod
+    def get_average_submetrics(cls) -> List[dict]:
+        """
+        Get the average submetrics of the current metric with their target and min/max values.
+
+        :return: the list of the average submetrics
+        """
+        return [
+            {
+                "submetric": "diff_real_synth",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            }
+        ]

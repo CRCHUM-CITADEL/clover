@@ -21,10 +21,10 @@ import xgboost as xgb
 # Local
 import utils.draw as udraw
 import utils.learning as ulearning
-from metrics.utility.base import UtilityMetric
+from ..base import Metric
 
 
-def get_metrics() -> List[Type[UtilityMetric]]:
+def get_metrics() -> List[Type[Metric]]:
     """
     List all the available metrics in this module.
 
@@ -34,7 +34,7 @@ def get_metrics() -> List[Type[UtilityMetric]]:
     return [Regression, Classification, FScore, FeatureImportance]
 
 
-class Prediction(UtilityMetric, metaclass=ABCMeta):
+class Prediction(Metric, metaclass=ABCMeta):
     """
     Check that the synthetic data have the same behavior as the real data regarding the application task.
 
@@ -58,9 +58,6 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
 
     name = "Prediction"
     alias = "prediction"
-    min = 0
-    max = np.inf
-    objective = "min"
     score_name: str
 
     @classmethod
@@ -80,15 +77,6 @@ class Prediction(UtilityMetric, metaclass=ABCMeta):
         super().__init__(random_state)
         self._num_repeat = num_repeat
         self._use_gpu = use_gpu
-
-    @classmethod
-    def get_average_submetrics(cls) -> List[str]:
-        """
-        Get the average submetrics of the current metric.
-
-        :return: the list of the average submetrics
-        """
-        return ["diff_real_synth"]
 
     @classmethod
     def _learning(
@@ -354,6 +342,22 @@ class Regression(Prediction):
     alias = "regression"
     score_name = "Mean Squared Error"
 
+    @classmethod
+    def get_average_submetrics(cls) -> List[dict]:
+        """
+        Get the average submetrics of the current metric with their target and min/max values.
+
+        :return: the list of the average submetrics
+        """
+        return [
+            {
+                "submetric": "diff_real_synth",
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            }
+        ]
+
     def compute(
         self,
         df_real: dict[str, pd.DataFrame],
@@ -410,8 +414,23 @@ class Classification(Prediction):
 
     name = "Classification"
     alias = "classif"
-    max = 1
     score_name = "AUC score"
+
+    @classmethod
+    def get_average_submetrics(cls) -> List[dict]:
+        """
+        Get the average submetrics of the current metric with their target and min/max values.
+
+        :return: the list of the average submetrics
+        """
+        return [
+            {
+                "submetric": "diff_real_synth",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            }
+        ]
 
     def compute(
         self,
@@ -461,7 +480,7 @@ class Classification(Prediction):
         return super().compute(df_real, df_synthetic, metadata)
 
 
-class FScore(UtilityMetric):
+class FScore(Metric):
     """
     Check the similarities of the F-scores for each feature of the real and synthetic datasets.
 
@@ -483,18 +502,22 @@ class FScore(UtilityMetric):
 
     name = "FScore"
     alias = "fscore"
-    min = 0
-    max = np.inf  # TODO: is it bounded?
-    objective = "min"
 
     @classmethod
-    def get_average_submetrics(cls) -> List[str]:
+    def get_average_submetrics(cls) -> List[dict]:
         """
-        Get the average submetrics of the current metric.
+        Get the average submetrics of the current metric with their target and min/max values.
 
         :return: the list of the average submetrics
         """
-        return ["diff_f_score"]
+        return [
+            {
+                "submetric": "diff_f_score",
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            }
+        ]
 
     @staticmethod
     def fscore(df: pd.DataFrame, predicted_var: str) -> pd.Series:
@@ -632,7 +655,7 @@ class FScore(UtilityMetric):
         )
 
 
-class FeatureImportance(UtilityMetric):
+class FeatureImportance(Metric):
     """
     Check the importance of each feature for the prediction task is preserved.
 
@@ -659,9 +682,6 @@ class FeatureImportance(UtilityMetric):
 
     name = "Feature Importance"
     alias = "feature_imp"
-    min = 0
-    max = np.inf
-    objective = "min"
 
     def __init__(
         self,
@@ -672,13 +692,20 @@ class FeatureImportance(UtilityMetric):
         self._num_repeat = num_repeat
 
     @classmethod
-    def get_average_submetrics(cls) -> List[str]:
+    def get_average_submetrics(cls) -> List[dict]:
         """
-        Get the average submetrics of the current metric.
+        Get the average submetrics of the current metric with their target and min/max values.
 
         :return: the list of the average submetrics
         """
-        return ["diff_permutation_importance"]
+        return [
+            {
+                "submetric": "diff_permutation_importance",
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            }
+        ]
 
     def compute(
         self,

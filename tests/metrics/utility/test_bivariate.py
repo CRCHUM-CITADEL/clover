@@ -1,11 +1,14 @@
-import pytest  # standard library
+# Standard library
+import pytest
 from typing import Type, Tuple
 
-import pandas as pd  # 3rd party packages
+# 3rd party packages
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from metrics.utility.base import UtilityMetric  # local packages
+# Local packages
+from metrics.base import Metric
 from metrics.utility import bivariate as biv
 
 
@@ -18,12 +21,12 @@ test_ids = [f"{d['metric_class'].name}-{d['which_data']}" for d in test_params]
 
 
 @pytest.fixture(scope="module", params=test_params, ids=test_ids)
-def bivariate_metric_results(
+def bivariate_metrics_results(
     request,
     df_wbcd: dict[str, pd.DataFrame],
     df_mock_wbcd: dict[str, pd.DataFrame],
     metadata_wbcd: dict,
-) -> Tuple[Type[UtilityMetric], str, dict]:
+) -> Tuple[Type[Metric], str, dict]:
     """
     Compute the bivariate metrics in different settings.
 
@@ -47,27 +50,36 @@ def bivariate_metric_results(
 
 
 def test_bivariate_metrics_summary(
-    bivariate_metric_results: Tuple[Type[UtilityMetric], str, dict]
+    bivariate_metrics_results: Tuple[Type[Metric], str, dict]
 ) -> None:
     """
     Test the bivariate metrics average scores.
 
-    :param bivariate_metric_results: a tuple containing the metric class, the dataset type and a dictionary containing
+    :param bivariate_metrics_results: a tuple containing the metric class, the dataset type and a dictionary containing
       the **average** scores of the metric and the **detailed** scores
 
     :return: None
     """
 
-    metric, which_data, scores = bivariate_metric_results
+    metric, which_data, scores = bivariate_metrics_results
     scores = scores["average"]
 
     for submetric in metric.get_average_submetrics():
         # Check the boundaries
-        assert np.isnan(scores[submetric]) or scores[submetric] >= metric.min
-        assert np.isnan(scores[submetric]) or scores[submetric] <= metric.max
+        assert (
+            np.isnan(scores[submetric["submetric"]])
+            or scores[submetric["submetric"]] >= submetric["min"]
+        )
+        assert (
+            np.isnan(scores[submetric["submetric"]])
+            or scores[submetric["submetric"]] <= submetric["max"]
+        )
 
         # Check the target
-        diff_to_objective = abs(scores[submetric] - getattr(metric, metric.objective))
+        diff_to_objective = abs(
+            scores[submetric["submetric"]] - submetric[submetric["objective"]]
+        )
+
         if which_data == "different_datasets":
             assert np.isnan(diff_to_objective) or diff_to_objective > 0.01
         else:
@@ -75,18 +87,18 @@ def test_bivariate_metrics_summary(
 
 
 def test_bivariate_metrics_detailed(
-    bivariate_metric_results: Tuple[Type[UtilityMetric], str, dict]
+    bivariate_metrics_results: Tuple[Type[Metric], str, dict]
 ) -> None:
     """
     Test the bivariate metrics detailed scores.
 
-    :param bivariate_metric_results: a tuple containing the metric class, the dataset type and a dictionary containing
+    :param bivariate_metrics_results: a tuple containing the metric class, the dataset type and a dictionary containing
       the **average** scores of the metric and the **detailed** scores
 
     :return: None
     """
 
-    metric, which_data, scores = bivariate_metric_results
+    metric, which_data, scores = bivariate_metrics_results
     report = scores["detailed"]
 
     metric.draw(report=report, figsize=(8, 6))

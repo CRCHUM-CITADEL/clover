@@ -74,6 +74,10 @@ Current Features
       + Prediction (regression & classification)
       + F-Score for binary classification with continuous variables only
       + Feature importance
+* The following privacy metrics are implemented:
+   - Reidentification metrics
+      + Distance to Closest Record
+      + Nearest Neighbor Distance Ratio
 
 See the documentation of each component in :ref:`about` for more details.
 

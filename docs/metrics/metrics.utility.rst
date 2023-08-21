@@ -4,14 +4,6 @@ metrics.utility package
 Submodules
 ----------
 
-metrics.utility.base module
----------------------------
-
-.. automodule:: metrics.utility.base
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 metrics.utility.univariate module
 ---------------------------------
 

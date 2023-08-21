@@ -4,14 +4,6 @@ tests.metrics.utility package
 Submodules
 ----------
 
-tests.metrics.utility.conftest module
--------------------------------------
-
-.. automodule:: tests.metrics.utility.conftest
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tests.metrics.utility.test\_univariate module
 ---------------------------------------------
 

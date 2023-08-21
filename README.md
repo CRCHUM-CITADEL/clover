@@ -74,6 +74,10 @@ Nb: The branch `gh-pages` is recreated each time the main branch is modified on 
      - Prediction (regression & classification)
      - F-Score for binary classification with continuous variables only
      - Feature importance
+* The following privacy metrics are implemented:
+   - Reidentification metrics 
+     - Distance to Closest Record 
+     - Nearest Neighbor Distance Ratio
 
 See the [documentation](#documentation) for more details.
 

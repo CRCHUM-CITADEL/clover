@@ -1,11 +1,12 @@
 # Standard library
-from typing import List, Tuple
+from typing import List, Tuple, Union
+from pathlib import Path
 
 # 3rd party packages
 import pandas as pd
 
 # Local packages
-from ..report import Report
+from ..base import Report
 from . import reidentification as reid
 
 
@@ -23,6 +24,7 @@ class PrivacyReport(Report):
         Must be specified by the user since the variable type might be equivocal.
     :param figsize: the size of the figure in inches (width, height)
     :param random_state: for reproducibility purposes
+    :param report_filepath: the path of a computed report if available
     :param metrics: list of the metrics to compute. If not specified, all the metrics are computed.
     :param sampling_frac: the fraction of data to sample from real and synthetic datasets
         for better computing performance
@@ -32,22 +34,30 @@ class PrivacyReport(Report):
 
     def __init__(
         self,
-        dataset_name: str,
-        df_real: dict[str, pd.DataFrame],
-        df_synthetic: dict[str, pd.DataFrame],
-        metadata: dict,
+        dataset_name: str = None,
+        df_real: dict[str, pd.DataFrame] = None,
+        df_synthetic: dict[str, pd.DataFrame] = None,
+        metadata: dict = None,
         figsize: Tuple[float, float] = (8, 6),
         random_state: int = 0,
+        report_filepath: Union[Path, str] = None,
         metrics: List[str] = None,
         sampling_frac: float = 0.2,
     ):
         super().__init__(
-            dataset_name, df_real, df_synthetic, metadata, figsize, random_state
+            dataset_name,
+            df_real,
+            df_synthetic,
+            metadata,
+            figsize,
+            random_state,
+            report_filepath,
         )
 
         # Metrics instantiation with their respective parameters
         params = {"random_state": None, "sampling_frac": sampling_frac}
-        self._init_metrics(metrics=metrics, params=params)
+        if report_filepath is None:
+            self._init_metrics(metrics=metrics, params=params)
 
         # Personalized size of the figures
         self._figsize[reid.DistanceToClosestRecord.name] = (

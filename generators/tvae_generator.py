@@ -58,12 +58,6 @@ class TVAEGenerator(Generator):
         }
         self._tvae_metadata = None
 
-        self._gen = (
-            None
-            if generator_filepath is None
-            else ustandard.load_pickle(filepath=generator_filepath)
-        )
-
     def preprocess(self) -> None:
         """
         Prepare the parameters to train the generator.
@@ -99,7 +93,7 @@ class TVAEGenerator(Generator):
         self._gen.fit(self._df)
 
         ustandard.save_pickle(
-            obj=self._gen, path=save_path, filename=TVAEGenerator.name
+            obj=self._gen, folderpath=save_path, filename=TVAEGenerator.name, date=True
         )
 
     def display(self) -> None:

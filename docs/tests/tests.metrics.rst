@@ -21,6 +21,22 @@ tests.metrics.conftest module
    :undoc-members:
    :show-inheritance:
 
+tests.metrics.test\_metareport module
+-------------------------------------
+
+.. automodule:: tests.metrics.test_metareport
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tests.metrics.test\_report module
+---------------------------------
+
+.. automodule:: tests.metrics.test_report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

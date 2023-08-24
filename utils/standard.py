@@ -19,27 +19,35 @@ def load_pickle(filepath: Union[Path, str]) -> Any:
     """
     Load a pickled object.
 
-    :param filepath: the filepath of the pickle object to load
+    :param filename: the filename of the object with the extension
     :return: the pickled object
     """
 
-    with open(Path(filepath), "rb") as file:
+    path = Path(filepath)
+    assert path.exists()
+    with open(path, "rb") as file:
         obj = pickle.load(file)
     return obj
 
 
-def save_pickle(obj: Any, path: Union[Path, str], filename: str) -> None:
+def save_pickle(
+    obj: Any, folderpath: Union[Path, str], filename: str, date: bool = False
+) -> None:
     """
     Save an object with pickle.
 
     :param obj: the object to pickle
-    :param path: the path to save the object
-    :param filename: the filename of the object to pickle
+    :param folderpath: the path of the folder where to save the object
+    :param filename: the filename of the object to pickle without the extension
+    :param date: add the date at the beginning of the filename if *True*
     :return: *None*
     """
 
+    path = Path(folderpath)
+    assert path.exists()
     if obj is not None:
-        with open(Path(path) / f"{get_date()}_{filename}.pkl", "wb") as file:
+        name = f"{get_date()}_{filename}" if date else filename
+        with open(path / f"{name}.pkl", "wb") as file:
             pickle.dump(obj, file, pickle.HIGHEST_PROTOCOL)
 
 

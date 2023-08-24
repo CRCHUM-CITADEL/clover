@@ -55,7 +55,7 @@ Nb: The branch `gh-pages` is recreated each time the main branch is modified on 
    - [TVAE](https://github.com/sdv-dev)
    - [CTAB-GAN+](https://github.com/Team-TUD/CTAB-GAN-Plus)
    - [TabDDPM](https://github.com/hazy/synthpop)
-* Utility report to assess the fidelity of the synthetic data:
+* Utility and privacy reports to assess the fidelity of the synthetic data:
    - Summary table
    - Detailed report with figures
 * The following utility metrics are implemented:
@@ -78,6 +78,7 @@ Nb: The branch `gh-pages` is recreated each time the main branch is modified on 
    - Reidentification metrics 
      - Distance to Closest Record 
      - Nearest Neighbor Distance Ratio
+* Metareport to compare several synthetic datasets with respect to the metrics
 
 See the [documentation](#documentation) for more details.
 
@@ -92,11 +93,16 @@ The package is not yet available on pypi. You can clone the Github repository.
 The branch 'main' contains the latest development version.
 
 ## Quickstart
-To get started, we created three notebooks to guide you through the generation of synthetic data,
-their associated utility report and the hyperparameters tuning:
+To get started, we created 4 notebooks to guide you through the generation of synthetic data,
+their associated utility and privacy reports and the hyperparameters tuning:
 * [Synthetic data generation](notebooks/synthetic_data_generation.ipynb)
 * [Utility report](notebooks/utility_report.ipynb)
+* [Privacy report](notebooks/privacy_report.ipynb)
 * [Tune hyperparameters](notebooks/tune_hyperparameters.ipynb)
+
+To get the average summary metrics results for both utility and privacy at once, see the 
+[combined report](notebooks/combined_report.ipynb) notebook. To compare several synthetic datasets 
+with respect to a list of metrics, see the [metareport](notebooks/metareport.ipynb) notebook.
 
 The notebooks are based on the 
 [Breast Wisconsin Cancer WBCD dataset](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Original%29).

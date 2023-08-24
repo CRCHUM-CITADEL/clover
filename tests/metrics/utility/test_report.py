@@ -75,7 +75,9 @@ def test_summary_report(utility_report: UtilityReport) -> None:
     """
     df_summary = utility_report.summary()
 
-    assert df_summary.shape[1] == 6  # name, objective, min, max, submetric, value
+    assert (
+        df_summary.shape[1] == 7
+    )  # name, alias, objective, min, max, submetric, value
 
 
 def test_detailed_report(utility_report: UtilityReport) -> None:
@@ -98,3 +100,22 @@ def test_detailed_report(utility_report: UtilityReport) -> None:
     )  # no figure if there is nothing to report
 
     assert num_figures >= thresh
+
+
+def test_save_load_report(utility_report: UtilityReport) -> None:
+    """
+    Test the save/load operations for the utility report.
+
+    :param utility_report: the computed report fixture
+    :return: *None*
+    """
+    df_summary = utility_report.summary()
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        dir = Path(temp_dir)
+        utility_report.save(savepath=temp_dir, filename="report")  # save
+        new_report = UtilityReport(report_filepath=dir / "report.pkl")  # load
+
+        assert df_summary.equals(
+            new_report.summary()
+        )  # check the content of the new report

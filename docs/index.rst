@@ -78,6 +78,7 @@ Current Features
    - Reidentification metrics
       + Distance to Closest Record
       + Nearest Neighbor Distance Ratio
+* Metareport to compare several synthetic datasets with respect to the metrics
 
 See the documentation of each component in :ref:`about` for more details.
 
@@ -118,16 +119,24 @@ The branch 'main' contains the latest development version.
 
 Quickstart
 ==========
-To get started, we created three notebooks to guide you through the generation of synthetic data,
-their associated utility report and the hyperparameters tuning.
-
-The notebooks are based on the `Breast Wisconsin Cancer WBCD dataset
-<https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Original%29>`_.
+To get started, we created 4 notebooks to guide you through the generation of synthetic data,
+their associated utility and privacy reports and the hyperparameters tuning.
 
 .. toctree::
    :maxdepth: 4
 
    notebooks/modules
+
+To get the average summary metrics results for both utility and privacy at once, see the combined report notebook.
+To compare several synthetic datasets with respect to a list of metrics, see the metareport notebook.
+
+.. toctree::
+   :maxdepth: 4
+
+   notebooks/modules_2
+
+The notebooks are based on the `Breast Wisconsin Cancer WBCD dataset
+<https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Original%29>`_.
 
 The original notebooks can be found in the
 `notebooks/ <https://github.com/CRCHUM-CITADEL/clover/tree/main/notebooks>`_ folder on Github.

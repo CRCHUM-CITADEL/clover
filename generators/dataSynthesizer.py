@@ -52,6 +52,7 @@ class DataSynthesizerGenerator(Generator):
         self._threshold = None
         self._epsilon = epsilon
         self._degree = degree
+        self._generator_filepath = generator_filepath
 
     def preprocess(self) -> None:
         """

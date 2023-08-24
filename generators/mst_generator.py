@@ -44,11 +44,6 @@ class MSTGenerator(Generator):
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
-        self._gen = (
-            None
-            if generator_filepath is None
-            else ustandard.load_pickle(filepath=generator_filepath)
-        )
         self._dataset = None
 
         # Privacy parameters
@@ -103,7 +98,9 @@ class MSTGenerator(Generator):
 
         self._gen = MSTClass(self._dataset, self._epsilon, self._delta)
 
-        ustandard.save_pickle(obj=self._gen, path=save_path, filename=MSTGenerator.name)
+        ustandard.save_pickle(
+            obj=self._gen, folderpath=save_path, filename=MSTGenerator.name, date=True
+        )
 
     def display(self) -> None:
         """

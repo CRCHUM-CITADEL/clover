@@ -1,11 +1,12 @@
 # Standard library
-from typing import List, Tuple
+from typing import List, Tuple, Union
+from pathlib import Path
 
 # 3rd party packages
 import pandas as pd
 
 # Local packages
-from ..report import Report
+from ..base import Report
 from . import univariate as uni
 from . import bivariate as biv
 from . import population as pop
@@ -26,6 +27,7 @@ class UtilityReport(Report):
         Must be specified by the user since the variable type might be equivocal.
     :param figsize: the size of the figure in inches (width, height)
     :param random_state: for reproducibility purposes
+    :param report_filepath: the path of a computed report if available
     :param metrics: list of the metrics to compute. If not specified, all the metrics are computed.
     :param cross_learning: the Cross Learning metrics can slow down the report computation.
         Set to *False* to exclude these metrics. Not taken into account if a list of metrics is provided.
@@ -44,12 +46,13 @@ class UtilityReport(Report):
 
     def __init__(
         self,
-        dataset_name: str,
-        df_real: dict[str, pd.DataFrame],
-        df_synthetic: dict[str, pd.DataFrame],
-        metadata: dict,
+        dataset_name: str = None,
+        df_real: dict[str, pd.DataFrame] = None,
+        df_synthetic: dict[str, pd.DataFrame] = None,
+        metadata: dict = None,
         figsize: Tuple[float, float] = (8, 6),
         random_state: int = 0,
+        report_filepath: Union[Path, str] = None,
         metrics: List[str] = None,
         cross_learning: bool = True,
         num_repeat: int = 20,
@@ -58,7 +61,13 @@ class UtilityReport(Report):
         alpha: float = 0.05,
     ):
         super().__init__(
-            dataset_name, df_real, df_synthetic, metadata, figsize, random_state
+            dataset_name,
+            df_real,
+            df_synthetic,
+            metadata,
+            figsize,
+            random_state,
+            report_filepath,
         )
 
         # Metrics instantiation with their respective parameters
@@ -68,15 +77,17 @@ class UtilityReport(Report):
             "num_repeat": num_repeat,
             "use_gpu": use_gpu,
         }
-        self._init_metrics(metrics=metrics, params=params)
 
-        # Remove Cross Learning metrics that can slow down the report computation
-        if metrics is None and not cross_learning:
-            self._metrics = [
-                metric
-                for metric in self._metrics
-                if not isinstance(metric, pop.CrossLearning)
-            ]
+        if report_filepath is None:
+            self._init_metrics(metrics=metrics, params=params)
+
+            # Remove Cross Learning metrics that can slow down the report computation
+            if metrics is None and not cross_learning:
+                self._metrics = [
+                    metric
+                    for metric in self._metrics
+                    if not isinstance(metric, pop.CrossLearning)
+                ]
 
         # Personalized size of the figures
         figsize_longer = (figsize[0], figsize[1] * 1.5)

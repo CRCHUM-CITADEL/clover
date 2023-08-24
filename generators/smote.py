@@ -36,11 +36,6 @@ class SmoteGenerator(Generator):
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
-        self._gen = (
-            None
-            if generator_filepath is None
-            else ustandard.load_pickle(filepath=generator_filepath)
-        )
         self._params = self._gen.get_params() if self._gen is not None else None
 
         self._prediction_type = (
@@ -93,7 +88,7 @@ class SmoteGenerator(Generator):
             self._gen = SMOTEN(**self._params)
 
         ustandard.save_pickle(
-            obj=self._gen, path=save_path, filename=SmoteGenerator.name
+            obj=self._gen, folderpath=save_path, filename=SmoteGenerator.name, date=True
         )
 
     def display(self) -> None:

@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pandas as pd  # 3rd party packages
 
+import utils.standard as ustandard  # local
+
 
 class Generator(metaclass=ABCMeta):
     """
@@ -41,7 +43,11 @@ class Generator(metaclass=ABCMeta):
         self._df = df
         self._metadata = metadata
         self._random_state = random_state
-        self._generator_filepath = generator_filepath
+        self._gen = (
+            None
+            if generator_filepath is None
+            else ustandard.load_pickle(filepath=generator_filepath)
+        )
 
     @abstractmethod
     def preprocess(self) -> None:

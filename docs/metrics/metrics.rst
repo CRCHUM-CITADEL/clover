@@ -29,6 +29,14 @@ metrics.report module
    :undoc-members:
    :show-inheritance:
 
+metrics.metareport module
+-------------------------
+
+.. automodule:: metrics.metareport
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

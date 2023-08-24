@@ -37,11 +37,8 @@ class SynthpopGenerator(Generator):
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
-        self._gen = (
-            Synthpop(visit_sequence=variables_order, seed=random_state)
-            if generator_filepath is None
-            else ustandard.load_pickle(filepath=generator_filepath)
-        )
+        if generator_filepath is None:
+            self._gen = Synthpop(visit_sequence=variables_order, seed=random_state)
         self._df = self._df.copy()
         self._dtypes = None
         self._original_dtypes = df.dtypes.to_dict()
@@ -76,7 +73,10 @@ class SynthpopGenerator(Generator):
             self._gen.fit(self._df, self._dtypes)
 
         ustandard.save_pickle(
-            obj=self._gen, path=save_path, filename=SynthpopGenerator.name
+            obj=self._gen,
+            folderpath=save_path,
+            filename=SynthpopGenerator.name,
+            date=True,
         )
 
     def display(self) -> None:

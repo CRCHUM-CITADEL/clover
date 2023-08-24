@@ -112,6 +112,7 @@ class DistanceToClosestRecord(Metric):
         )
         if real.shape[1] == 0:
             return {}
+        synth = synth[real.columns]  # gower needs the same order
 
         # Compute the gower distance (adapted to mixed data)
         cat_features = [  # boolean array instead of column names

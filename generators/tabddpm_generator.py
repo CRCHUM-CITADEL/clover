@@ -51,12 +51,6 @@ class TabDDPMGenerator(Generator):
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
-        self._gen = (
-            None
-            if generator_filepath is None
-            else ustandard.load_pickle(filepath=generator_filepath)
-        )
-
         if generator_filepath is None:
             # Load the default configurations
             self._config = tabddpm_lib.load_config(
@@ -197,7 +191,10 @@ class TabDDPMGenerator(Generator):
             )
 
         ustandard.save_pickle(
-            obj=self._gen, path=save_path, filename=TabDDPMGenerator.name
+            obj=self._gen,
+            folderpath=save_path,
+            filename=TabDDPMGenerator.name,
+            date=True,
         )
 
     def display(self) -> None:

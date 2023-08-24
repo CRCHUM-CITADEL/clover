@@ -73,7 +73,9 @@ def test_summary_report(privacy_report: PrivacyReport) -> None:
     """
     df_summary = privacy_report.summary()
 
-    assert df_summary.shape[1] == 6  # name, objective, min, max, submetric, value
+    assert (
+        df_summary.shape[1] == 7
+    )  # name, alias, objective, min, max, submetric, value
 
 
 def test_detailed_report(privacy_report: PrivacyReport) -> None:
@@ -96,3 +98,22 @@ def test_detailed_report(privacy_report: PrivacyReport) -> None:
     )  # no figure if there is nothing to report
 
     assert num_figures >= thresh
+
+
+def test_save_load_report(privacy_report: PrivacyReport) -> None:
+    """
+    Test the save/load operations for the privacy report.
+
+    :param privacy_report: the computed report fixture
+    :return: *None*
+    """
+    df_summary = privacy_report.summary()
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        dir = Path(temp_dir)
+        privacy_report.save(savepath=temp_dir, filename="report")  # save
+        new_report = PrivacyReport(report_filepath=dir / "report.pkl")  # load
+
+        assert df_summary.equals(
+            new_report.summary()
+        )  # check the content of the new report

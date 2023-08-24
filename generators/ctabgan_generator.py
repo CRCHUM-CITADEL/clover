@@ -81,12 +81,6 @@ class CTABGANGenerator(Generator):
             "epochs": epochs,
         }
 
-        self._gen = (
-            None
-            if generator_filepath is None
-            else ustandard.load_pickle(filepath=generator_filepath)
-        )
-
     def preprocess(self) -> None:
         """
         Creation of the DataPrep object from the CTAB-GAN plus code. This is used for both pre-processing
@@ -129,7 +123,10 @@ class CTABGANGenerator(Generator):
         )
 
         ustandard.save_pickle(
-            obj=self._gen, path=save_path, filename=CTABGANGenerator.name
+            obj=self._gen,
+            folderpath=save_path,
+            filename=CTABGANGenerator.name,
+            date=True,
         )
 
     def sample(self, save_path: Union[Path, str], num_samples: int = 1) -> pd.DataFrame:

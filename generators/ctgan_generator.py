@@ -98,7 +98,7 @@ class CTGANGenerator(Generator):
         self._gen.fit(self._df)
 
         ustandard.save_pickle(
-            obj=self._gen, path=save_path, filename=CTGANGenerator.name
+            obj=self._gen, folderpath=save_path, filename=CTGANGenerator.name, date=True
         )
 
     def display(self) -> None:

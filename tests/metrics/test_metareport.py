@@ -65,8 +65,8 @@ def test_summary_report(metareport: Metareport) -> None:
     df_summary = metareport.summary()
 
     assert (
-        df_summary.shape[0] == 2  # the number of datasets to compare
-        and df_summary.shape[1] == 1  # the number of metrics computed
+        df_summary.shape[0] == 1  # the number of metrics computed
+        and df_summary.shape[1] == 2  # the number of datasets to compare
     )
 
 

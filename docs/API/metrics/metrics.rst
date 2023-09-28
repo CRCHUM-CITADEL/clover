@@ -1,46 +1,39 @@
-metrics package
-===============
+*******
+metrics
+*******
 
 Subpackages
------------
+===========
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
 
    metrics.utility
    metrics.privacy
 
 Submodules
-----------
+==========
 
-metrics.base module
--------------------
+metrics.base
+------------
 
 .. automodule:: metrics.base
    :members:
    :undoc-members:
    :show-inheritance:
 
-metrics.report module
----------------------
+metrics.report
+--------------
 
 .. automodule:: metrics.report
    :members:
    :undoc-members:
    :show-inheritance:
 
-metrics.metareport module
--------------------------
+metrics.metareport
+------------------
 
 .. automodule:: metrics.metareport
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: metrics
    :members:
    :undoc-members:
    :show-inheritance:

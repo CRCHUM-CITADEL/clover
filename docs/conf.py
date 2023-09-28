@@ -41,8 +41,22 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
+html_theme_options = {
+    "light_css_variables": {
+        "color-brand-primary": "#7C4DFF",
+        "color-brand-content": "#7C4DFF",
+        "color-problematic": "#00b377",
+    },
+    "dark_css_variables": {
+        "color-brand-primary": "#926bff",
+        "color-brand-content": "#926bff",
+        "color-problematic": "#00b377",
+    },
+}
 html_static_path = []
+pygments_style = "sas"
+pygments_dark_style = "monokai"
 
 
 # Sorting parameter ('alphabetical' is default, 'groupwise' for member type and 'bysource' for source order)

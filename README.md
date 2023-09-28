@@ -38,7 +38,7 @@ We shall keep the repository private during the first stage of development.
 The documentation is therefore not yet available as a web page. To browse it, please follow the following steps:
 
 * `git clone git@github.com:CRCHUM-CITADEL/clover.git` or `git clone https://github.com/CRCHUM-CITADEL/clover`
-* `git checkout gh-pages` (a new local branch will automatically be created from the remote `gh-pages` branch)
+* `git switch gh-pages` (a new local branch will automatically be created from the remote `gh-pages` branch)
 * open the file `index.html` in your browser to visualize the documentation home page
 
 Nb: The branch `gh-pages` is recreated each time the main branch is modified on Github.

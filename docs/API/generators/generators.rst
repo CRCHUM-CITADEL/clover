@@ -1,85 +1,74 @@
-generators package
-==================
+generators
+==========
 
-Submodules
-----------
-
-generators.base module
-----------------------
+generators.base
+---------------
 
 .. automodule:: generators.base
    :members:
    :undoc-members:
    :show-inheritance:
 
-generators.dataSynthesizer module
----------------------------------
+generators.dataSynthesizer
+--------------------------
 
 .. automodule:: generators.dataSynthesizer
    :members:
    :undoc-members:
    :show-inheritance:
 
-generators.synthpop module
---------------------------
+generators.synthpop
+-------------------
 
 .. automodule:: generators.synthpop_generator
    :members:
    :undoc-members:
    :show-inheritance:
 
-generators.smote module
------------------------
+generators.smote
+----------------
 
 .. automodule:: generators.smote
    :members:
    :undoc-members:
    :show-inheritance:
 
-generators.ctgan_generator module
----------------------------------
+generators.ctgan_generator
+--------------------------
 
 .. automodule:: generators.ctgan_generator
    :members:
    :undoc-members:
    :show-inheritance:
 
-generators.tvae_generator module
---------------------------------
+generators.tvae_generator
+-------------------------
 
 .. automodule:: generators.tvae_generator
    :members:
    :undoc-members:
    :show-inheritance:
 
-generators.ctabgan_generator module
------------------------------------
+generators.ctabgan_generator
+----------------------------
 
 .. automodule:: generators.ctabgan_generator
    :members:
    :undoc-members:
    :show-inheritance:
 
-generators.tabddpm_generator module
------------------------------------
+generators.tabddpm_generator
+----------------------------
 
 .. automodule:: generators.tabddpm_generator
    :members:
    :undoc-members:
    :show-inheritance:
 
-generators.mst_generator module
--------------------------------
+generators.mst_generator
+------------------------
 
 .. automodule:: generators.mst_generator
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: generators
    :members:
    :undoc-members:
    :show-inheritance:

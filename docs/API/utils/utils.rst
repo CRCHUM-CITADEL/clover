@@ -1,61 +1,50 @@
-utils package
-=============
+utils
+=====
 
-Submodules
+utils.draw
 ----------
-
-utils.draw module
------------------
 
 .. automodule:: utils.draw
    :members:
    :undoc-members:
    :show-inheritance:
 
-utils.learning module
----------------------
+utils.learning
+--------------
 
 .. automodule:: utils.learning
    :members:
    :undoc-members:
    :show-inheritance:
 
-utils.optimization module
--------------------------
+utils.optimization
+------------------
 
 .. automodule:: utils.optimization
    :members:
    :undoc-members:
    :show-inheritance:
 
-utils.preprocessing module
---------------------------
+utils.preprocessing
+-------------------
 
 .. automodule:: utils.preprocessing
    :members:
    :undoc-members:
    :show-inheritance:
 
-utils.standard module
----------------------
+utils.standard
+--------------
 
 .. automodule:: utils.standard
    :members:
    :undoc-members:
    :show-inheritance:
 
-utils.stats module
-------------------
+utils.stats
+-----------
 
 .. automodule:: utils.stats
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: utils
    :members:
    :undoc-members:
    :show-inheritance:

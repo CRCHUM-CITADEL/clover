@@ -24,6 +24,7 @@ class Synthpop:
         numtocat=None,
         catgroups=None,
         seed=None,
+        **kwargs,
     ):
         # initialise the validator and processor
         self.validator = Validator(self)
@@ -40,6 +41,7 @@ class Synthpop:
         self.numtocat = numtocat
         self.catgroups = catgroups
         self.seed = seed
+        self.args = kwargs
 
         # check init
         self.validator.check_init()
@@ -82,6 +84,7 @@ class Synthpop:
                 smoothing=self.smoothing[col],
                 proper=self.proper,
                 random_state=self.seed,
+                **self.args,
             )
             # fit the method
             col_predictors = self.predictor_matrix_columns[

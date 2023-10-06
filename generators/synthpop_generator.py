@@ -23,6 +23,9 @@ class SynthpopGenerator(Generator):
     :param random_state: for reproducibility purposes
     :param generator_filepath: the path of the generator to sample from if it exists
     :param variable_order: the order of the variable to construct the sequential trees
+    :param min_samples_leaf: the minimum number of samples required in a leaf to expand the tree further
+    :param max_depth: the maximum depth of the tree. If None, the tree expands until all leaves are pure or
+        until they contain less than min_samples_leaf samples
     """
 
     name = "Synthpop"
@@ -34,11 +37,18 @@ class SynthpopGenerator(Generator):
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         variables_order: List[str] = None,
+        min_samples_leaf: int = 5,
+        max_depth: int = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
         if generator_filepath is None:
-            self._gen = Synthpop(visit_sequence=variables_order, seed=random_state)
+            self._gen = Synthpop(
+                visit_sequence=variables_order,
+                seed=random_state,
+                minibucket=min_samples_leaf,
+                max_depth=max_depth,
+            )
         self._df = self._df.copy()
         self._dtypes = None
         self._original_dtypes = df.dtypes.to_dict()

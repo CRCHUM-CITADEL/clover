@@ -63,7 +63,12 @@ class Metareport:
             for name in synthetic_data:
                 # Load the synthetic dataset and split it into train/test
                 df_synthetic = pd.read_csv(synthetic_data[name])
-                df_synth = {"train": df_synthetic.sample(frac=0.8, replace=False)}
+                assert len(df_synthetic) == len(df_real["train"]) + len(
+                    df_real["test"]
+                ), "The number of synthetic data samples must be the same that the real train and test sets gathered"
+                df_synth = {
+                    "train": df_synthetic.sample(n=len(df_real["train"]), replace=False)
+                }
                 df_synth["test"] = df_synthetic.drop(
                     df_synth["train"].index
                 ).reset_index(drop=True)

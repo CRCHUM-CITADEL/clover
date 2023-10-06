@@ -15,6 +15,7 @@ class CARTMethod(Method):
         smoothing=False,
         proper=False,
         minibucket=5,
+        max_depth=None,
         random_state=None,
         *args,
         **kwargs
@@ -27,11 +28,15 @@ class CARTMethod(Method):
 
         if self.dtype in CAT_COLS_DTYPES:
             self.cart = DecisionTreeClassifier(
-                min_samples_leaf=self.minibucket, random_state=self.random_state
+                min_samples_leaf=self.minibucket,
+                max_depth=max_depth,
+                random_state=self.random_state,
             )
         if self.dtype in NUM_COLS_DTYPES:
             self.cart = DecisionTreeRegressor(
-                min_samples_leaf=self.minibucket, random_state=self.random_state
+                min_samples_leaf=self.minibucket,
+                max_depth=max_depth,
+                random_state=self.random_state,
             )
 
     def fit(self, X_df, y_df):

@@ -88,7 +88,7 @@ class Report:
                 if path.exists():
                     self._reports[name] = report(report_filepath=path)
 
-            assert len(self._reports) > 0
+        assert len(self._reports) > 0
 
     @classmethod
     def get_available_metrics(cls) -> list[str]:

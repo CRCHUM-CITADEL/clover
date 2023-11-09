@@ -58,9 +58,3 @@ class PrivacyReport(Report):
         params = {"random_state": None, "sampling_frac": sampling_frac}
         if report_filepath is None:
             self._init_metrics(metrics=metrics, params=params)
-
-        # Personalized size of the figures
-        self._figsize[reid.DistanceToClosestRecord.name] = (
-            figsize[0] * 1.5,
-            figsize[1] * 1.5,
-        )

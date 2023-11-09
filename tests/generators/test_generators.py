@@ -55,10 +55,12 @@ def test_generation(
             "random_state": 0,
             "generator_filepath": None,
             "variables_order": None,  # synthpop
+            "min_samples_leaf": 5,  # synthpop
+            "max_depth": None,  # synthpop
             "candidate_keys": None,  # datasynthesizer
             "epsilon": 1,  # datasynthesizer / MST
             "degree": 2,  # datasynthesizer
-            "k_neighbors": None,  # smote
+            "k_neighbors": 5,  # smote
             "epochs": 1,  # tvae / ctgan / ctabganplus
             "batch_size": 100,  # tvae / ctgan / tabDDPM / ctabganplus
             "compress_dims": (249, 249),  # tvae

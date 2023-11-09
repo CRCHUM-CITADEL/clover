@@ -587,6 +587,9 @@ def histplot_plot(
     title: str,
     value_name: str = "",
     xrotation: bool = True,
+    stat: str = "count",
+    bins: any = "auto",
+    binrange: Tuple[float] = None,
     counts: bool = False,
     ax: Axes = None,
 ) -> Axes:
@@ -597,6 +600,9 @@ def histplot_plot(
     :param title: the title of the plot
     :param value_name: the name of the value axis
     :param xrotation: if True, the xlabels are rotated
+    :param stat: the aggregate statistic to compute in each bin
+    :param bins: the number of bins
+    :param binrange: the upper and lower bounds to include in the bins
     :param counts: display counts on top of the bars
     :param ax: the *Axes* object to draw the plot onto, otherwise use the current *Axes*
     :return: the *Axes* object with the plot drawn into it
@@ -604,10 +610,12 @@ def histplot_plot(
 
     axis = sns.histplot(
         x=s,
-        bins="auto",
+        bins=bins,
+        binrange=binrange,
         alpha=0.5,
         color=sns.color_palette(config.SEABORN_PALETTE, n_colors=10).as_hex()[0],
         ax=ax,
+        stat=stat,
     )
 
     # Display counts on top of the bars

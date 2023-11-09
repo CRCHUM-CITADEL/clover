@@ -65,16 +65,40 @@ class DistanceToClosestRecord(Metric):
 
         submetrics = [
             {
-                "submetric": "dcr_5th_percent_synthreal",
+                "submetric": "dcr_5th_percent_synthreal_train",
                 "min": 0,
                 "max": np.inf,
                 "objective": "max",
             },
             {
-                "submetric": "nndr_5th_percent_synthreal",
+                "submetric": "nndr_5th_percent_synthreal_train",
                 "min": 0,
                 "max": 1,
                 "objective": "max",
+            },
+            {
+                "submetric": "dcr_5th_percent_synthreal_control",
+                "min": 0,
+                "max": np.inf,
+                "objective": "max",
+            },
+            {
+                "submetric": "nndr_5th_percent_synthreal_control",
+                "min": 0,
+                "max": 1,
+                "objective": "max",
+            },
+            {
+                "submetric": "ratio_match_synthreal_train",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            },
+            {
+                "submetric": "ratio_match_synthreal_control",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
             },
         ]
         return submetrics
@@ -104,70 +128,109 @@ class DistanceToClosestRecord(Metric):
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
 
         # Sample a fraction of the datasets for computation performance
-        real = df_real["test"].sample(
+        real_train = df_real["train"].sample(
+            n=int(self._sampling_frac * len(df_real["test"])),
+            replace=False,
+            ignore_index=True,
+        )
+        real_control = df_real["test"].sample(
             frac=self._sampling_frac, replace=False, ignore_index=True
         )
         synth = df_synthetic["test"].sample(
             frac=self._sampling_frac, replace=False, ignore_index=True
         )
-        if real.shape[1] == 0:
+        if real_train.shape[1] == 0:
             return {}
-        synth = synth[real.columns]  # gower needs the same order
+        synth = synth[real_train.columns]  # gower needs the same order
 
         # Compute the gower distance (adapted to mixed data)
         cat_features = [  # boolean array instead of column names
-            True if col in metadata["categorical"] else False for col in real.columns
+            True if col in metadata["categorical"] else False
+            for col in real_train.columns
         ]
+
         #   Convert numerical columns to float (otherwise error in the numpy divide)
-        real[metadata["continuous"]] = real[metadata["continuous"]].astype("float")
+        real_train[metadata["continuous"]] = real_train[metadata["continuous"]].astype(
+            "float"
+        )
+        real_control[metadata["continuous"]] = real_control[
+            metadata["continuous"]
+        ].astype("float")
         synth[metadata["continuous"]] = synth[metadata["continuous"]].astype("float")
 
-        pairwise_gower_synthreal = gower.gower_matrix(
-            synth, real, cat_features=cat_features
-        )
-        pairwise_gower_real = gower.gower_matrix(real, cat_features=cat_features)
-        pairwise_gower_synth = gower.gower_matrix(synth, cat_features=cat_features)
+        def pipeline(
+            data,
+            to_compare=None,
+        ):
+            ind = 1 if to_compare is None else 0
 
-        # Keep only the 2 smallest distances (first column is 0 for the within real/synth)
-        dist_synthreal = np.sort(pairwise_gower_synthreal, axis=1)[:, 0:2]
-        dist_real = np.sort(pairwise_gower_real, axis=1)[:, 1:3]
-        dist_synth = np.sort(pairwise_gower_synth, axis=1)[:, 1:3]
+            # Compute Gower distance
+            pairwise_gower = gower.gower_matrix(
+                data_x=data, data_y=to_compare, cat_features=cat_features
+            )
 
-        # Divide the smallest by the second smallest for NNDR
-        ratio_synthreal = np.divide(
-            dist_synthreal[:, 0],
-            dist_synthreal[:, 1],
-            out=np.zeros_like(dist_synthreal[:, 0]),
-            where=dist_synthreal[:, 1] != 0,
-        )
-        ratio_real = np.divide(
-            dist_real[:, 0],
-            dist_real[:, 1],
-            out=np.zeros_like(dist_real[:, 0]),
-            where=dist_real[:, 1] != 0,
-        )
-        ratio_synth = np.divide(
-            dist_synth[:, 0],
-            dist_synth[:, 1],
-            out=np.zeros_like(dist_synth[:, 0]),
-            where=dist_synth[:, 1] != 0,
-        )
+            # Keep only the 2 smallest distances (first column is 0 for the within real/synth)
+            dist = np.sort(pairwise_gower, axis=1)[:, ind + 0 : ind + 2]
 
-        # Compute the 5th percentile for the average results
-        dcr_percent_synthreal = np.percentile(dist_synthreal[:, 0], q=5)
-        nndr_percent_synthreal = np.percentile(ratio_synthreal, q=5)
+            # Divide the smallest by the second smallest for NNDR
+            ratio = np.divide(
+                dist[:, 0],
+                dist[:, 1],
+                out=np.zeros_like(dist[:, 0]),
+                where=dist[:, 1] != 0,
+            )
+
+            # Compute the 5th percentile for the average results
+            dcr_percent = np.percentile(dist[:, 0], q=5)
+            nndr_percent = np.percentile(ratio, q=5)
+
+            return dist, ratio, dcr_percent, nndr_percent
+
+        (
+            dist_synthreal_train,
+            ratio_synthreal_train,
+            dcr_percent_synthreal_train,
+            nndr_percent_synthreal_train,
+        ) = pipeline(synth, real_train)
+
+        (
+            dist_synthreal_control,
+            ratio_synthreal_control,
+            dcr_percent_synthreal_control,
+            nndr_percent_synthreal_control,
+        ) = pipeline(synth, real_control)
+
+        dist_real_train, ratio_real_train, _, _ = pipeline(real_train)
+        dist_real_control, ratio_real_control, _, _ = pipeline(real_control)
+        dist_synth, ratio_synth, _, _ = pipeline(synth)
+
+        # Count the match ratio
+        ratio_match_synthreal_train = np.sum(dist_synthreal_train[:, 0] < 0.01) / len(
+            dist_synthreal_train
+        )
+        ratio_match_synthreal_control = np.sum(
+            dist_synthreal_control[:, 0] < 0.01
+        ) / len(dist_synthreal_control)
 
         res = {
             "average": {
-                "dcr_5th_percent_synthreal": dcr_percent_synthreal,
-                "nndr_5th_percent_synthreal": nndr_percent_synthreal,
+                "dcr_5th_percent_synthreal_train": dcr_percent_synthreal_train,
+                "nndr_5th_percent_synthreal_train": nndr_percent_synthreal_train,
+                "dcr_5th_percent_synthreal_control": dcr_percent_synthreal_control,
+                "nndr_5th_percent_synthreal_control": nndr_percent_synthreal_control,
+                "ratio_match_synthreal_train": ratio_match_synthreal_train,
+                "ratio_match_synthreal_control": ratio_match_synthreal_control,
             },
             "detailed": {
-                "dcr_synthreal": dist_synthreal[:, 0],
-                "dcr_real": dist_real[:, 0],
+                "dcr_synthreal_train": dist_synthreal_train[:, 0],
+                "dcr_synthreal_control": dist_synthreal_control[:, 0],
+                "dcr_real_train": dist_real_train[:, 0],
+                "dcr_real_control": dist_real_control[:, 0],
                 "dcr_synth": dist_synth[:, 0],
-                "nndr_synthreal": ratio_synthreal,
-                "nndr_real": ratio_real,
+                "nndr_synthreal_train": ratio_synthreal_train,
+                "nndr_synthreal_control": ratio_synthreal_control,
+                "nndr_real_train": ratio_real_train,
+                "nndr_real_control": ratio_real_control,
                 "nndr_synth": ratio_synth,
             },
         }
@@ -187,16 +250,81 @@ class DistanceToClosestRecord(Metric):
         assert all(
             key in report
             for key in [
-                "dcr_synthreal",
-                "dcr_real",
+                "dcr_synthreal_train",
+                "dcr_synthreal_control",
+                "dcr_real_train",
+                "dcr_real_control",
                 "dcr_synth",
-                "nndr_synthreal",
-                "nndr_real",
+                "nndr_synthreal_train",
+                "nndr_synthreal_control",
+                "nndr_real_train",
+                "nndr_real_control",
                 "nndr_synth",
             ]
         )
 
-        fig, axes = plt.subplots(
+        def plot_dcr_nndr(name, title, axes, synthetic=False):
+            submetric = ["dcr", "nndr"]
+            titles = [
+                "Gower Distance to Closest Record",
+                "Nearest Neighbour Gower Distance Ratio",
+            ]
+
+            for i in range(2):
+                bounds_values = np.concatenate(
+                    (
+                        report[f"{submetric[i]}_{name}_train"],
+                        report[f"{submetric[i]}_{name}_control"],
+                    )
+                )
+                if synthetic:
+                    bounds_values = np.concatenate(
+                        (bounds_values, report[f"{submetric[i]}_synth"])
+                    )
+                mini = np.min(bounds_values)
+                maxi = np.max(bounds_values)
+
+                udraw.histplot_plot(
+                    s=pd.Series(report[f"{submetric[i]}_{name}_train"]),
+                    title="",
+                    value_name=titles[i],
+                    stat="proportion",
+                    bins=10,
+                    binrange=(mini, maxi),
+                    xrotation=False,
+                    ax=axes[i][0],
+                )
+
+                udraw.histplot_plot(
+                    s=pd.Series(report[f"{submetric[i]}_{name}_control"]),
+                    title="",
+                    value_name=titles[i],
+                    stat="proportion",
+                    bins=10,
+                    binrange=(mini, maxi),
+                    xrotation=False,
+                    ax=axes[i][1],
+                )
+
+                if synthetic:
+                    udraw.histplot_plot(
+                        s=pd.Series(report[f"{submetric[i]}_synth"]),
+                        title="",
+                        value_name="",
+                        stat="proportion",
+                        bins=10,
+                        binrange=(mini, maxi),
+                        xrotation=False,
+                        ax=axes_real_synth[i][2],
+                    )
+
+            axes[0][0].set_title(title + "Train")
+            axes[0][1].set_title(title + "Control")
+            if synthetic:
+                axes_real_synth[0][2].set_title("Synthetic")
+
+        # Synthreal 2x2 plot
+        _, axes_synthreal = plt.subplots(
             ncols=2,
             nrows=2,
             figsize=figsize,
@@ -204,31 +332,22 @@ class DistanceToClosestRecord(Metric):
             sharex="row",
             sharey="row",
         )
+        plt.suptitle("Synthetic to real")
+        plot_dcr_nndr(name="synthreal", title="", axes=axes_synthreal)
 
-        submetric = ["dcr", "nndr"]
-        titles = [
-            "Gower Distance to Closest Record",
-            "Nearest Neighbour Gower Distance Ratio",
-        ]
+        # Real (2x2) and synthetic 2x3 plot
+        _, axes_real_synth = plt.subplots(
+            ncols=3,
+            nrows=2,
+            figsize=figsize,
+            layout="constrained",
+            sharex="row",
+            sharey="row",
+        )
+        plt.suptitle("Within real and synthetic datasets")
+        plot_dcr_nndr(
+            name="real", title="Real - ", axes=axes_real_synth, synthetic=True
+        )
 
-        for i in range(2):
-            udraw.histplot_plot(
-                s=pd.Series(report[f"{submetric[i]}_synthreal"]),
-                title="",
-                value_name=titles[i],
-                xrotation=False,
-                ax=axes[i][0],
-            )
-            axes[i][0].legend(["Synthetic to real"])
-
-            udraw.histplot_hue(
-                s=pd.Series(report[f"{submetric[i]}_real"]),
-                s_nested=pd.Series(report[f"{submetric[i]}_synth"]),
-                original_name="Real",
-                nested_name="Synthetic",
-                hue_name="Within",
-                title="",
-                value_name=titles[i],
-                xrotation=False,
-                ax=axes[i][1],
-            )
+        axes_real_synth[0][0].set_xlabel("")
+        axes_real_synth[1][0].set_xlabel("")

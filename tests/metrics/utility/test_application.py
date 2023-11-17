@@ -86,7 +86,13 @@ def application_metrics_results(
     metadata["variable_to_predict"] = dependent_var
 
     # Instance parameters
-    d = {"random_state": 0, "num_repeat": 1, "use_gpu": False}
+    d = {
+        "random_state": 0,
+        "num_repeat": 1,
+        "num_kfolds": 2,
+        "num_optuna_trials": 1,
+        "use_gpu": False,
+    }
 
     # Select only the expected instance parameters
     args = getfullargspec(metric_class).args[1:]  # remove self
@@ -122,6 +128,7 @@ def test_application_metrics_summary(
         diff_to_objective = abs(
             scores[submetric["submetric"]] - submetric[submetric["objective"]]
         )
+
         if which_data == "different_datasets":
             assert diff_to_objective > 0.01
         else:

@@ -56,8 +56,9 @@ def utility_report(
         df_real=df_wbcd_mix,
         df_synthetic=df_mock_wbcd_mix,
         metadata=metadata,
-        num_repeat=2,
-        num_folds=10,
+        num_repeat=1,
+        num_kfolds=3,
+        num_optuna_trials=1,
         alpha=0.05,
     )
 

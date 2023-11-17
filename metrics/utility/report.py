@@ -32,7 +32,8 @@ class UtilityReport(Report):
     :param cross_learning: the Cross Learning metrics can slow down the report computation.
         Set to *False* to exclude these metrics. Not taken into account if a list of metrics is provided.
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
-    :param num_folds: the scores are averaged across the number of folds to account for split randomness
+    :param num_kfolds: the number of folds to tune the hyperparameters of the classifier
+    :param num_optuna_trials: the number of trials of the optimization process for tuning hyperparameters
     :param alpha: the significance level for the chi square test
     """
 
@@ -56,7 +57,8 @@ class UtilityReport(Report):
         metrics: List[str] = None,
         cross_learning: bool = True,
         num_repeat: int = 20,
-        num_folds: int = 10,  # TODO: add a loop
+        num_kfolds: int = 5,
+        num_optuna_trials: int = 20,
         use_gpu: bool = False,
         alpha: float = 0.05,
     ):
@@ -75,6 +77,8 @@ class UtilityReport(Report):
             "random_state": None,
             "alpha": alpha,
             "num_repeat": num_repeat,
+            "num_kfolds": num_kfolds,
+            "num_optuna_trials": num_optuna_trials,
             "use_gpu": use_gpu,
         }
 

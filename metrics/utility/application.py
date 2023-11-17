@@ -8,15 +8,18 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import (
-    OneHotEncoder,
     LabelBinarizer,
     StandardScaler,
     LabelEncoder,
+    OneHotEncoder,
 )
 from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
 from sklearn.inspection import permutation_importance
 import xgboost as xgb
+import optuna
+
+optuna.logging.set_verbosity(optuna.logging.WARNING)
+
 
 # Local
 import utils.draw as udraw
@@ -42,17 +45,13 @@ class Prediction(Metric, metaclass=ABCMeta):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar score_name: the name of the score
     :vartype score_name: str
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
+    :param num_kfolds: the number of folds to tune the hyperparameters of the classifier
+    :param num_optuna_trials: the number of trials of the optimization process for tuning hyperparameters
     :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
@@ -72,22 +71,24 @@ class Prediction(Metric, metaclass=ABCMeta):
         self,
         random_state: int = None,
         num_repeat: int = 10,
+        num_kfolds: int = 5,
+        num_optuna_trials: int = 20,
         use_gpu: bool = False,
     ):
         super().__init__(random_state)
         self._num_repeat = num_repeat
+        self._num_kfolds = num_kfolds
+        self._num_optuna_trials = num_optuna_trials
         self._use_gpu = use_gpu
 
-    @classmethod
     def _learning(
-        cls,
+        self,
         x_reference: pd.DataFrame,
         y_reference: np.ndarray,
         x_comparative: pd.DataFrame,
         y_comparative: np.ndarray,
         continuous_cols: List[str],
         categorical_cols: List[str],
-        use_gpu: bool,
     ) -> dict:
         """
         Train a classifier and score the predictions for the test sets from the reference and comparative inputs.
@@ -98,7 +99,6 @@ class Prediction(Metric, metaclass=ABCMeta):
         :param y_comparative: the comparative ground truth
         :param continuous_cols: the continuous columns
         :param categorical_cols: the categorical columns
-        :param use_gpu: flag to use GPU computation power to accelerate the learning
         :return: a dictionary containing the average scores **score_reference** and **score_comparative** on k-folds,
           the **best_model** and the testing sets **x_test_best_model** and **y_test_best_model**
           used for the best model
@@ -110,8 +110,8 @@ class Prediction(Metric, metaclass=ABCMeta):
                 ("continuous", StandardScaler(), continuous_cols),
                 (
                     "categorical",
-                    OneHotEncoder(
-                        # drop="first", not used since the first category and the unknown would be the same.
+                    # "passthrough",  # catboost has its own way to handly categorical variables
+                    OneHotEncoder(  # drop first not used since the first category and the unknown would be the same.
                         categories=[
                             x_reference[cat].unique() for cat in categorical_cols
                         ],
@@ -123,42 +123,57 @@ class Prediction(Metric, metaclass=ABCMeta):
             verbose_feature_names_out=False,
         )
 
-        if cls.name == "Regression":
-            xgbPredictor = xgb.XGBRegressor
-            objective = "reg:squarederror"
+        if self.__class__.name == "Regression":
+            xgboostPredictor = xgb.XGBRegressor
+            loss_function = "reg:squarederror"
+            scoring_cv = "neg_root_mean_squared_error"
+            refit_function = ulearning.refit_rmse_score
         else:
-            xgbPredictor = xgb.XGBClassifier
-            objective = (
-                "multi:softprob"
+            xgboostPredictor = xgb.XGBClassifier
+            loss_function = (
+                "multi:softmax"
                 if len(np.unique(y_reference)) > 2
                 else "binary:logistic"
             )
+            scoring_cv = "roc_auc_ovo" if len(np.unique(y_reference)) > 2 else "roc_auc"
+            refit_function = ulearning.refit_auc_score
 
-        model_params = {
-            "n_estimators": 100,
-            "eta": 0.1,
-            "tree_method": "auto" if not use_gpu else "gpu_hist",
-            "objective": objective,
-        }
-
-        pipe = Pipeline(
-            steps=[
-                ("preprocessing", preprocessing),
-                ("xgb", xgbPredictor(**model_params)),
-            ]
+        pipeline = lambda trial: ulearning.pipeline_prediction(
+            trial,
+            predictor=xgboostPredictor,
+            preprocessing=preprocessing,
+            loss_function=loss_function,
+            use_gpu=self._use_gpu,
         )
-        scores, _ = ulearning.train_predict(
-            pipeline=pipe,
-            x_train=x_reference,
+        objective = lambda trial: ulearning.objective_cross_val(
+            trial,
+            pipeline=pipeline,
+            df_train=x_reference,
             y_train=y_reference,
-            x_test_list=[x_comparative],
-            y_test_list=[y_comparative],
-            is_classification=cls.name == "Classification",
+            num_kfolds=self._num_kfolds,
+            scoring=scoring_cv,
+        )
+
+        study = optuna.create_study(
+            direction="maximize",
+            sampler=optuna.samplers.TPESampler(
+                n_startup_trials=10, seed=np.random.randint(1000)
+            ),
+        )
+        study.optimize(objective, n_trials=self._num_optuna_trials)
+
+        score, _, best_model = refit_function(
+            trial=study.best_trial,
+            pipeline=pipeline,
+            df_train=x_reference,
+            y_train=y_reference,
+            df_test=x_comparative,
+            y_test=y_comparative,
         )
 
         res = {
-            "score_real_test": scores[0],
-            "best_model": pipe,
+            "score_real_test": score,
+            "best_model": best_model,
         }
 
         return res
@@ -189,6 +204,10 @@ class Prediction(Metric, metaclass=ABCMeta):
         if var_pred is None:
             return {}
         if df_real["train"].shape[1] <= 1:
+            return {}
+        if var_pred in metadata["categorical"] and any(
+            df_real["train"][var_pred].value_counts() < self._num_kfolds
+        ):  # ensure that there is enough sample in each class
             return {}
 
         # Create x and y data
@@ -232,7 +251,8 @@ class Prediction(Metric, metaclass=ABCMeta):
 
         # Compute scores several times to account for randomness
         for i in range(self._num_repeat):
-            # Prediction MSE and AUC score on the test set with kfolds
+            state = np.random.get_state()
+            # Prediction RMSE and AUC score on the test set with kfolds
             real_dict = self._learning(
                 x_reference=df_train_real,
                 y_reference=y_train_real,
@@ -240,9 +260,11 @@ class Prediction(Metric, metaclass=ABCMeta):
                 y_comparative=y_test_real,
                 continuous_cols=cont_cols,
                 categorical_cols=cat_cols,
-                use_gpu=self._use_gpu,
             )
 
+            np.random.set_state(
+                state
+            )  # ensure that the results are identical for the same datasets
             synth_dict = self._learning(
                 x_reference=df_train_synth,
                 y_reference=y_train_synth,
@@ -250,16 +272,21 @@ class Prediction(Metric, metaclass=ABCMeta):
                 y_comparative=y_test_real,
                 continuous_cols=cont_cols,
                 categorical_cols=cat_cols,
-                use_gpu=self._use_gpu,
             )
 
             scores_real_real.append(real_dict["score_real_test"])
             scores_synth_real.append(synth_dict["score_real_test"])
 
-            if real_dict["score_real_test"] >= np.max(scores_real_real):
-                best_model_real = real_dict["best_model"]
-            if synth_dict["score_real_test"] >= np.max(scores_synth_real):
-                best_model_synth = synth_dict["best_model"]
+            if var_pred in metadata["continuous"]:  # minimize RMSE
+                if real_dict["score_real_test"] <= np.min(scores_real_real):
+                    best_model_real = real_dict["best_model"]
+                if synth_dict["score_real_test"] <= np.min(scores_synth_real):
+                    best_model_synth = synth_dict["best_model"]
+            else:  # maximize ROC AUC
+                if real_dict["score_real_test"] >= np.max(scores_real_real):
+                    best_model_real = real_dict["best_model"]
+                if synth_dict["score_real_test"] >= np.max(scores_synth_real):
+                    best_model_synth = synth_dict["best_model"]
 
         diff_real_synth = abs(np.array(scores_real_real) - np.array(scores_synth_real))
 
@@ -324,12 +351,6 @@ class Regression(Prediction):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar score_name: the name of the score
     :vartype score_name: str
 
@@ -340,14 +361,15 @@ class Regression(Prediction):
 
     name = "Regression"
     alias = "regression"
-    score_name = "Mean Squared Error"
+    score_name = "Root Mean Squared Error"
 
     @classmethod
     def get_average_submetrics(cls) -> List[dict]:
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -398,12 +420,6 @@ class Classification(Prediction):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar score_name: the name of the score
     :vartype score_name: str
 
@@ -421,7 +437,8 @@ class Classification(Prediction):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -490,12 +507,6 @@ class FScore(Metric):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
 
     :param random_state: for reproducibility purposes
     """
@@ -508,7 +519,8 @@ class FScore(Metric):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -669,15 +681,12 @@ class FeatureImportance(Metric):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
+    :param num_kfolds: the number of folds to tune the hyperparameters of the classifier
+    :param num_optuna_trials: the number of trials of the optimization process for tuning hyperparameters
+    :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
     name = "Feature Importance"
@@ -687,16 +696,23 @@ class FeatureImportance(Metric):
         self,
         random_state: int = None,
         num_repeat: int = 10,
+        num_kfolds: int = 5,
+        num_optuna_trials: int = 20,
+        use_gpu: bool = False,
     ):
         super().__init__(random_state)
         self._num_repeat = num_repeat
+        self._num_kfolds = num_kfolds
+        self._num_optuna_trials = num_optuna_trials
+        self._use_gpu = use_gpu
 
     @classmethod
     def get_average_submetrics(cls) -> List[dict]:
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -729,17 +745,31 @@ class FeatureImportance(Metric):
         """
 
         super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
+        if metadata["variable_to_predict"] is None:
+            return {}
         if df_real["train"].shape[1] <= 1:
             return {}
 
         var_pred = metadata["variable_to_predict"]
         independent_vars = list(set(df_real["train"].columns) - {var_pred})
 
-        prediction_class = (
-            Regression if var_pred in metadata["continuous"] else Classification
-        )
+        if var_pred in metadata["continuous"]:
+            prediction_class = Regression
+            scoring = "neg_root_mean_squared_error"
+        else:
+            prediction_class = Classification
+            scoring = (
+                "roc_auc_ovo"
+                if len(np.unique(df_real["train"][var_pred])) > 2
+                else "roc_auc"
+            )
 
-        pred = prediction_class(num_repeat=self._num_repeat)
+        pred = prediction_class(
+            num_repeat=self._num_repeat,
+            num_kfolds=self._num_kfolds,
+            num_optuna_trials=self._num_optuna_trials,
+            use_gpu=self._use_gpu,
+        )
         res = pred.compute(df_real, df_synthetic, metadata)
         if len(res) == 0:
             return {}
@@ -749,8 +779,8 @@ class FeatureImportance(Metric):
             estimator=res[f"best_model_{dataset}"],
             X=res[f"x_test_best_model"],
             y=res[f"y_test_best_model"],
-            scoring=None,  # the one used by the estimator
-            n_repeats=20,
+            scoring=scoring,
+            n_repeats=5,
         )
 
         real_importance = compute_permutation_importance(dataset="real")

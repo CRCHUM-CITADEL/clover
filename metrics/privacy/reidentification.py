@@ -60,7 +60,8 @@ class DistanceToClosestRecord(Metric):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
 
         submetrics = [

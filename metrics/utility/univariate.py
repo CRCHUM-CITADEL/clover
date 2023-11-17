@@ -42,12 +42,6 @@ class Consistency(Metric, metaclass=ABCMeta):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
 
     :param random_state: for reproducibility purposes
     """
@@ -60,7 +54,8 @@ class Consistency(Metric, metaclass=ABCMeta):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -106,12 +101,6 @@ class ContinuousConsistency(Consistency):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
 
     :param random_state: for reproducibility purposes
     """
@@ -179,12 +168,6 @@ class CategoricalConsistency(Consistency):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
 
     :param random_state: for reproducibility purposes
     """
@@ -257,12 +240,6 @@ class ContinuousStatistics(Metric):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
 
     :param random_state: for reproducibility purposes
     """
@@ -275,7 +252,8 @@ class ContinuousStatistics(Metric):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -408,12 +386,6 @@ class CategoricalStatistics(Metric):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
 
     :param random_state: for reproducibility purposes
     """
@@ -426,7 +398,8 @@ class CategoricalStatistics(Metric):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -569,12 +542,6 @@ class UnivariateDiscreteDistance(Metric, metaclass=ABCMeta):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar distance_name: the name of the distance to use
     :vartype distance_name: str
 
@@ -724,12 +691,6 @@ class ContinuousUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMeta
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar distance_name: the name of the distance to use
     :vartype distance_name: str
 
@@ -795,12 +756,6 @@ class CategoricalUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMet
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar distance_name: the name of the distance to use
     :vartype distance_name: str
 
@@ -862,12 +817,6 @@ class ContinuousUnivariateHellingerDistance(ContinuousUnivariateDistance):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar distance_name: the name of the distance to use
     :vartype distance_name: str
 
@@ -883,7 +832,8 @@ class ContinuousUnivariateHellingerDistance(ContinuousUnivariateDistance):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -915,12 +865,6 @@ class CategoricalUnivariateHellingerDistance(CategoricalUnivariateDistance):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar distance_name: the name of the distance to use
     :vartype distance_name: str
 
@@ -936,7 +880,8 @@ class CategoricalUnivariateHellingerDistance(CategoricalUnivariateDistance):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -968,12 +913,6 @@ class ContinuousUnivariateKLDivergence(ContinuousUnivariateDistance):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar distance_name: the name of the distance to use
     :vartype distance_name: str
 
@@ -989,7 +928,8 @@ class ContinuousUnivariateKLDivergence(ContinuousUnivariateDistance):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -1021,12 +961,6 @@ class CategoricalUnivariateKLDivergence(CategoricalUnivariateDistance):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar distance_name: the name of the distance to use
     :vartype distance_name: str
 
@@ -1042,7 +976,8 @@ class CategoricalUnivariateKLDivergence(CategoricalUnivariateDistance):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {

@@ -1,10 +1,15 @@
-from typing import Tuple, Union  # standard library
+# Standard library
+from typing import Tuple, Callable
 
-import numpy as np  # 3rd party packages
-from sklearn.metrics import roc_auc_score, mean_squared_error
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import confusion_matrix
+# 3rd party packages
+import numpy as np
 import pandas as pd
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import confusion_matrix, roc_auc_score, mean_squared_error
+from sklearn.model_selection import cross_val_score
+from sklearn.compose import ColumnTransformer
+import xgboost as xgb
+from optuna.trial import Trial
 
 
 def sklearn_confusion_matrix(
@@ -27,46 +32,140 @@ def sklearn_confusion_matrix(
     return tn, fp, fn, tp, sensitivity, specificity
 
 
-def train_predict(
-    pipeline: Pipeline,
-    x_train: Union[np.ndarray, pd.DataFrame],
-    y_train: Union[np.ndarray, pd.DataFrame],
-    x_test_list: list[Union[np.ndarray, pd.DataFrame]],
-    y_test_list: list[Union[np.ndarray, pd.DataFrame]],
-    is_classification: bool,
-) -> Tuple[list[float], list[np.ndarray]]:
+def pipeline_prediction(
+    trial: Trial,
+    predictor: type(xgb.XGBModel),
+    preprocessing: ColumnTransformer,
+    loss_function: str,
+    use_gpu: bool = False,
+) -> Pipeline:
     """
-    Train a classifier or a regressor and score the predictions for the test sets.
+    Create a XGBoost classifier or regressor sklearn pipeline within an Optuna trial.
 
+    :param trial: the Optuna trial to specify the hyperparameters to tune
+    :param predictor: the predictor object
+    :param preprocessing: a list of steps to perform before training the model
+    :param loss_function: the loss function of the predictor
+    :param use_gpu: flag to use GPU computation power to accelerate the learning
+    :return: a Sklearn pipeline
+    """
+
+    pipe = Pipeline(
+        steps=[
+            ("preprocessing", preprocessing),
+            (
+                "catboost",
+                predictor(
+                    n_estimators=100,
+                    eta=trial.suggest_float("eta", 0.001, 0.1, log=True),
+                    max_depth=trial.suggest_int("max_depth", 4, 10),
+                    subsample=trial.suggest_float("subsample", 0.5, 1),
+                    colsample_bytree=trial.suggest_float("colsample_bylevel", 0.5, 1),
+                    tree_method="auto" if not use_gpu else "gpu_hist",
+                    objective=loss_function,
+                    seed=np.random.randint(1000),
+                    verbosity=1,
+                ),
+            ),
+        ]
+    )
+    return pipe
+
+
+def objective_cross_val(
+    trial: Trial,
+    pipeline: Callable[[Trial], Pipeline],
+    df_train: pd.DataFrame,
+    y_train: np.ndarray,
+    num_kfolds: int,
+    scoring: str,
+) -> float:
+    """
+    Run a k-fold cross validation within an Optuna trial.
+
+    :param trial: the Optuna trial to specify the hyperparameters to tune
     :param pipeline: a sequence of the data transformations to apply with a final estimator
-    :param x_train: the training input
+    :param df_train: the training input as a Pandas dataframe
     :param y_train: the training ground truth
-    :param x_test_list: the test sets for the prediction
-    :param y_test_list: the test sets ground truth
-    :param is_classification: *True* if classification task, *False* else
-    :return: the predictions scores and the raw predictions
+    :param num_kfolds: the number of folds to tune the hyperparameters of the predictor
+    :param scoring: the scoring metric to evaluate the predictor performance on the validation set
+    :return: the average cross validation score across the k-folds
     """
-    pipeline.fit(x_train, y_train)
 
-    scores = []
-    preds = []
-    for x_test, y_test in zip(x_test_list, y_test_list):
-        if is_classification:
-            y_pred = pipeline.predict_proba(x_test)
-            if y_pred.shape[1] == 2:  # binary case, y_pred needs to be (num_samples,)
-                y_pred = y_pred[:, 1]
-                score = roc_auc_score(y_test, y_pred)
-            else:
-                score = roc_auc_score(
-                    y_test, y_pred, multi_class="ovo", labels=range(y_pred.shape[1])
-                )
-        else:  # regression
-            y_pred = pipeline.predict(x_test)
-            score = mean_squared_error(y_test, y_pred)
-        scores.append(score)
-        preds.append(y_pred)
+    cv_scores = cross_val_score(
+        pipeline(trial),
+        df_train,
+        y_train,
+        cv=num_kfolds,
+        scoring=scoring,
+    )
+    score = np.mean(cv_scores)
 
-    return scores, preds
+    return score
+
+
+def refit_auc_score(
+    trial: Trial,
+    pipeline: Callable[[Trial], Pipeline],
+    df_train: pd.DataFrame,
+    y_train: np.ndarray,
+    df_test: pd.DataFrame,
+    y_test: np.ndarray,
+) -> Tuple[float, np.ndarray, Pipeline]:
+    """
+    Refit the best estimator and compute the score on the test set. For classification task only.
+
+    :param trial: the Optuna best trial
+    :param pipeline: a sequence of the data transformations to apply with a final estimator
+    :param df_train: the training input as a Pandas dataframe
+    :param y_train: the training ground truth
+    :param df_test: the test input as a Pandas dataframe
+    :param y_test: the test ground truth
+    :return: a tuple, the score, the associated predictions and the fitted pipeline
+    """
+
+    pipe = pipeline(trial)
+    pipe.fit(df_train, y_train)
+    y_pred = pipe.predict_proba(df_test)
+
+    if y_pred.shape[1] == 2:  # binary case, y_pred needs to be (num_samples,)
+        y_pred = y_pred[:, 1]
+        score = roc_auc_score(y_test, y_pred)
+    else:
+        score = roc_auc_score(
+            y_test, y_pred, multi_class="ovo", labels=range(y_pred.shape[1])
+        )
+
+    return score, y_pred, pipe
+
+
+def refit_rmse_score(
+    trial: Trial,
+    pipeline: Callable[[Trial], Pipeline],
+    df_train: pd.DataFrame,
+    y_train: np.ndarray,
+    df_test: pd.DataFrame,
+    y_test: np.ndarray,
+) -> Tuple[float, np.ndarray, Pipeline]:
+    """
+    Refit the best estimator and compute the score on the test set. For regression task only.
+
+    :param trial: the Optuna best trial
+    :param pipeline: a sequence of the data transformations to apply with a final estimator
+    :param df_train: the training input as a Pandas dataframe
+    :param y_train: the training ground truth
+    :param df_test: the test input as a Pandas dataframe
+    :param y_test: the test ground truth
+    :return: a tuple, the score (root mean square error), the associated predictions and the fitted pipeline
+    """
+
+    pipe = pipeline(trial)
+    pipe.fit(df_train, y_train)
+    y_pred = pipe.predict(df_test)
+
+    score = mean_squared_error(y_test, y_pred, squared=False)
+
+    return score, y_pred, pipe
 
 
 def hinge_loss(score: float, threshold: float) -> float:

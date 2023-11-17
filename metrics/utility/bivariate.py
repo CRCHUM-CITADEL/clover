@@ -32,12 +32,6 @@ class PairwiseCorrelationDifference(Metric):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
 
     :param random_state: for reproducibility purposes
     """
@@ -50,7 +44,8 @@ class PairwiseCorrelationDifference(Metric):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -160,12 +155,6 @@ class PairwiseChiSquareDifference(Metric):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
 
     :param random_state: for reproducibility purposes
     :param alpha: the significance level for the chi square test
@@ -183,7 +172,8 @@ class PairwiseChiSquareDifference(Metric):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {

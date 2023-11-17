@@ -6,9 +6,11 @@ from copy import deepcopy
 # 3rd party packages
 import pandas as pd
 import numpy as np
-from sklearn.pipeline import Pipeline
+import optuna
+
+optuna.logging.set_verbosity(optuna.logging.WARNING)
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 import xgboost as xgb
 import matplotlib.pyplot as plt
 
@@ -42,15 +44,11 @@ class Distinguishability(Metric):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
+    :param num_kfolds: the number of folds to tune the hyperparameters of the classifier
+    :param num_optuna_trials: the number of trials of the optimization process for tuning hyperparameters
     :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
@@ -61,10 +59,14 @@ class Distinguishability(Metric):
         self,
         random_state: int = None,
         num_repeat: int = 10,
+        num_kfolds: int = 5,
+        num_optuna_trials: int = 20,
         use_gpu: bool = False,
     ):
         super().__init__(random_state)
         self._num_repeat = num_repeat
+        self._num_kfolds = num_kfolds
+        self._num_optuna_trials = num_optuna_trials
         self._use_gpu = use_gpu
 
     @classmethod
@@ -72,7 +74,8 @@ class Distinguishability(Metric):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -94,7 +97,7 @@ class Distinguishability(Metric):
                 "objective": "min",
             },
             {
-                "submetric": "prediction_auc",
+                "submetric": "prediction_auc_rescaled",
                 "min": 0,
                 "max": 1,
                 "objective": "min",
@@ -155,26 +158,33 @@ class Distinguishability(Metric):
             [df_real["test"], df_synthetic["test"]], axis=0, ignore_index=True
         )
 
-        #   Select the columns keeping the order
-        cat_cols = [
-            col for col in df_real["train"].columns if col not in metadata["continuous"]
-        ]
-        cont_cols = [col for col in df_real["train"].columns if col not in cat_cols]
-        df_train[cat_cols] = df_train[cat_cols].astype("object")
-        df_test[cat_cols] = df_test[cat_cols].astype("object")
+        #   Transform the categorical variables to object
+        df_train[metadata["categorical"]] = df_train[metadata["categorical"]].astype(
+            "object"
+        )
+        df_test[metadata["categorical"]] = df_test[metadata["categorical"]].astype(
+            "object"
+        )
+        cat_features = list(
+            range(  # the columns follow the order specified in the ColumnTransformer
+                len(metadata["continuous"]), df_train.shape[1]
+            )
+        )
 
         # ColumnTransformers
         preprocessing = ColumnTransformer(
             [
-                ("continuous", StandardScaler(), cont_cols),
+                ("continuous", StandardScaler(), metadata["continuous"]),
                 (
                     "categorical",
-                    OneHotEncoder(
-                        # drop="first", not used since the first category and the unknown would be the same.
-                        categories=[df_train[cat].unique() for cat in cat_cols],
+                    # "passthrough",  # catboost has its own way to handly categorical variables
+                    OneHotEncoder(  # drop first not used since the first category and the unknown would be the same.
+                        categories=[
+                            df_train[cat].unique() for cat in metadata["categorical"]
+                        ],
                         handle_unknown="ignore",
                     ),
-                    cat_cols,
+                    metadata["categorical"],
                 ),
             ],
             verbose_feature_names_out=False,
@@ -186,45 +196,58 @@ class Distinguishability(Metric):
         )
         y_test = np.array([1] * len(df_real["test"]) + [0] * len(df_synthetic["test"]))
 
+        #   Shuffle train dataset
+        df_train["y"] = y_train
+        df_train = df_train.sample(frac=1).reset_index(drop=True)
+        y_train = df_train["y"].to_numpy()
+        df_train = df_train.drop(columns="y")
+
         # Compute the distinguishability score in three different settings
         dist_scores = []
         prediction_real = []
         prediction_synth = []
 
+        pipeline = lambda trial: ulearning.pipeline_prediction(
+            trial,
+            predictor=xgb.XGBClassifier,
+            preprocessing=preprocessing,
+            loss_function="binary:logistic",
+            use_gpu=self._use_gpu,
+        )
+        objective = lambda trial: ulearning.objective_cross_val(
+            trial,
+            pipeline=pipeline,
+            df_train=df_train,
+            y_train=y_train,
+            num_kfolds=self._num_kfolds,
+            scoring="roc_auc",
+        )
+
         # Compute scores several times to account for randomness
         for _ in range(self._num_repeat):
-            pipe = Pipeline(
-                steps=[
-                    ("preprocessing", preprocessing),
-                    (
-                        "xgb",
-                        xgb.XGBClassifier(
-                            n_estimators=100,
-                            eta=0.1,
-                            tree_method="auto" if not self._use_gpu else "gpu_hist",
-                            objective="binary:logistic",
-                        ),
-                    ),
-                ]
+            study = optuna.create_study(
+                direction="maximize",
+                sampler=optuna.samplers.TPESampler(
+                    n_startup_trials=10, seed=np.random.randint(1000)
+                ),
             )
+            study.optimize(objective, n_trials=self._num_optuna_trials)
 
-            scores, y_pred_proba = ulearning.train_predict(
-                pipeline=pipe,
-                x_train=df_train,
+            auc, y_pred_proba, _ = ulearning.refit_auc_score(
+                trial=study.best_trial,
+                pipeline=pipeline,
+                df_train=df_train,
                 y_train=y_train,
-                x_test_list=[df_test],
-                y_test_list=[y_test],
-                is_classification=True,
+                df_test=df_test,
+                y_test=y_test,
             )
 
-            mse = self.propensity_mse(y_pred_proba[0])  # only one test set
-            y_pred_real = y_pred_proba[0][: len(df_test) // 2]
+            mse = self.propensity_mse(y_pred_proba)
+            y_pred_real = y_pred_proba[: len(df_test) // 2]
             mse_real = self.propensity_mse(y_pred_real)
-            y_pred_synth = y_pred_proba[0][len(df_test) // 2 :]
+            y_pred_synth = y_pred_proba[len(df_test) // 2 :]
             mse_synth = self.propensity_mse(y_pred_synth)
-            auc = (
-                max(0.5, scores[0]) * 2 - 1
-            )  # only one test set and scale between 0 and 1
+            auc_rescaled = max(0.5, auc) * 2 - 1  # scale between 0 and 1
 
             # Average scores on kfolds
             dist_scores.append(
@@ -232,7 +255,7 @@ class Distinguishability(Metric):
                     mse,
                     mse_real,
                     mse_synth,
-                    auc,
+                    auc_rescaled,
                 ]
             )
             prediction_real.extend(y_pred_real)
@@ -245,7 +268,7 @@ class Distinguishability(Metric):
             prediction_mse,
             prediction_mse_real,
             prediction_mse_synth,
-            prediction_auc,
+            prediction_auc_rescaled,
         ) = np.mean(dist_scores, axis=0)
 
         res = {
@@ -253,13 +276,13 @@ class Distinguishability(Metric):
                 "prediction_mse": prediction_mse,
                 "prediction_mse_real": prediction_mse_real,
                 "prediction_mse_synth": prediction_mse_synth,
-                "prediction_auc": prediction_auc,
+                "prediction_auc_rescaled": prediction_auc_rescaled,
             },
             "detailed": {
                 "prediction_mse": dist_scores[:, 0],
                 "prediction_mse_real": dist_scores[:, 1],
                 "prediction_mse_synth": dist_scores[:, 2],
-                "prediction_auc": dist_scores[:, 3],
+                "prediction_auc_rescaled": dist_scores[:, 3],
                 "prediction_real": np.array(prediction_real),
                 "prediction_synth": np.array(prediction_synth),
             },
@@ -283,7 +306,7 @@ class Distinguishability(Metric):
                 "prediction_mse",
                 "prediction_mse_real",
                 "prediction_mse_synth",
-                "prediction_auc",
+                "prediction_auc_rescaled",
                 "prediction_real",
                 "prediction_synth",
             ]
@@ -297,7 +320,7 @@ class Distinguishability(Metric):
                 "prediction_mse": report["prediction_mse"],
                 "prediction_mse_real": report["prediction_mse_real"],
                 "prediction_mse_synth": report["prediction_mse_synth"],
-                "prediction_auc": report["prediction_auc"],
+                "prediction_auc_rescaled": report["prediction_auc_rescaled"],
             }
         )
         udraw.bar_plot(
@@ -335,17 +358,13 @@ class CrossLearning(Metric, metaclass=ABCMeta):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar class_name: the prediction class name
     :vartype score_name: str
 
     :param random_state: for reproducibility purposes
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
+    :param num_kfolds: the number of folds to tune the hyperparameters of the classifier
+    :param num_optuna_trials: the number of trials of the optimization process for tuning hyperparameters
     :param use_gpu: flag to use GPU computation power to accelerate the learning
     """
 
@@ -365,10 +384,14 @@ class CrossLearning(Metric, metaclass=ABCMeta):
         self,
         random_state: int = None,
         num_repeat: int = 10,
+        num_kfolds: int = 5,
+        num_optuna_trials: int = 20,
         use_gpu: bool = False,
     ):
         super().__init__(random_state)
         self._num_repeat = num_repeat
+        self._num_kfolds = num_kfolds
+        self._num_optuna_trials = num_optuna_trials
         self._use_gpu = use_gpu
 
     def compute(
@@ -423,6 +446,8 @@ class CrossLearning(Metric, metaclass=ABCMeta):
 
             pred = getattr(app, self.__class__.class_name)(
                 num_repeat=self._num_repeat,
+                num_kfolds=self._num_kfolds,
+                num_optuna_trials=self._num_optuna_trials,
                 use_gpu=self._use_gpu,
             )
             res = pred.compute(df_real, df_synthetic, metadata_pred)
@@ -522,12 +547,6 @@ class CrossRegression(CrossLearning):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar class_name: the prediction class name
     :vartype score_name: str
 
@@ -544,7 +563,8 @@ class CrossRegression(CrossLearning):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {
@@ -569,12 +589,6 @@ class CrossClassification(CrossLearning):
     :vartype name: str
     :cvar alias: the shortname of the metric
     :vartype alias: str
-    :cvar min: the minimal bound
-    :vartype min: Union[int, float]
-    :cvar max: the maximal bound
-    :vartype max: Union[int, float]
-    :cvar objective: the target value for the metric: 'min' or 'max'
-    :vartype objective: str
     :cvar class_name: the prediction class name
     :vartype score_name: str
 
@@ -591,7 +605,8 @@ class CrossClassification(CrossLearning):
         """
         Get the average submetrics of the current metric with their target and min/max values.
 
-        :return: the list of the average submetrics
+        :return: the list of the average submetrics formatted as dictionaries
+            (**submetric** name, **min**, **max** and **objective**)
         """
         return [
             {

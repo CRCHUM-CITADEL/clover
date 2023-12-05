@@ -16,8 +16,8 @@ class Metareport:
 
     :param dataset_name: the name of the dataset
     :param df_real: the real dataset, split into **train** and **test** sets
-    :param synthetic_data_path: the path of the folder containing the synthetic datasets to compare,
-        split into **train** and **test** sets
+    :param synthetic_datasets: synthetic datasets to compare, each dataset is
+        split into **train**, **test** and **2nd_gen** sets
     :param metadata: dictionary with two entries: the **continuous** and **categorical** lists of variables.
         Must be specified by the user since the variable type might be equivocal.
     :param figsize: the size of the figure in inches (width, height)
@@ -32,7 +32,7 @@ class Metareport:
         self,
         dataset_name: str = None,
         df_real: dict[str, pd.DataFrame] = None,
-        synthetic_data_path: Union[Path, str] = None,
+        synthetic_datasets: dict[str, dict[str, pd.DataFrame]] = None,
         metadata: dict = None,
         figsize: Tuple[float, float] = (8, 6),
         random_state: int = 0,
@@ -45,34 +45,22 @@ class Metareport:
             for name in metareport_folderpath.keys()
         )
         assert metareport_folderpath is not None or all(
-            v is not None
-            for v in [dataset_name, df_real, synthetic_data_path, metadata]
+            v is not None for v in [dataset_name, df_real, synthetic_datasets, metadata]
         )
 
         if metareport_folderpath is None:
-            # Get all the synthetic data files to compare
-            files = Path(synthetic_data_path).glob("**/*")
-            files = [x for x in files if x.is_file()]
-            synthetic_data = {
-                f.stem: f for f in files
-            }  # the name of the file is used as the name of the data to compare
-            assert len(synthetic_data) > 0, "No synthetic dataset to compare"
+            assert len(synthetic_datasets) > 0, "No synthetic dataset to compare"
 
             # Instantiate reports
             self._metareport = {}
-            for name in synthetic_data:
-                # Load the synthetic dataset and split it into train/test
-                df_synthetic = pd.read_csv(synthetic_data[name])
-                assert len(df_synthetic) == len(df_real["train"]) + len(
+            for name in synthetic_datasets:
+                # Load each synthetic dataset
+                df_synth = synthetic_datasets[name]
+                assert len(df_synth["train"]) + len(df_synth["test"]) == len(
+                    df_real["train"]
+                ) + len(
                     df_real["test"]
-                ), "The number of synthetic data samples must be the same that the real train and test sets gathered"
-                df_synth = {
-                    "train": df_synthetic.sample(n=len(df_real["train"]), replace=False)
-                }
-                df_synth["test"] = df_synthetic.drop(
-                    df_synth["train"].index
-                ).reset_index(drop=True)
-                df_synth["train"] = df_synth["train"].reset_index(drop=True)
+                ), "The number of synthetic data samples must be the same that the real set"
 
                 self._metareport[name] = Report(
                     dataset_name,

@@ -12,7 +12,7 @@ import utils.standard as ustandard
 
 class SmoteGenerator(Generator):
     """
-    Wrapper of the SMOTE (Synthetic Minority Oversampling TEchnique) Python implementation from imbalanced-learn.
+    Wrapper of the SMOTE (Synthetic Minority Oversampling Technique) Python implementation from imbalanced-learn.
 
     :cvar name: the name of the metric
     :vartype name: str

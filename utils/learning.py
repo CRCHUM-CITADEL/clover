@@ -1,5 +1,5 @@
 # Standard library
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Union
 
 # 3rd party packages
 import numpy as np

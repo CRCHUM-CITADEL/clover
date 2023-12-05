@@ -67,7 +67,13 @@ def gower_matrix(data_x, data_y=None, weight=None, cat_features=None):
 
     # This is to normalize the numeric values between 0 and 1.
     if num_cols > 0:
-        Z_num = np.divide(Z_num, num_max, out=np.zeros_like(Z_num), where=num_max != 0)
+        Z_num = np.divide(
+            Z_num,
+            num_max,
+            casting="unsafe",
+            out=np.zeros_like(Z_num),
+            where=num_max != 0,
+        )
     Z_cat = Z[:, cat_features]
 
     if weight is None:
@@ -136,6 +142,7 @@ def gower_get(
         sij_num = np.divide(
             abs_delta,
             ranges_of_numeric,
+            casting="unsafe",
             out=np.zeros_like(abs_delta),
             where=ranges_of_numeric != 0,
         )
@@ -144,7 +151,7 @@ def gower_get(
 
     sum_num = np.multiply(feature_weight_num, sij_num).sum(axis=1)
     sums = np.add(sum_cat, sum_num)
-    sum_sij = np.divide(sums, feature_weight_sum)
+    sum_sij = np.divide(sums, feature_weight_sum, casting="unsafe")
 
     return sum_sij
 

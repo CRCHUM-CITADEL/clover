@@ -632,3 +632,55 @@ def histplot_plot(
         )
 
     return axis
+
+
+def plot_log_scale(
+    data: list, title: str, labels: list, x_label: str, y_label: str
+) -> None:
+    """Plot a log-log graph
+
+    :param data: the data to be plotted in the form of[(x1, y1), (x2, y2)...]
+    :param title: title of the plot
+    :param labels: the list of labels
+    :param x_label: the x label of the plot
+    :param y_label: the y label of the plot
+    :return: None
+    """
+
+    for idx, (x, y) in enumerate(data):
+        label = labels[idx]
+        plt.plot(x, y, label=label)
+
+    plt.semilogx()
+    plt.semilogy()
+    plt.xlim(1e-5, 1)
+    plt.ylim(1e-5, 1)
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.plot([0, 1], [0, 1], ls="--", color="gray")
+    plt.legend()
+    plt.show()
+
+
+def line_plot(data: list, title: str, x_label: str, y_label: str) -> None:
+    """Plot a log-log graph
+
+    :param data: the data to be plotted in the form of[(y1, x1), (y2, x2)...]
+    :param title: title of the plot
+    :param x_label: the x label of the plot
+    :param y_label: the y label of the plot
+    :return: None
+    """
+
+    for idx, (y, x) in enumerate(data):
+        label = f"trial {idx+1}"
+        plt.plot(x, y, label=label)
+
+    plt.xlim(0, 1)
+    # plt.ylim(0, 1)
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.legend()
+    plt.show()

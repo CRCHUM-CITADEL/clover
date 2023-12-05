@@ -18,7 +18,7 @@ class Report:
 
     :param dataset_name: the name of the dataset
     :param df_real: the real dataset, split into **train** and **test** sets
-    :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
+    :param df_synthetic: the synthetic dataset, split into **train**, **test** and **2nd_gen** sets
     :param metadata: dictionary with two entries: the **continuous** and **categorical** lists of variables.
         Must be specified by the user since the variable type might be equivocal.
     :param figsize: the size of the figure in inches (width, height)
@@ -71,6 +71,11 @@ class Report:
                 if metrics is not None
                 else available_metrics
             )
+
+            if "cross_learning" in params and params["cross_learning"] == False:
+                metrics_to_compute.discard("Cross Classification")
+                metrics_to_compute.discard("Cross Regression")
+
             if report_folderpath is None:
                 if len(metrics_to_compute) > 0:
                     other_params = params if params is not None else {}
@@ -83,6 +88,7 @@ class Report:
                         },
                         metrics=metrics_to_compute,
                     )
+
             else:
                 path = Path(report_folderpath) / f"{report_filename}_{name}.pkl"
                 if path.exists():

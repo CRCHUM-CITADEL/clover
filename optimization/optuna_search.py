@@ -79,10 +79,10 @@ class OptunaSearch(HyperparametersSearch):
             optuna.logging.set_verbosity(optuna.logging.WARNING)
 
         # Block for coherence with other optimizers, which use "min" or "max" instead of "minimize" and "maximize".
-        if direction == "min" or direction == "minimize":
-            direction = "minimize"
-        else:
+        if direction == "max" or direction == "maximize":
             direction = "maximize"
+        else:
+            direction = "minimize"
 
         self._study = optuna.create_study(
             direction=direction, sampler=sampler, pruner=pruner

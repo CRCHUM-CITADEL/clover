@@ -14,10 +14,17 @@ def df_mock_wbcd(df_wbcd: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
     # Shuffle each column with replacement
 
     df = {}
+
     for set in ["train", "test"]:
         df[set] = df_wbcd[set].apply(
             lambda x: np.random.choice(x.unique(), size=len(x), replace=True)
         )
+
+    df["2nd_gen"] = df["train"].apply(
+        lambda x: np.random.choice(x.unique(), size=len(x), replace=True)
+    )
+
+    for set in ["train", "test"]:
 
         # Ensure the support coverage is different
         df[set] = df[set].replace(

@@ -47,6 +47,8 @@ def privacy_report(
         df_wbcd_mix[set] = df_wbcd[set][
             metadata["continuous"] + metadata["categorical"]
         ]
+
+    for set in ["train", "test", "2nd_gen"]:
         df_mock_wbcd_mix[set] = df_mock_wbcd[set][
             metadata["continuous"] + metadata["categorical"]
         ]
@@ -57,6 +59,7 @@ def privacy_report(
         df_synthetic=df_mock_wbcd_mix,
         metadata=metadata,
         sampling_frac=0.5,
+        num_kfolds=2,
     )
 
     report.compute()

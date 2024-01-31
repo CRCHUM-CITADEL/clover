@@ -16,7 +16,7 @@ class Metareport:
 
     :param dataset_name: the name of the dataset
     :param df_real: the real dataset, split into **train** and **test** sets
-    :param synthetic_datasets: synthetic datasets to compare, each dataset is
+    :param synthetic_datasets: synthetic datasets to compare, with each synthetic dataset as a dictionary
         split into **train**, **test** and **2nd_gen** sets
     :param metadata: dictionary with two entries: the **continuous** and **categorical** lists of variables.
         Must be specified by the user since the variable type might be equivocal.

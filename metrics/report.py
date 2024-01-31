@@ -72,11 +72,16 @@ class Report:
                 else available_metrics
             )
 
-            if "cross_learning" in params and params["cross_learning"] == False:
-                metrics_to_compute.discard("Cross Classification")
-                metrics_to_compute.discard("Cross Regression")
+            # if "cross_learning" in params and params["cross_learning"] == False:
+            #     metrics_to_compute.discard("Cross Classification")
+            #     metrics_to_compute.discard("Cross Regression")
 
             if report_folderpath is None:
+
+                if params is not None and "cross_learning" in params.keys() and params["cross_learning"] == False:
+                    metrics_to_compute.discard("Cross Classification")
+                    metrics_to_compute.discard("Cross Regression")
+
                 if len(metrics_to_compute) > 0:
                     other_params = params if params is not None else {}
                     self._reports[name] = report(  # instantiate the report

@@ -1,6 +1,7 @@
 # Standard library
 from typing import Tuple, List, Type
 from abc import ABCMeta
+import warnings
 
 # 3rd party packages
 import pandas as pd
@@ -116,18 +117,16 @@ class AttackModel(Metric, metaclass=ABCMeta):
         """
 
         y_pred_proba_decend_idx = y_pred_proba.argsort()[::-1]
-        # y_pred_proba_top_n = y_pred_proba[y_pred_proba_decend_idx][
-        #     : int(len(y_pred_proba_decend_idx) * (n / 100))
-        # ]
         y_true_top_n = y_true[y_pred_proba_decend_idx][
             : int(len(y_pred_proba_decend_idx) * (n / 100))
         ]
 
-        assert (
-            len(y_true_top_n) > 0
-        ), f"Not enough samples in test set to compute top {n}% precision"
+        if len(y_true_top_n) > 0:
+            return np.count_nonzero(y_true_top_n) / len(y_true_top_n)
+        else:
+            warnings.warn(f"Not enough samples in test set to compute top {n}% precision")
+            return np.nan
 
-        return np.count_nonzero(y_true_top_n) / len(y_true_top_n)
 
     @classmethod
     def tpr_at_n_fpr(cls, n: float, fpr: np.ndarray, tpr: np.ndarray) -> float:
@@ -152,7 +151,7 @@ class AttackModel(Metric, metaclass=ABCMeta):
 
         df_copy = (
             df.copy()
-        )  # Make a copy so that the original dafaframe is not modified
+        )  # Make a copy so that the original dataframe is not modified
 
         df_copy["frequency"] = df_copy.groupby(list(df_copy.columns)).transform(
             "size"

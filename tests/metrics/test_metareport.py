@@ -5,6 +5,7 @@ from pathlib import Path
 
 # 3rd party packages
 import pandas as pd
+import numpy as np
 
 # Local packages
 from metrics.metareport import Metareport
@@ -30,27 +31,41 @@ def metareport(
     }
 
     df_wbcd_mix = {}
+    df_mock_1 = {}
+    df_mock_2 = {}
+
     sublist = metadata["continuous"] + metadata["categorical"]
     for set in ["train", "test"]:
         df_wbcd_mix[set] = df_wbcd[set][sublist]
 
-    df_mock = pd.concat(
-        [df_mock_wbcd["train"][sublist], df_mock_wbcd["test"][sublist]], axis=0
-    )
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        df_mock.to_csv(Path(temp_dir) / "1.csv", index=False)
-        df_mock.to_csv(Path(temp_dir) / "2.csv", index=False)
-
-        report = Metareport(
-            dataset_name="Wisconsin Breast Cancer Dataset",
-            df_real=df_wbcd_mix,
-            synthetic_data_path=temp_dir,
-            metadata=metadata,
-            metrics=["Categorical Consistency"],
+    for set in ["train", "test", "2nd_gen"]:
+        df_mock_1[set] = df_mock_wbcd[set][sublist]
+        df_mock_2[set] = df_mock_1[set].apply(
+            lambda x: np.random.choice(x.unique(), size=len(x), replace=True)
         )
 
-        report.compute()
+    # df_mock_1 = pd.concat(
+    #     [
+    #         df_mock_wbcd["train"][sublist],
+    #         df_mock_wbcd["test"][sublist],
+    #         df_mock_wbcd["2nd_gen"][sublist]
+    #     ], axis=0
+    # )
+
+    # with tempfile.TemporaryDirectory() as temp_dir:
+    #     df_mock.to_csv(Path(temp_dir) / "1.csv", index=False)
+    #     df_mock.to_csv(Path(temp_dir) / "2.csv", index=False)
+
+    report = Metareport(
+        dataset_name="Wisconsin Breast Cancer Dataset",
+        df_real=df_wbcd_mix,
+        synthetic_datasets={"df_mock_1": df_mock_1, "df_mock_2": df_mock_2},
+        # synthetic_data_path=temp_dir,
+        metadata=metadata,
+        metrics=["Categorical Consistency"],
+    )
+
+    report.compute()
 
     return report
 
@@ -82,7 +97,7 @@ def test_save_load_report(metareport: Metareport) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         metareport.save(savepath=temp_dir)  # save
         new_report = Metareport(
-            metareport_folderpath={"1": temp_dir, "2": temp_dir}
+            metareport_folderpath={"df_mock_1": temp_dir, "df_mock_2": temp_dir}
         )  # load
 
         assert df_summary.equals(

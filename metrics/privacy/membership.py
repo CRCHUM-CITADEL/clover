@@ -36,7 +36,7 @@ def get_metrics() -> List[Type[Metric]]:
     :return: a list of the classes of privacy metrics (membership inference attacks)
     """
 
-    return [GANLeaks, MCMembership, Logan, TableGan, Detector, Collision]
+    return [GANLeaks, MCMembership, Logan, TableGan, Detector, Ensemble, Collision]
 
 
 class AttackModel(Metric, metaclass=ABCMeta):
@@ -124,9 +124,10 @@ class AttackModel(Metric, metaclass=ABCMeta):
         if len(y_true_top_n) > 0:
             return np.count_nonzero(y_true_top_n) / len(y_true_top_n)
         else:
-            warnings.warn(f"Not enough samples in test set to compute top {n}% precision")
+            warnings.warn(
+                f"Not enough samples in test set to compute top {n}% precision"
+            )
             return np.nan
-
 
     @classmethod
     def tpr_at_n_fpr(cls, n: float, fpr: np.ndarray, tpr: np.ndarray) -> float:
@@ -725,12 +726,18 @@ class Logan(AttackModel):
             n=int(self._sampling_frac * len(df_real["test"])),
             replace=False,
             ignore_index=True,
+            random_state=self._random_state,
         )
         real_control = df_real["test"].sample(
-            frac=self._sampling_frac, replace=False, ignore_index=True
+            frac=self._sampling_frac,
+            replace=False,
+            ignore_index=True,
+            random_state=self._random_state,
         )
 
         df_test = pd.concat([real_train, real_control], axis=0, ignore_index=True)
+
+        print(f"LOGAN test set shape: {df_test.shape}")
 
         # Select the columns keeping the order
         cat_cols = [
@@ -998,12 +1005,18 @@ class TableGan(AttackModel):
             n=int(self._sampling_frac * len(df_real["test"])),
             replace=False,
             ignore_index=True,
+            random_state=self._random_state,
         )
         real_control = df_real["test"].sample(
-            frac=self._sampling_frac, replace=False, ignore_index=True
+            frac=self._sampling_frac,
+            replace=False,
+            ignore_index=True,
+            random_state=self._random_state,
         )
 
         df_test = pd.concat([real_train, real_control], axis=0, ignore_index=True)
+
+        print(f"TableGan test set shape: {df_test.shape}")
 
         # Select the columns keeping the order
         cat_cols = [
@@ -1258,13 +1271,14 @@ class Detector(AttackModel):
 
         # Split the real test data which is not used to generate 1st generation synthetic data into 2 sets:
         # 1 set used to train the detector and another set for control (ratio = 80%:20%)
-        real_train_detector = df_real["test"].sample(
-            frac=0.8,
+        real_control = df_real["test"].sample(
+            frac=0.2,
             replace=False,
             ignore_index=False,
+            random_state=self._random_state,
         )
-        real_control = df_real["test"][
-            ~df_real["test"].index.isin(real_train_detector.index)
+        real_train_detector = df_real["test"][
+            ~df_real["test"].index.isin(real_control.index)
         ].reset_index(drop=True)
 
         # Sample from 1st generation synthetic data to train detector
@@ -1276,7 +1290,7 @@ class Detector(AttackModel):
 
         # Construct the train set to train the detector
         df_train = pd.concat(
-            [real_train_detector.reset_index(drop=True), synth_train_detector],
+            [real_train_detector, synth_train_detector],
             axis=0,
             ignore_index=True,
         )
@@ -1287,10 +1301,15 @@ class Detector(AttackModel):
             n=len(real_control),
             replace=False,
             ignore_index=True,
+            random_state=self._random_state,
         )
 
         # Construct the test set
-        df_test = pd.concat([real_train, real_control], axis=0, ignore_index=True)
+        df_test = pd.concat(
+            [real_train, real_control.reset_index(drop=True)], axis=0, ignore_index=True
+        )
+
+        print(f"Detector test set shape: {df_test.shape}")
 
         # Select the columns keeping the order
         cat_cols = [
@@ -1349,6 +1368,417 @@ class Detector(AttackModel):
 
             prec_score = precision_score(y_test, y_pred)
             precision.append(prec_score)
+
+        res = {
+            "average": {
+                "precision_top1%": np.mean(precision_top1),
+                "precision_top50%": np.mean(precision_top50),
+                "precision": np.mean(precision),
+                "tpr_at_0.001%_fpr": np.mean(tpr_at_lowest_fpr),
+                "tpr_at_0.1%_fpr": np.mean(tpr_at_lower_fpr),
+            },
+            "detailed": {
+                "precision_top1%": np.array(precision_top1),
+                "precision_top50%": np.array(precision_top50),
+                "precision": np.array(precision),
+                "roc": roc,
+            },
+        }
+
+        return res
+
+    @classmethod
+    def draw(cls, report: dict, figsize: Tuple[float, float] = None) -> None:
+        """
+        Draw a barplot to compare the different scores and a log-log graph for ROC
+
+        :param report: the **detailed** report, outcome of the *compute* method
+        :param figsize: the size of the figure in inches (width, height)
+        :return: *None*
+        """
+        assert report is not None
+        assert all(
+            key in report
+            for key in [
+                "precision_top1%",
+                "precision_top50%",
+                "precision",
+                "roc",
+            ]
+        )
+
+        # Bar plot single value
+        plt.figure(figsize=figsize, layout="constrained")
+
+        data = pd.DataFrame(
+            {
+                "precision_top1%": report["precision_top1%"],
+                "precision_top50%": report["precision_top50%"],
+                "precision": report["precision"],
+            }
+        )
+        udraw.bar_plot(
+            data=data,
+            title=f"Metric: {cls.name}",
+            value_name="",
+        )
+
+        fpr_tpr_list = report["roc"]
+
+        labels_list = []
+        for fpr, tpr in fpr_tpr_list:
+            auc_roc = auc(fpr, tpr)
+            metric_text = "auc=%.3f" % auc_roc
+            labels_list.append(metric_text)
+
+        # Plot a log-log graph
+        plt.figure(figsize=figsize, layout="constrained")
+
+        udraw.plot_log_scale(
+            data=fpr_tpr_list,
+            title=f"{cls.name}: ROC Curves",
+            labels=labels_list,
+            x_label="False Positive Rate",
+            y_label="True Positive rate",
+        )
+
+
+class Ensemble(AttackModel):
+    """
+    Ensemble method (combining LOGAN, TableGan and Detector models) for membership inference attacks.
+
+    :cvar name: the name of the attack model
+    :vartype name: str
+    :cvar alias: the shortname of the attack model
+    :vartype alias: str
+
+
+    :param random_state: for reproducibility purposes
+    :param sampling_frac: the fraction of data to sample from real dataset
+        for better computing performance when evaluating the model (for LOGAN and TableGan)
+    :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
+    :param num_kfolds: the number of folds to tune the hyperparameters of the classifier
+    :param num_optuna_trials: the number of trials of the optimization process for tuning hyperparameters
+    :param use_gpu: flag to use GPU computation power to accelerate the learning
+    """
+
+    name = "Ensemble"
+    alias = "ensemble"
+
+    @classmethod
+    def get_average_submetrics(cls) -> List[dict]:
+        """
+        Get the average submetrics of the current metric with their target and min/max values.
+
+        :return: the list of the average submetrics
+        """
+
+        submetrics = [
+            {
+                "submetric": "precision_top1%",
+                "min": 0,
+                "max": 1.0,
+                "objective": "max",
+            },
+            {
+                "submetric": "precision_top50%",
+                "min": 0,
+                "max": 1.0,
+                "objective": "max",
+            },
+            {
+                "submetric": "precision",
+                "min": 0,
+                "max": 1.0,
+                "objective": "max",
+            },
+            {
+                "submetric": "tpr_at_0.001%_fpr",
+                "min": 0,
+                "max": 1.0,
+                "objective": "max",
+            },
+            {
+                "submetric": "tpr_at_0.1%_fpr",
+                "min": 0,
+                "max": 1.0,
+                "objective": "max",
+            },
+        ]
+        return submetrics
+
+    def compute(
+        self,
+        df_real: dict[str, pd.DataFrame],
+        df_synthetic: dict[str, pd.DataFrame],
+        metadata: dict,
+    ) -> dict:
+        """
+        Train an ensemble model for membership inference attacks. Evaluate the model with real data,
+        which consists of the real data used to generate 1st generation synthetic data and a control (test set).
+        Output precision and ROC.
+
+        :param df_real: the real dataset, split into **train** and **test** sets
+        :param df_synthetic: the synthetic dataset, split into **train**, **test** and **2nd_gen** sets
+        :param metadata: a dict containing the metadata with the following keys:
+          **continuous**, **categorical** and **variable_to_predict**
+        :return: a dictionary with two keys pointing to dictionaries
+
+            * **average** -- the average across repetitions for **top 1% precision**, **top 50 precision** and **precision**
+            to predict if a record in the real set (train and test) is used to generate the first generation synthetic data
+            * **detailed** -- **top 1% precision**, **top 50% precision**, **precision** and **ROC** for each repetition
+        """
+
+        self.check_consistency_compute_parameters(df_real, df_synthetic, metadata)
+
+        if df_synthetic["train"].shape[1] <= 1:
+            return {}
+
+        # Select the columns keeping the order
+        cat_cols = [
+            col for col in df_real["train"].columns if col not in metadata["continuous"]
+        ]
+        cont_cols = [col for col in df_real["train"].columns if col not in cat_cols]
+
+        # Construct the training set for LOGAN
+        df_train_logan = pd.concat(
+            [df_synthetic["train"], df_synthetic["2nd_gen"]],
+            axis=0,
+            ignore_index=True,
+        )
+
+        df_train_logan[cat_cols] = df_train_logan[cat_cols].astype("object")
+
+        # Label 1 for 1st generation synthetic data used to generate 2nd generation synthetic data and 0 for 2nd generation sytnthetic data.
+        y_train_logan = np.array(
+            [1] * len(df_synthetic["train"]) + [0] * len(df_synthetic["2nd_gen"])
+        )
+
+        # Construct the training set for TableGan
+
+        # Split the 1st generation synthetic train set into 2 sets: 1 used to train discriminator and another used to train final classifier
+        df_synth_train_classifier_tablegan = df_synthetic["train"].sample(
+            n=len(df_synthetic["test"]),
+            replace=False,
+            ignore_index=False,
+        )
+        df_synth_train_discriminator_tablegan = df_synthetic["train"][
+            ~df_synthetic["train"].index.isin(df_synth_train_classifier_tablegan.index)
+        ].reset_index(drop=True)
+
+        # Construct train set to train the discriminator: 1st gen + 2nd gen synthetic sets
+        df_synth_2nd_gen_tablegan = df_synthetic["2nd_gen"].sample(
+            n=len(df_synth_train_discriminator_tablegan),
+            replace=False,
+            ignore_index=True,
+        )
+        df_train_tablegan = pd.concat(
+            [df_synth_train_discriminator_tablegan, df_synth_2nd_gen_tablegan],
+            axis=0,
+            ignore_index=True,
+        )
+
+        # Construct the train set used to train the final classifier, which contains 1st generation of
+        # synthetic data which is used to generate the 2nd generation synthetic data and control set
+        df_train_classifier_tablegan = pd.concat(
+            [
+                df_synth_train_classifier_tablegan.reset_index(drop=True),
+                df_synthetic["test"],
+            ],
+            axis=0,
+            ignore_index=True,
+        )
+
+        df_train_tablegan[cat_cols] = df_train_tablegan[cat_cols].astype("object")
+        df_train_classifier_tablegan[cat_cols] = df_train_classifier_tablegan[
+            cat_cols
+        ].astype("object")
+
+        # Label 1 for 1st generation synthetic data and 0 for 2nd generation synthetic data.
+        y_train_tablegan = np.array(
+            [1] * len(df_synth_train_discriminator_tablegan)
+            + [0] * len(df_synth_2nd_gen_tablegan)
+        )
+
+        # Label 1 for 1st gen synthetic data used to generate 2nd generation synthetic data and 0 for control.
+        y_train_classifier_tablegan = np.array(
+            [1] * len(df_synth_train_classifier_tablegan)
+            + [0] * len(df_synthetic["test"])
+        )
+
+        # Construct the training set for Detector
+
+        # Split the real test data which is not used to generate 1st generation synthetic data into 2 sets:
+        # 1 set used to train the detector and another set for control (ratio = 80%:20%)
+        real_control_det = df_real["test"].sample(
+            frac=0.2,
+            replace=False,
+            ignore_index=False,
+            random_state=self._random_state,
+        )
+        real_train_detector_det = df_real["test"][
+            ~df_real["test"].index.isin(real_control_det.index)
+        ].reset_index(drop=True)
+
+        # Sample from 1st generation synthetic data to train detector
+        synth_train_detector_det = df_synthetic["train"].sample(
+            n=len(real_train_detector_det),
+            replace=False,
+            ignore_index=True,
+        )
+
+        # Construct the train set to train the detector
+        df_train_det = pd.concat(
+            [real_train_detector_det, synth_train_detector_det],
+            axis=0,
+            ignore_index=True,
+        )
+
+        df_train_det[cat_cols] = df_train_det[cat_cols].astype("object")
+
+        # Train set: label 1 for generated synthetic data 0 for reference fresh real data.
+        y_train_det = np.array(
+            [0] * len(real_train_detector_det) + [1] * len(synth_train_detector_det)
+        )
+
+        # Sample from the real data used to generate 1st generation synthetic data to be used as part of the test set
+        # The size of real_train and real_control should be the same, so that the test set is balanced.
+        real_train_det = df_real["train"].sample(
+            n=len(real_control_det),
+            replace=False,
+            ignore_index=True,
+            random_state=self._random_state,
+        )
+
+        # Construct the test set for all the models
+        df_test = pd.concat(
+            [real_train_det, real_control_det.reset_index(drop=True)],
+            axis=0,
+            ignore_index=True,
+        )
+
+        print(f"Ensemble model test set shape: {df_test.shape}")
+
+        df_test[cat_cols] = df_test[cat_cols].astype("object")
+
+        # Test set: label 1 for real records used to generate 1st generation synthetic data and 0 for control.
+        y_test = np.array([1] * len(real_train_det) + [0] * len(real_control_det))
+
+        df_full_result = df_test.copy()
+        df_full_result["y_true"] = y_test
+
+        # Compute the metrics
+        precision_top1 = []
+        precision_top50 = []
+        precision = []
+        tpr_at_lowest_fpr = []  # at 0.001%
+        tpr_at_lower_fpr = []  # at 0.1%
+        roc = []
+
+        # Compute scores several times to account for randomness
+        for repeat in range(self._num_repeat):
+            # Train LOGAN
+            pipe_logan = self.hyperparam_tuning(
+                x=df_train_logan,
+                y=y_train_logan,
+                continuous_cols=cont_cols,
+                categorical_cols=cat_cols,
+            )
+
+            y_pred_proba_logan = pipe_logan.predict_proba(df_test)[
+                :, 1
+            ]  # binary case, y_pred needs to be (num_samples,)
+
+            # Train TableGan
+
+            # Train the discriminator
+            pipe_discriminator_tablegan = self.hyperparam_tuning(
+                x=df_train_tablegan,
+                y=y_train_tablegan,
+                continuous_cols=cont_cols,
+                categorical_cols=cat_cols,
+            )
+
+            y_pred_proba_tablegan = pipe_discriminator_tablegan.predict_proba(
+                df_train_classifier_tablegan
+            )[:, 1]
+
+            # Train the final classifier
+            df_train_classifier_tablegan["score"] = y_pred_proba_tablegan.tolist()
+
+            pipe_classifier_tablegan = self.hyperparam_tuning(
+                x=df_train_classifier_tablegan,
+                y=y_train_classifier_tablegan,
+                continuous_cols=cont_cols + ["score"],
+                categorical_cols=cat_cols,
+            )
+
+            # Evaluation on real data
+            real_train_score_tablegan = pipe_discriminator_tablegan.predict_proba(
+                df_test
+            )[:, 1]
+            df_test_tablegan = df_test.copy()
+            df_test_tablegan["score"] = real_train_score_tablegan.tolist()
+
+            y_test_pred_proba_tablegan = pipe_classifier_tablegan.predict_proba(
+                df_test_tablegan
+            )[:, 1]
+
+            # Train Detector
+            pipe_detector = self.hyperparam_tuning(
+                x=df_train_det,
+                y=y_train_det,
+                continuous_cols=cont_cols,
+                categorical_cols=cat_cols,
+            )
+
+            y_pred_proba_detector = pipe_detector.predict_proba(df_test)[:, 1]
+
+            # Add predictions of each individual model to result
+            df_full_result[f"y_pred_prob_logan_trail{repeat}"] = y_pred_proba_logan
+            df_full_result[
+                f"y_pred_prob_tablegan_trail{repeat}"
+            ] = y_test_pred_proba_tablegan
+            df_full_result[
+                f"y_pred_prob_detector_trail{repeat}"
+            ] = y_pred_proba_detector
+
+            # Average the prections from different models
+
+            y_pred_proba_final = np.mean(
+                [
+                    y_pred_proba_logan,
+                    y_test_pred_proba_tablegan,
+                    y_pred_proba_detector,
+                ],
+                axis=0,
+            )
+
+            fpr, tpr, _ = roc_curve(y_test, y_pred_proba_final)
+            tpr_lowest = self.tpr_at_n_fpr(0.001, fpr, tpr)
+            tpr_lower = self.tpr_at_n_fpr(0.1, fpr, tpr)
+            tpr_at_lowest_fpr.append(tpr_lowest)
+            tpr_at_lower_fpr.append(tpr_lower)
+            roc.append([fpr, tpr])
+
+            precision_top_1 = self.precision_top_n(
+                n=1, y_true=y_test, y_pred_proba=y_pred_proba_final
+            )
+            precision_top_50 = self.precision_top_n(
+                n=50, y_true=y_test, y_pred_proba=y_pred_proba_final
+            )
+
+            precision_top1.append(precision_top_1)
+            precision_top50.append(precision_top_50)
+
+            # Convert probability to class prediction
+            y_pred_final = np.where(y_pred_proba_final > 0.5, 1, 0)
+
+            prec_score = precision_score(y_test, y_pred_final)
+            precision.append(prec_score)
+
+        # Save the results
+        # df_full_result.to_csv("../results/attack/attack_prediction.csv", index=False)
 
         res = {
             "average": {
@@ -1592,6 +2022,8 @@ class Collision(AttackModel):
             )["collision"]
         )
 
+        print(np.unique(y_train))
+
         # Add frequency to 1st generation synthetic data (test set)
         df_test = self.compute_frequency(df_synthetic["train"])
 
@@ -1620,22 +2052,22 @@ class Collision(AttackModel):
             # If there's no collision
             res = {
                 "average": {
-                    "precision": ["-"],
-                    "recall": ["-"],
-                    "f1_score": ["-"],
-                    "recovery_rate": ["-"],
+                    "precision": np.nan,
+                    "recall": np.nan,
+                    "f1_score": np.nan,
+                    "recovery_rate": np.nan,
                     "avg_num_appearance_realtrain": avg_num_appearance_realtrain,
                     "avg_num_appearance_realcontrol": avg_num_appearance_realcontrol,
                     "avg_num_appearance_synth": avg_num_appearance_synth,
-                    "avg_num_appearance_collision_real": ["-"],
-                    "avg_num_appearance_collision_synth": ["-"],
+                    "avg_num_appearance_collision_real": np.nan,
+                    "avg_num_appearance_collision_synth": np.nan,
                 },
                 "detailed": {
-                    "precision": ["-"],
-                    "recall": ["-"],
-                    "f1_score": ["-"],
-                    "recovery_rate": ["-"],
-                    "pr_curve": ["-"],
+                    "precision": np.nan,
+                    "recall": np.nan,
+                    "f1_score": np.nan,
+                    "recovery_rate": np.nan,
+                    "pr_curve": np.nan,
                 },
             }
         else:
@@ -1716,7 +2148,7 @@ class Collision(AttackModel):
             ]
         )
 
-        if report["precision"][0] == "-":
+        if report["precision"] == np.nan:
             return None
         else:
             # Bar plot single value

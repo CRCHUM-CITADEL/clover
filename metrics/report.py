@@ -72,13 +72,12 @@ class Report:
                 else available_metrics
             )
 
-            # if "cross_learning" in params and params["cross_learning"] == False:
-            #     metrics_to_compute.discard("Cross Classification")
-            #     metrics_to_compute.discard("Cross Regression")
-
             if report_folderpath is None:
-
-                if params is not None and "cross_learning" in params.keys() and params["cross_learning"] == False:
+                if (
+                    params is not None
+                    and "cross_learning" in params
+                    and params["cross_learning"] == False
+                ):
                     metrics_to_compute.discard("Cross Classification")
                     metrics_to_compute.discard("Cross Regression")
 

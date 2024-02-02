@@ -7,4 +7,5 @@ Generators
    datasynthesizer
    smote
    synthpop
+   mst
 

@@ -8,4 +8,5 @@ Generators
    smote
    synthpop
    mst
+   ctgan
 

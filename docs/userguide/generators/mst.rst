@@ -1,5 +1,5 @@
-Maximum Spanning Tree (MST)
-===========================
+Private-PGM - MST
+==================
 
 Introduction
 ------------

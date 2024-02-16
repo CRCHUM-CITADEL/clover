@@ -1,3 +1,25 @@
+"""
+   Copyright 2023 (https://github.com/ryan112358/private-pgm)
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+   The original code was modified in the following ways:
+   - The parameter num_samples was added in the MST function
+   - Only the functions MST, measure, compress_domain, exponential_mechanism, select, transform_data and reverse_data
+     are included. Other elements of the code were removed.
+   - The paths of imported modules were modified to be relative to the location of this file.
+"""
+
 import numpy as np
 from ..mbi.inference import FactoredInference
 from ..mbi.domain import Domain
@@ -20,6 +42,7 @@ and does not rely on public provisional data for measurement selection.
 
 
 def MST(data, epsilon, delta, num_samples):
+    # The num_samples parameter was added to the code - the original code does not include it.
     rho = cdp_rho(epsilon, delta)
     sigma = np.sqrt(3 / (2 * rho))
     cliques = [(col,) for col in data.domain]

@@ -1,3 +1,13 @@
+"""
+This file is under the following license and copyright.
+MIT License
+Copyright (c) 2020 Hazy Limited
+
+The following modifications were made to the file:
+    - The paths of imported modules were modified to be relative.
+    - Replace iteritems() by items() (deprecated)
+"""
+
 import numpy as np
 import pandas as pd
 

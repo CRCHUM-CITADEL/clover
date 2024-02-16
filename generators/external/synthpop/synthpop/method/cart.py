@@ -1,3 +1,13 @@
+"""
+This file is under the following license and copyright.
+MIT License
+Copyright (c) 2020 Hazy Limited
+
+The following modifications were made to the file:
+    - The paths of imported modules were modified to be relative
+    - Add max_depth parameter in the decision tree classifier/regressor
+"""
+
 import numpy as np
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor

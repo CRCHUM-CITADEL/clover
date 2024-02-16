@@ -1,0 +1,25 @@
+Notices for the Clover project
+
+This product includes software from the Private PGM project, under the license Apache version 2.0.
+https://github.com/ryan112358/private-pgm
+The file mst.py in the folder mechanisms was modified in the following ways:
+    - The parameter num_samples was added in the MST function
+    - Only the functions MST, measure, compress_domain, exponential_mechanism, select, transform_data and reverse_data
+      are included. Other elements of the code were removed.
+    - The paths of imported modules were modified to be relative to the location of this file.
+
+This product includes software from the Synthpop project, under the MIT license.
+https://github.com/hazy/synthpop
+The following changes were made to the code:
+    - The paths of imported modules were modified to be relative.
+    - Replace iteritems() by items() in validator.py and synthpop.py (deprecated)
+    - Add **kwargs / self.args parameter in synthpop.py to pass arguments to the generation method
+    - Add max_depth parameter in the decision tree classifier/regressor in cart.py
+
+This product includes software from the TabDDPM project, under the MIT license.
+https://github.com/yandex-research/tab-ddpm
+
+This product includes software from the CTAB-GAN-Plus project, under the UNKNOWN LETS PRAY LICENSE.
+https://github.com/Team-TUD/CTAB-GAN-Plus
+
+Please refer to the LICENSE file for details about the licensing of this project.

@@ -5,6 +5,7 @@ import pandas as pd
 import utils.learning as ulearning
 from metrics.utility.population import Distinguishability
 from metrics.utility.application import Classification, Regression
+from metrics.privacy.reidentification import DistanceToClosestRecord
 
 
 def distinguishability_hinge_loss(
@@ -65,5 +66,57 @@ def absolute_difference_hinge_loss(
 
     # Compute the hinge loss based on the distinguishability score
     loss = ulearning.hinge_loss(absolute_diff_score, threshold=0.05)
+
+    return loss
+
+
+def nndr_hinge_loss(
+    df: dict[str, pd.DataFrame], df_to_compare: dict[str, pd.DataFrame], metadata: dict
+) -> float:
+    """
+    The cost or fitness function computed as the Hinge loss applied to the nndr_5th_percent_synthreal_train metric.
+
+    :param df: the real dataset, split into **train** and **test** sets
+    :param df_to_compare: the synthetic dataset, split into **train** and **test** sets
+    :param metadata: a dict containing the metadata with the following keys:
+      **continuous**, **categorical** and **variable_to_predict**
+    :return: the cost
+    """
+
+    # Compute the distinguishability metric
+    dcr = DistanceToClosestRecord(sampling_frac=1.0)
+
+    nndr_5th_percent_synthreal_train = dcr.compute(
+        df_real=df, df_synthetic=df_to_compare, metadata=metadata
+    )["average"]["nndr_5th_percent_synthreal_train"]
+
+    # Compute the hinge loss based on dcr_5th_percent_synthreal_train
+    loss = ulearning.hinge_loss(1 - nndr_5th_percent_synthreal_train, threshold=0.05)
+
+    return loss
+
+
+def ratio_match_hinge_loss(
+    df: dict[str, pd.DataFrame], df_to_compare: dict[str, pd.DataFrame], metadata: dict
+) -> float:
+    """
+    The cost or fitness function computed as the Hinge loss applied to the ratio_match_synthreal_train metric.
+
+    :param df: the real dataset, split into **train** and **test** sets
+    :param df_to_compare: the synthetic dataset, split into **train** and **test** sets
+    :param metadata: a dict containing the metadata with the following keys:
+      **continuous**, **categorical** and **variable_to_predict**
+    :return: the cost
+    """
+
+    # Compute the distinguishability metric
+    dcr = DistanceToClosestRecord(sampling_frac=1.0)
+
+    ratio_match_synthreal_train = dcr.compute(
+        df_real=df, df_synthetic=df_to_compare, metadata=metadata
+    )["average"]["ratio_match_synthreal_train"]
+
+    # Compute the hinge loss based on ratio_match_synthreal_train
+    loss = ulearning.hinge_loss(ratio_match_synthreal_train, threshold=0.05)
 
     return loss

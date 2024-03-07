@@ -16,6 +16,13 @@ The following changes were made to the code:
     - Add **kwargs / self.args parameter in synthpop.py to pass arguments to the generation method
     - Add max_depth parameter in the decision tree classifier/regressor in cart.py
 
+This product includes software from the SDV (and CTGAN) project, under the Business Source License 1.1.
+The Licensed Work is (c) DataCebo, Inc.
+https://github.com/sdv-dev
+The following changes were made to the code:
+    - The paths of imported modules were modified.
+    - The fitting methods were modified to accommodate for differentially private training.
+
 This product includes software from the TabDDPM project, under the MIT license.
 https://github.com/yandex-research/tab-ddpm
 

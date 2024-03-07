@@ -2,7 +2,7 @@ from typing import Union, Tuple  # standard library
 
 import pandas as pd  # 3rd party packages
 from pathlib import Path
-from sdv.single_table import TVAESynthesizer
+from generators.external.ctgan.single_table.dp_ctgan import TVAESynthesizer
 from sdv.metadata import SingleTableMetadata
 
 from generators.base import Generator  # local
@@ -28,7 +28,6 @@ class TVAEGenerator(Generator):
     :param metadata: a dictionary containing the list of **continuous** and **categorical** variables
     :param random_state: for reproducibility purposes
     :param generator_filepath: the path of the generator to sample from if it exists
-    :param discriminator_steps: the number of discriminator updates to do for each generator update.
     :param epochs: the number of training epochs.
     :param batch_size: the batch size for training.
     :param compress_dims: the size of the hidden layers in the encoder.
@@ -38,15 +37,19 @@ class TVAEGenerator(Generator):
     name = "TVAE"
 
     def __init__(
-        self,
-        df: pd.DataFrame,
-        metadata: dict,
-        random_state: int = None,
-        generator_filepath: Union[Path, str] = None,
-        epochs: int = 300,
-        batch_size: int = 100,
-        compress_dims: Tuple[int, int] = (249, 249),
-        decompress_dims: Tuple[int, int] = (249, 249),
+            self,
+            df: pd.DataFrame,
+            metadata: dict,
+            random_state: int = None,
+            generator_filepath: Union[Path, str] = None,
+            epochs: int = 300,
+            batch_size: int = 100,
+            compress_dims: Tuple[int, int] = (249, 249),
+            decompress_dims: Tuple[int, int] = (249, 249),
+            target_epsilon: float = None,
+            target_delta: float = None,
+            max_grad_norm: float = 1,
+            max_physical_batch_size: int = 125,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
@@ -55,8 +58,21 @@ class TVAEGenerator(Generator):
             "batch_size": batch_size,
             "compress_dims": compress_dims,
             "decompress_dims": decompress_dims,
+            "target_delta": target_delta,
+            "target_epsilon": target_epsilon,
+            "max_grad_norm": max_grad_norm,
+            "max_physical_batch_size": max_physical_batch_size,
         }
         self._tvae_metadata = None
+
+        if not (
+                (target_epsilon is None and target_delta is None)
+                or (target_epsilon is not None and target_delta is not None)
+        ):
+            raise ValueError(
+                "target_epsilon and target_delta should either both be specified for differentially private training, "
+                "or none should be for non-DP training"
+            )
 
     def preprocess(self) -> None:
         """
@@ -90,7 +106,12 @@ class TVAEGenerator(Generator):
         """
 
         self._gen = TVAESynthesizer(self._tvae_metadata, **self._params)
+
         self._gen.fit(self._df)
+
+        # necessary to be able to pickle the model
+        if self._params['target_epsilon'] is not None and self._params['target_delta'] is not None:
+            self._gen._model.vae.remove_hooks()
 
         ustandard.save_pickle(
             obj=self._gen, folderpath=save_path, filename=TVAEGenerator.name, date=True

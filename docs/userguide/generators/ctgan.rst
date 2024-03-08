@@ -106,7 +106,7 @@ performed an ablation study and concluded that PacGAN might not be useful when W
 explained by the Wassertein loss preventing mode collapse and thus rendering PacGAN redundant. Therefore, rather
 than the default parameter of m=10 in CTGAN’s original paper, the default in the Clover library is m=1.
 
-References:
+References
 -----------
 .. container:: references csl-bib-body hanging-indent
   :name: refs

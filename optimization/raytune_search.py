@@ -127,3 +127,11 @@ class RayTuneSearch(HyperparametersSearch):
         cost = self._fit(config, callback=callback)
 
         session.report({"score": cost})
+
+    @property
+    def best_params(self):
+        return self._best_params
+
+    @property
+    def tuner(self):
+        return self._tuner

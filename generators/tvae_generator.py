@@ -46,8 +46,8 @@ class TVAEGenerator(Generator):
             batch_size: int = 100,
             compress_dims: Tuple[int, int] = (249, 249),
             decompress_dims: Tuple[int, int] = (249, 249),
-            target_epsilon: float = None,
-            target_delta: float = None,
+            epsilon: float = None,
+            delta: float = None,
             max_grad_norm: float = 1,
             max_physical_batch_size: int = 125,
     ):
@@ -58,19 +58,19 @@ class TVAEGenerator(Generator):
             "batch_size": batch_size,
             "compress_dims": compress_dims,
             "decompress_dims": decompress_dims,
-            "target_delta": target_delta,
-            "target_epsilon": target_epsilon,
+            "delta": delta,
+            "epsilon": epsilon,
             "max_grad_norm": max_grad_norm,
             "max_physical_batch_size": max_physical_batch_size,
         }
         self._tvae_metadata = None
 
         if not (
-                (target_epsilon is None and target_delta is None)
-                or (target_epsilon is not None and target_delta is not None)
+                (epsilon is None and delta is None)
+                or (epsilon is not None and delta is not None)
         ):
             raise ValueError(
-                "target_epsilon and target_delta should either both be specified for differentially private training, "
+                "epsilon and delta should either both be specified for differentially private training, "
                 "or none should be for non-DP training"
             )
 
@@ -110,7 +110,7 @@ class TVAEGenerator(Generator):
         self._gen.fit(self._df)
 
         # necessary to be able to pickle the model
-        if self._params['target_epsilon'] is not None and self._params['target_delta'] is not None:
+        if self._params['epsilon'] is not None and self._params['delta'] is not None:
             self._gen._model.vae.remove_hooks()
 
         ustandard.save_pickle(

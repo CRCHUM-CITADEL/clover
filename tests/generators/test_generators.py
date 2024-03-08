@@ -58,7 +58,9 @@ def test_generation(
             "min_samples_leaf": 5,  # synthpop
             "max_depth": None,  # synthpop
             "candidate_keys": None,  # datasynthesizer
-            "epsilon": 1,  # datasynthesizer / MST
+            "epsilon": 1,  # datasynthesizer / MST / tvae / ctgan
+            "max_grad_norm": 1, # tvae / ctgan
+            "max_physical_batch_size": 126, # tvae / ctgan
             "degree": 2,  # datasynthesizer
             "k_neighbors": 5,  # smote
             "epochs": 1,  # tvae / ctgan / ctabganplus
@@ -70,7 +72,7 @@ def test_generation(
             "num_timesteps": 2,  # tabDDPM
             "num_iter": 2,  # tabDDPM
             "layers": None,  # tabDDPM
-            "delta": 1e-9,  # MST
+            "delta": 1e-9,  # MST / tvae / ctgan
             "mixed_columns": None,  # ctabganplus
             "log_columns": None,  # ctabganplus
             "integer_columns": None,  # ctabganplus

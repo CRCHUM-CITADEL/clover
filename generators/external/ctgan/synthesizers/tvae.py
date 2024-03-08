@@ -198,8 +198,8 @@ class TVAE(BaseSynthesizer):
         batch_size=500,
         epochs=300,
         loss_factor=2,
-        target_epsilon=None,
-        target_delta=None,
+        epsilon=None,
+        delta=None,
         max_grad_norm=1,
         max_physical_batch_size=126,
         verbose=1,
@@ -214,8 +214,8 @@ class TVAE(BaseSynthesizer):
         self.loss_factor = loss_factor
         self.epochs = epochs
 
-        self.target_epsilon = target_epsilon
-        self.target_delta = target_delta
+        self.epsilon = epsilon
+        self.delta = delta
         self.max_grad_norm = max_grad_norm
         self.max_physical_batch_size = max_physical_batch_size
 
@@ -299,9 +299,9 @@ class TVAE(BaseSynthesizer):
         Args:
             train_data (numpy.ndarray or pandas.DataFrame):
                 Training Data. It must be a 2-dimensional numpy array or a pandas.DataFrame.
-            target_epsilon (float):
+            epsilon (float):
                 Target privacy parameter (epsilon) for differential privacy.
-            target_delta (float):
+            delta (float):
                 Target privacy parameter (delta) for differential privacy.
             max_grad_norm (float):
                 Maximum gradient norm for gradient clipping during training.
@@ -347,8 +347,8 @@ class TVAE(BaseSynthesizer):
             module=self.vae,
             optimizer=self.optimizerAE,
             data_loader=loader,
-            target_delta=self.target_delta,
-            target_epsilon=self.target_epsilon,
+            target_delta=self.delta,
+            target_epsilon=self.epsilon,
             max_grad_norm=self.max_grad_norm,
             epochs=self.epochs,
         )
@@ -392,7 +392,7 @@ class TVAE(BaseSynthesizer):
                     self.optimizerAE.step()
                     self.vae.decoder.sigma.data.clamp_(0.01, 1.0)
 
-                    spent_epsilon = privacy_engine.get_epsilon(self.target_delta)
+                    spent_epsilon = privacy_engine.get_epsilon(self.delta)
 
                     batch.append(id_)
                     loss_values.append(loss.detach().cpu().item())

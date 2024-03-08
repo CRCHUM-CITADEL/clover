@@ -184,9 +184,9 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
             Number of training epochs. Defaults to 300.
         loss_factor (int):
             Multiplier for the reconstruction error. Defaults to 2.
-        target_epsilon (float or None):
+        epsilon (float or None):
             Privacy parameter for differential privacy. Defaults to None.
-        target_delta (float or None):
+        delta (float or None):
             Privacy parameter for differential privacy. Defaults to None.
         max_grad_norm (Union[float, List[float]]):
             The maximum norm of the per-sample gradients. Defaults to 1.
@@ -202,7 +202,7 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
     def __init__(self, metadata, enforce_min_max_values=True, enforce_rounding=True,
                  embedding_dim=128, compress_dims=(128, 128), decompress_dims=(128, 128),
                  l2scale=1e-5, batch_size=500, epochs=300, loss_factor=2,
-                 target_epsilon=None, target_delta=None, max_grad_norm=1, max_physical_batch_size=126,
+                 epsilon=None, delta=None, max_grad_norm=1, max_physical_batch_size=126,
                  cuda=True):
 
         super().__init__(
@@ -218,8 +218,8 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
         self.epochs = epochs
         self.loss_factor = loss_factor
         self.cuda = cuda
-        self.target_epsilon = target_epsilon
-        self.target_delta = target_delta
+        self.epsilon = epsilon
+        self.delta = delta
         self.max_grad_norm = max_grad_norm
         self.max_physical_batch_size = max_physical_batch_size
 
@@ -231,8 +231,8 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
             'batch_size': batch_size,
             'epochs': epochs,
             'loss_factor': loss_factor,
-            'target_epsilon': target_epsilon,
-            'target_delta': target_delta,
+            'epsilon': epsilon,
+            'delta': delta,
             'max_grad_norm': max_grad_norm,
             'max_physical_batch_size': max_physical_batch_size,
             'cuda': cuda
@@ -249,7 +249,7 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
 
         self._model = TVAE(**self._model_kwargs)
 
-        if self._model.target_epsilon is not None:
+        if self._model.epsilon is not None:
             self._model.fit_dp(processed_data,
                                discrete_columns=discrete_columns,
                                )

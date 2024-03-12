@@ -17,10 +17,11 @@ The original code was modified in the following ways to accommodate differential
 """
 
 from generators.external.ctgan.synthesizers.tvae import TVAE
+from generators.external.ctgan.synthesizers.ctgan import CTGAN
 
 """Wrapper around CTGAN model."""
 
-from ctgan import CTGAN
+#from ctgan import CTGAN
 
 from sdv.single_table.base import BaseSingleTableSynthesizer
 from sdv.single_table.utils import detect_discrete_columns
@@ -84,7 +85,9 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
                  embedding_dim=128, generator_dim=(256, 256), discriminator_dim=(256, 256),
                  generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4,
                  discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
-                 log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True):
+                 log_frequency=True, verbose=False, epochs=300, pac=10,
+                 epsilon=None, delta=None, max_grad_norm=1,
+                 cuda=True):
 
         super().__init__(
             metadata=metadata,
@@ -106,6 +109,9 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
         self.verbose = verbose
         self.epochs = epochs
         self.pac = pac
+        self.epsilon = epsilon
+        self.delta = delta
+        self.max_grad_norm = max_grad_norm
         self.cuda = cuda
 
         self._model_kwargs = {
@@ -122,6 +128,9 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
             'verbose': verbose,
             'epochs': epochs,
             'pac': pac,
+            'epsilon': epsilon,
+            'delta': delta,
+            'max_grad_norm': max_grad_norm,
             'cuda': cuda
         }
 
@@ -134,7 +143,15 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
         """
         discrete_columns = detect_discrete_columns(self.get_metadata(), processed_data)
         self._model = CTGAN(**self._model_kwargs)
-        self._model.fit(processed_data, discrete_columns=discrete_columns)
+
+        if self._model.epsilon is not None:
+            self._model.fit_dp(processed_data,
+                               discrete_columns=discrete_columns,
+                               )
+        else:
+            self._model.fit(processed_data,
+                            discrete_columns=discrete_columns,
+                            )
 
     def _sample(self, num_rows, conditions=None):
         """Sample the indicated number of rows from the model.

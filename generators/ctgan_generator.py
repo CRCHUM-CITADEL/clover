@@ -2,7 +2,8 @@ from typing import Union  # standard library
 
 import pandas as pd  # 3rd party packages
 from pathlib import Path
-from sdv.single_table import CTGANSynthesizer
+#from sdv.single_table import CTGANSynthesizer
+from generators.external.ctgan.single_table.dp_ctgan import CTGANSynthesizer
 from sdv.metadata import SingleTableMetadata
 
 from generators.base import Generator  # local
@@ -43,6 +44,10 @@ class CTGANGenerator(Generator):
         discriminator_steps: int = 4,
         epochs: int = 300,
         batch_size: int = 100,
+        epsilon: float = None,
+        delta: float = None,
+        max_grad_norm: float = 1,
+        verbose: int = 1,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
@@ -50,6 +55,10 @@ class CTGANGenerator(Generator):
             "discriminator_steps": discriminator_steps,
             "epochs": epochs,
             "batch_size": batch_size,
+            "delta": delta,
+            "epsilon": epsilon,
+            "max_grad_norm": max_grad_norm,
+            "verbose": verbose,
         }
         self._ctgan_metadata = None
 
@@ -58,6 +67,15 @@ class CTGANGenerator(Generator):
             if generator_filepath is None
             else ustandard.load_pickle(filepath=generator_filepath)
         )
+
+        if not (
+                (epsilon is None and delta is None)
+                or (epsilon is not None and delta is not None)
+        ):
+            raise ValueError(
+                "epsilon and delta should either both be specified for differentially private training, "
+                "or none should be for non-DP training"
+            )
 
     def preprocess(self) -> None:
         """

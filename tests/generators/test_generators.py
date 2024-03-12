@@ -80,6 +80,7 @@ def test_generation(
             "random_dim": 100,  # ctabganplus
             "num_channels": 64,  # ctabganplus
             "l2scale": 1e-5,  # ctabganplus
+            "verbose": 0,  # ctgan
         }
 
         # Select only the expected instance parameters

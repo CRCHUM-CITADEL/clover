@@ -353,10 +353,7 @@ class TVAE(BaseSynthesizer):
             epochs=self.epochs,
         )
 
-        self.loss_values = pd.DataFrame(columns=["Epoch", "Batch", "Loss"])
-        self.epsilon_values = pd.DataFrame(
-            columns=["Epoch", "Batch", "Loss", "Epsilon"]
-        )
+        self.loss_values = pd.DataFrame(columns=["Epoch", "Batch", "Loss", "Epsilon"])
 
         iterator = tqdm(range(self.epochs), disable=(not self.verbose))
         if self.verbose:

@@ -48,7 +48,7 @@ class CTGANGenerator(Generator):
         epsilon: float = None,
         delta: float = None,
         max_grad_norm: float = 1,
-        verbose: int = 1,
+        verbose: int = 0,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 

@@ -322,7 +322,7 @@ class GANLeaks(AttackModel):
         y_test: np.ndarray,
         df_synth: pd.DataFrame,
         cat_cols: list,
-    ) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    ) -> Tuple[float, float, np.ndarray, np.ndarray, np.ndarray]:
         """
         Evaluate a GAN-Leaks model
 
@@ -330,7 +330,9 @@ class GANLeaks(AttackModel):
         :param y_test: the true label of the real data
         :param df_synth: the reference synthetic data
         :param cat_cols: the columns with categorical variables
-        :return: top 1% precision and top 50% precision of the predictions and DCRs for the top 1% and top 50% predictions
+        :return: top 1% precision and top 50% precision of the predictions,
+            DCRs for the top 1% and top 50% predictions and
+            DCRs for each record
         """
         df_synth_ref = df_synth[df_test.columns]  # gower needs the same order
 
@@ -347,7 +349,7 @@ class GANLeaks(AttackModel):
         min_dist = np.min(pairwise_gower, axis=1)
 
         # Convert the distance to probability, in order to compute top 1% and top 50% precision
-        y_pred_proba = np.exp(min_dist)
+        y_pred_proba = np.exp(-min_dist)
 
         distance_sorted = np.sort(min_dist)
         distance_top1 = distance_sorted[: int(len(distance_sorted) * 0.01)]
@@ -361,7 +363,7 @@ class GANLeaks(AttackModel):
             n=50, y_true=y_test, y_pred_proba=y_pred_proba
         )
 
-        return precision_top1, precision_top50, distance_top1, distance_top50
+        return precision_top1, precision_top50, distance_top1, distance_top50, min_dist
 
     def compute(
         self,
@@ -413,7 +415,7 @@ class GANLeaks(AttackModel):
         # Label 1 for real records used to generate 1st generation synthetic data and 0 for control
         y_test = np.array([1] * len(real_train) + [0] * len(real_control))
 
-        precision_top1, precision_top50, distance_top1, distance_top50 = self.eval(
+        precision_top1, precision_top50, distance_top1, distance_top50, _ = self.eval(
             df_test=df_test,
             y_test=y_test,
             df_synth=df_synthetic["train"],

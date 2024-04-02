@@ -22,11 +22,13 @@ https://github.com/sdv-dev
 The following changes were made to the code:
     - The paths of imported modules were modified.
     - The fitting methods were modified to accommodate for differentially private training.
+    - In CTGAN, the gradient penalty was removed in the DP version as the gradient clipping respects the imposed
+      constraints (clipping norm of 1).
 
 This product includes software from the TabDDPM project, under the MIT license.
 https://github.com/yandex-research/tab-ddpm
 
-This product includes software from the CTAB-GAN-Plus project, under the UNKNOWN LETS PRAY LICENSE.
+This product includes software from the CTAB-GAN-Plus project, under the license Apache version 2.0.
 https://github.com/Team-TUD/CTAB-GAN-Plus
 
 This product includes software from the dpart project, under the MIT license.

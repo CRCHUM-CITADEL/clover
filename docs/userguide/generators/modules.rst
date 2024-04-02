@@ -9,4 +9,5 @@ Generators
    synthpop
    mst
    ctgan
+   tvae
 

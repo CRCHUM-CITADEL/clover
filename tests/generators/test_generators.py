@@ -59,8 +59,8 @@ def test_generation(
             "max_depth": None,  # synthpop
             "candidate_keys": None,  # datasynthesizer
             "epsilon": 1,  # datasynthesizer / MST / tvae / ctgan
-            "max_grad_norm": 1, # tvae / ctgan
-            "max_physical_batch_size": 126, # tvae / ctgan
+            "max_grad_norm": 1,  # tvae / ctgan
+            "max_physical_batch_size": 126,  # tvae / ctgan
             "degree": 2,  # datasynthesizer
             "k_neighbors": 5,  # smote
             "epochs": 1,  # tvae / ctgan / ctabganplus

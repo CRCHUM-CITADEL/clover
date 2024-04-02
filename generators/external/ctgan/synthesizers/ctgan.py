@@ -7,7 +7,16 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import optim
-from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional
+from torch.nn import (
+    BatchNorm1d,
+    Dropout,
+    LeakyReLU,
+    Linear,
+    Module,
+    ReLU,
+    Sequential,
+    functional,
+)
 
 from ctgan.data_sampler import DataSampler
 from ctgan.data_transformer import DataTransformer
@@ -35,7 +44,9 @@ class Discriminator(Module):
         seq += [Linear(dim, 1)]
         self.seq = Sequential(*seq)
 
-    def calc_gradient_penalty(self, real_data, fake_data, device='cpu', pac=10, lambda_=10):
+    def calc_gradient_penalty(
+        self, real_data, fake_data, device="cpu", pac=10, lambda_=10
+    ):
         """Compute the gradient penalty."""
         alpha = torch.rand(real_data.size(0) // pac, 1, 1, device=device)
         alpha = alpha.repeat(1, pac, real_data.size(1))
@@ -46,9 +57,12 @@ class Discriminator(Module):
         disc_interpolates = self(interpolates)
 
         gradients = torch.autograd.grad(
-            outputs=disc_interpolates, inputs=interpolates,
+            outputs=disc_interpolates,
+            inputs=interpolates,
             grad_outputs=torch.ones(disc_interpolates.size(), device=device),
-            create_graph=True, retain_graph=True, only_inputs=True
+            create_graph=True,
+            retain_graph=True,
+            only_inputs=True,
         )[0]
 
         gradients_view = gradients.view(-1, pac * real_data.size(1)).norm(2, dim=1) - 1
@@ -62,7 +76,9 @@ class Discriminator(Module):
         return self.seq(input_.view(-1, self.pacdim))
 
 
-def calc_gradient_penalty(discriminator, real_data, fake_data, device='cpu', pac=10, lambda_=10):
+def calc_gradient_penalty(
+    discriminator, real_data, fake_data, device="cpu", pac=10, lambda_=10
+):
     """Compute the gradient penalty for the discriminator."""
     alpha = torch.rand(real_data.size(0) // pac, 1, 1, device=device)
     alpha = alpha.repeat(1, pac, real_data.size(1))
@@ -73,9 +89,12 @@ def calc_gradient_penalty(discriminator, real_data, fake_data, device='cpu', pac
     disc_interpolates = discriminator(interpolates)
 
     gradients = torch.autograd.grad(
-        outputs=disc_interpolates, inputs=interpolates,
+        outputs=disc_interpolates,
+        inputs=interpolates,
         grad_outputs=torch.ones(disc_interpolates.size(), device=device),
-        create_graph=True, retain_graph=True, only_inputs=True
+        create_graph=True,
+        retain_graph=True,
+        only_inputs=True,
     )[0]
 
     gradients_view = gradients.view(-1, pac * real_data.size(1)).norm(2, dim=1) - 1
@@ -167,13 +186,27 @@ class CTGAN(BaseSynthesizer):
             Defaults to ``True``.
     """
 
-    def __init__(self, embedding_dim=128, generator_dim=(256, 256), discriminator_dim=(256, 256),
-                 generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4,
-                 discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
-                 log_frequency=True, verbose=False, epochs=300, pac=10,
-                 epsilon=None, delta=None, max_grad_norm=1, max_physical_batch_size=126,
-                 cuda=True):
-
+    def __init__(
+        self,
+        embedding_dim=128,
+        generator_dim=(256, 256),
+        discriminator_dim=(256, 256),
+        generator_lr=2e-4,
+        generator_decay=1e-6,
+        discriminator_lr=2e-4,
+        discriminator_decay=1e-6,
+        batch_size=500,
+        discriminator_steps=1,
+        log_frequency=True,
+        verbose=False,
+        epochs=300,
+        pac=10,
+        epsilon=None,
+        delta=None,
+        max_grad_norm=1,
+        max_physical_batch_size=126,
+        cuda=True,
+    ):
         assert batch_size % 2 == 0
 
         self._embedding_dim = embedding_dim
@@ -198,11 +231,11 @@ class CTGAN(BaseSynthesizer):
         self.max_physical_batch_size = max_physical_batch_size
 
         if not cuda or not torch.cuda.is_available():
-            device = 'cpu'
+            device = "cpu"
         elif isinstance(cuda, str):
             device = cuda
         else:
-            device = 'cuda'
+            device = "cuda"
 
         self._device = torch.device(device)
 
@@ -232,11 +265,13 @@ class CTGAN(BaseSynthesizer):
             Sampled tensor of same shape as logits from the Gumbel-Softmax distribution.
         """
         for _ in range(10):
-            transformed = functional.gumbel_softmax(logits, tau=tau, hard=hard, eps=eps, dim=dim)
+            transformed = functional.gumbel_softmax(
+                logits, tau=tau, hard=hard, eps=eps, dim=dim
+            )
             if not torch.isnan(transformed).any():
                 return transformed
 
-        raise ValueError('gumbel_softmax returning NaN.')
+        raise ValueError("gumbel_softmax returning NaN.")
 
     def _apply_activate(self, data):
         """Apply proper activation function to the output of the generator."""
@@ -244,17 +279,19 @@ class CTGAN(BaseSynthesizer):
         st = 0
         for column_info in self._transformer.output_info_list:
             for span_info in column_info:
-                if span_info.activation_fn == 'tanh':
+                if span_info.activation_fn == "tanh":
                     ed = st + span_info.dim
                     data_t.append(torch.tanh(data[:, st:ed]))
                     st = ed
-                elif span_info.activation_fn == 'softmax':
+                elif span_info.activation_fn == "softmax":
                     ed = st + span_info.dim
                     transformed = self._gumbel_softmax(data[:, st:ed], tau=0.2)
                     data_t.append(transformed)
                     st = ed
                 else:
-                    raise ValueError(f'Unexpected activation function {span_info.activation_fn}.')
+                    raise ValueError(
+                        f"Unexpected activation function {span_info.activation_fn}."
+                    )
 
         return torch.cat(data_t, dim=1)
 
@@ -265,7 +302,7 @@ class CTGAN(BaseSynthesizer):
         st_c = 0
         for column_info in self._transformer.output_info_list:
             for span_info in column_info:
-                if len(column_info) != 1 or span_info.activation_fn != 'softmax':
+                if len(column_info) != 1 or span_info.activation_fn != "softmax":
                     # not discrete column
                     st += span_info.dim
                 else:
@@ -274,7 +311,7 @@ class CTGAN(BaseSynthesizer):
                     tmp = functional.cross_entropy(
                         data[:, st:ed],
                         torch.argmax(c[:, st_c:ed_c], dim=1),
-                        reduction='none'
+                        reduction="none",
                     )
                     loss.append(tmp)
                     st = ed
@@ -304,10 +341,10 @@ class CTGAN(BaseSynthesizer):
                 if column < 0 or column >= train_data.shape[1]:
                     invalid_columns.append(column)
         else:
-            raise TypeError('``train_data`` should be either pd.DataFrame or np.array.')
+            raise TypeError("``train_data`` should be either pd.DataFrame or np.array.")
 
         if invalid_columns:
-            raise ValueError(f'Invalid columns found: {invalid_columns}')
+            raise ValueError(f"Invalid columns found: {invalid_columns}")
 
     @random_state
     def fit(self, train_data, discrete_columns=(), epochs=None):
@@ -328,9 +365,11 @@ class CTGAN(BaseSynthesizer):
             epochs = self._epochs
         else:
             warnings.warn(
-                ('`epochs` argument in `fit` method has been deprecated and will be removed '
-                 'in a future version. Please pass `epochs` to the constructor instead'),
-                DeprecationWarning
+                (
+                    "`epochs` argument in `fit` method has been deprecated and will be removed "
+                    "in a future version. Please pass `epochs` to the constructor instead"
+                ),
+                DeprecationWarning,
             )
 
         self._transformer = DataTransformer()
@@ -339,32 +378,35 @@ class CTGAN(BaseSynthesizer):
         train_data = self._transformer.transform(train_data)
 
         self._data_sampler = DataSampler(
-            train_data,
-            self._transformer.output_info_list,
-            self._log_frequency)
+            train_data, self._transformer.output_info_list, self._log_frequency
+        )
 
         data_dim = self._transformer.output_dimensions
 
         self._generator = Generator(
             self._embedding_dim + self._data_sampler.dim_cond_vec(),
             self._generator_dim,
-            data_dim
+            data_dim,
         ).to(self._device)
 
         discriminator = Discriminator(
             data_dim + self._data_sampler.dim_cond_vec(),
             self._discriminator_dim,
-            pac=self.pac
+            pac=self.pac,
         ).to(self._device)
 
         optimizerG = optim.Adam(
-            self._generator.parameters(), lr=self._generator_lr, betas=(0.5, 0.9),
-            weight_decay=self._generator_decay
+            self._generator.parameters(),
+            lr=self._generator_lr,
+            betas=(0.5, 0.9),
+            weight_decay=self._generator_decay,
         )
 
         optimizerD = optim.Adam(
-            discriminator.parameters(), lr=self._discriminator_lr,
-            betas=(0.5, 0.9), weight_decay=self._discriminator_decay
+            discriminator.parameters(),
+            lr=self._discriminator_lr,
+            betas=(0.5, 0.9),
+            weight_decay=self._discriminator_decay,
         )
 
         mean = torch.zeros(self._batch_size, self._embedding_dim, device=self._device)
@@ -373,14 +415,15 @@ class CTGAN(BaseSynthesizer):
         steps_per_epoch = max(len(train_data) // self._batch_size, 1)
         for i in range(epochs):
             for id_ in range(steps_per_epoch):
-
                 for n in range(self._discriminator_steps):
                     fakez = torch.normal(mean=mean, std=std)
 
                     condvec = self._data_sampler.sample_condvec(self._batch_size)
                     if condvec is None:
                         c1, m1, col, opt = None, None, None, None
-                        real = self._data_sampler.sample_data(self._batch_size, col, opt)
+                        real = self._data_sampler.sample_data(
+                            self._batch_size, col, opt
+                        )
                     else:
                         c1, m1, col, opt = condvec
                         c1 = torch.from_numpy(c1).to(self._device)
@@ -390,13 +433,14 @@ class CTGAN(BaseSynthesizer):
                         perm = np.arange(self._batch_size)
                         np.random.shuffle(perm)
                         real = self._data_sampler.sample_data(
-                            self._batch_size, col[perm], opt[perm])
+                            self._batch_size, col[perm], opt[perm]
+                        )
                         c2 = c1[perm]
 
                     fake = self._generator(fakez)
                     fakeact = self._apply_activate(fake)
 
-                    real = torch.from_numpy(real.astype('float32')).to(self._device)
+                    real = torch.from_numpy(real.astype("float32")).to(self._device)
 
                     if c1 is not None:
                         fake_cat = torch.cat([fakeact, c1], dim=1)
@@ -409,7 +453,8 @@ class CTGAN(BaseSynthesizer):
                     y_real = discriminator(real_cat)
 
                     pen = discriminator.calc_gradient_penalty(
-                        real_cat, fake_cat, self._device, self.pac)
+                        real_cat, fake_cat, self._device, self.pac
+                    )
                     loss_d = -(torch.mean(y_real) - torch.mean(y_fake))
 
                     optimizerD.zero_grad(set_to_none=False)
@@ -448,9 +493,11 @@ class CTGAN(BaseSynthesizer):
                 optimizerG.step()
 
             if self._verbose:
-                print(f'Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},'  # noqa: T001
-                      f'Loss D: {loss_d.detach().cpu(): .4f}',
-                      flush=True)
+                print(
+                    f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"  # noqa: T001
+                    f"Loss D: {loss_d.detach().cpu(): .4f}",
+                    flush=True,
+                )
 
     @random_state
     def fit_dp(self, train_data, discrete_columns=(), epochs=None):
@@ -471,9 +518,11 @@ class CTGAN(BaseSynthesizer):
             epochs = self._epochs
         else:
             warnings.warn(
-                ('`epochs` argument in `fit` method has been deprecated and will be removed '
-                 'in a future version. Please pass `epochs` to the constructor instead'),
-                DeprecationWarning
+                (
+                    "`epochs` argument in `fit` method has been deprecated and will be removed "
+                    "in a future version. Please pass `epochs` to the constructor instead"
+                ),
+                DeprecationWarning,
             )
 
         self._transformer = DataTransformer()
@@ -482,65 +531,78 @@ class CTGAN(BaseSynthesizer):
         train_data = self._transformer.transform(train_data)
 
         self._data_sampler = DataSampler(
-            train_data,
-            self._transformer.output_info_list,
-            self._log_frequency)
+            train_data, self._transformer.output_info_list, self._log_frequency
+        )
 
         data_dim = self._transformer.output_dimensions
 
         self._generator = Generator(
             self._embedding_dim + self._data_sampler.dim_cond_vec(),
             self._generator_dim,
-            data_dim
+            data_dim,
         ).to(self._device)
 
         discriminator = Discriminator(
             data_dim + self._data_sampler.dim_cond_vec(),
             self._discriminator_dim,
-            pac=self.pac
+            pac=self.pac,
         ).to(self._device)
 
         accountant = RDPAccountant()
         discriminator = GradSampleModule(discriminator)
 
         optimizerG = optim.Adam(
-            self._generator.parameters(), lr=self._generator_lr, betas=(0.5, 0.9),
-            weight_decay=self._generator_decay
+            self._generator.parameters(),
+            lr=self._generator_lr,
+            betas=(0.5, 0.9),
+            weight_decay=self._generator_decay,
         )
 
         optimizerD = optim.Adam(
-            discriminator.parameters(), lr=self._discriminator_lr,
-            betas=(0.5, 0.9), weight_decay=self._discriminator_decay
+            discriminator.parameters(),
+            lr=self._discriminator_lr,
+            betas=(0.5, 0.9),
+            weight_decay=self._discriminator_decay,
         )
 
-        optimizerD = DPOptimizer(optimizer=optimizerD,
-                                 noise_multiplier=get_noise_multiplier(
-                                        target_epsilon=self.epsilon,
-                                        target_delta=self.delta,
-                                        sample_rate=self._batch_size/len(train_data),
-                                        epochs=self._discriminator_steps*epochs,
-                                        accountant=accountant.mechanism(),
-                                 ),
-                                 max_grad_norm=self.max_grad_norm,
-                                 expected_batch_size=self._batch_size)
+        optimizerD = DPOptimizer(
+            optimizer=optimizerD,
+            noise_multiplier=get_noise_multiplier(
+                target_epsilon=self.epsilon,
+                target_delta=self.delta,
+                sample_rate=self._batch_size / len(train_data),
+                epochs=self._discriminator_steps * epochs,
+                accountant=accountant.mechanism(),
+            ),
+            max_grad_norm=self.max_grad_norm,
+            expected_batch_size=self._batch_size,
+        )
 
         optimizerD.attach_step_hook(
-            accountant.get_optimizer_hook_fn(sample_rate=self._batch_size/len(train_data))
+            accountant.get_optimizer_hook_fn(
+                sample_rate=self._batch_size / len(train_data)
+            )
         )
 
         mean = torch.zeros(self._batch_size, self._embedding_dim, device=self._device)
         std = mean + 1
 
-        self.loss_values = pd.DataFrame(columns=["Epoch", "Batch", "Loss_d", "Loss_g", "Epsilon"])
+        self.loss_values = pd.DataFrame(
+            columns=["Epoch", "Batch", "Loss_d", "Loss_g", "Epsilon"]
+        )
 
         steps_per_epoch = max(len(train_data) // self._batch_size, 1)
 
         iterator = tqdm(range(epochs), disable=(not self._verbose))
         if self._verbose:
-            iterator_description = "Loss_D: {loss_d:.3f}, Loss_G: {loss_g:.3f}, Epsilon: {epsilon:.3f}"
-            iterator.set_description(iterator_description.format(loss_d=0, loss_g=0, epsilon=0))
+            iterator_description = (
+                "Loss_D: {loss_d:.3f}, Loss_G: {loss_g:.3f}, Epsilon: {epsilon:.3f}"
+            )
+            iterator.set_description(
+                iterator_description.format(loss_d=0, loss_g=0, epsilon=0)
+            )
 
-        #for i in range(epochs):
+        # for i in range(epochs):
         for i in iterator:
             batch = []
             loss_d_values = []
@@ -548,14 +610,15 @@ class CTGAN(BaseSynthesizer):
             epsilon_values = []
 
             for id_ in range(steps_per_epoch):
-
                 for n in range(self._discriminator_steps):
                     fakez = torch.normal(mean=mean, std=std)
 
                     condvec = self._data_sampler.sample_condvec(self._batch_size)
                     if condvec is None:
                         c1, m1, col, opt = None, None, None, None
-                        real = self._data_sampler.sample_data(self._batch_size, col, opt)
+                        real = self._data_sampler.sample_data(
+                            self._batch_size, col, opt
+                        )
                     else:
                         c1, m1, col, opt = condvec
                         c1 = torch.from_numpy(c1).to(self._device)
@@ -565,13 +628,14 @@ class CTGAN(BaseSynthesizer):
                         perm = np.arange(self._batch_size)
                         np.random.shuffle(perm)
                         real = self._data_sampler.sample_data(
-                            self._batch_size, col[perm], opt[perm])
+                            self._batch_size, col[perm], opt[perm]
+                        )
                         c2 = c1[perm]
 
                     fake = self._generator(fakez)
                     fakeact = self._apply_activate(fake)
 
-                    real = torch.from_numpy(real.astype('float32')).to(self._device)
+                    real = torch.from_numpy(real.astype("float32")).to(self._device)
 
                     if c1 is not None:
                         fake_cat = torch.cat([fakeact, c1], dim=1)
@@ -583,12 +647,12 @@ class CTGAN(BaseSynthesizer):
                     y_fake = discriminator(fake_cat)
                     y_real = discriminator(real_cat)
 
-                    #pen = calc_gradient_penalty(discriminator,
+                    # pen = calc_gradient_penalty(discriminator,
                     #    real_cat, fake_cat, self._device, self.pac)
                     loss_d = -(torch.mean(y_real) - torch.mean(y_fake))
 
                     optimizerD.zero_grad(set_to_none=False)
-                    #pen.backward(retain_graph=True)
+                    # pen.backward(retain_graph=True)
                     loss_d.backward()
                     optimizerD.step()
 
@@ -630,11 +694,13 @@ class CTGAN(BaseSynthesizer):
                 epsilon_values.append(spent_epsilon)
 
             epoch_loss_df = pd.DataFrame(
-                {"Epoch": [i] * len(batch),
-                 "Batch": batch,
-                 "Loss_d": loss_d_values,
-                 "Loss_g": loss_g_values,
-                 "Epsilon": epsilon_values}
+                {
+                    "Epoch": [i] * len(batch),
+                    "Batch": batch,
+                    "Loss_d": loss_d_values,
+                    "Loss_g": loss_g_values,
+                    "Epsilon": epsilon_values,
+                }
             )
 
             if not self.loss_values.empty:
@@ -645,9 +711,11 @@ class CTGAN(BaseSynthesizer):
                 self.loss_values = epoch_loss_df
 
             if self._verbose:
-                iterator.set_description(iterator_description.format(loss_d=loss_d,
-                                                                     loss_g=loss_g,
-                                                                     epsilon=spent_epsilon))
+                iterator.set_description(
+                    iterator_description.format(
+                        loss_d=loss_d, loss_g=loss_g, epsilon=spent_epsilon
+                    )
+                )
                 # print(f'Epoch {i + 1}, Loss G: {loss_g.detach().cpu(): .4f},'  # noqa: T001
                 #       f'Loss D: {loss_d.detach().cpu(): .4f},'
                 #       f'Epsilon: {spent_epsilon: .4f}',
@@ -674,9 +742,13 @@ class CTGAN(BaseSynthesizer):
         """
         if condition_column is not None and condition_value is not None:
             condition_info = self._transformer.convert_column_name_value_to_id(
-                condition_column, condition_value)
-            global_condition_vec = self._data_sampler.generate_cond_from_condition_column_info(
-                condition_info, self._batch_size)
+                condition_column, condition_value
+            )
+            global_condition_vec = (
+                self._data_sampler.generate_cond_from_condition_column_info(
+                    condition_info, self._batch_size
+                )
+            )
         else:
             global_condition_vec = None
 

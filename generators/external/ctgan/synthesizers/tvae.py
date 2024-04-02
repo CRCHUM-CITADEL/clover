@@ -396,7 +396,12 @@ class TVAE(BaseSynthesizer):
                     epsilon_values.append(spent_epsilon)
 
                 epoch_loss_df = pd.DataFrame(
-                    {"Epoch": [i] * len(batch), "Batch": batch, "Loss": loss_values, "Epsilon": epsilon_values}
+                    {
+                        "Epoch": [i] * len(batch),
+                        "Batch": batch,
+                        "Loss": loss_values,
+                        "Epsilon": epsilon_values,
+                    }
                 )
                 if not self.loss_values.empty:
                     self.loss_values = pd.concat(
@@ -406,7 +411,9 @@ class TVAE(BaseSynthesizer):
                     self.loss_values = epoch_loss_df
 
                 if self.verbose:
-                    iterator.set_description(iterator_description.format(loss=loss, epsilon=spent_epsilon))
+                    iterator.set_description(
+                        iterator_description.format(loss=loss, epsilon=spent_epsilon)
+                    )
 
     @random_state
     def sample(self, samples):

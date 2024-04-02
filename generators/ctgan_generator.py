@@ -2,7 +2,8 @@ from typing import Union  # standard library
 
 import pandas as pd  # 3rd party packages
 from pathlib import Path
-#from sdv.single_table import CTGANSynthesizer
+
+# from sdv.single_table import CTGANSynthesizer
 from generators.external.ctgan.single_table.dp_ctgan import CTGANSynthesizer
 from sdv.metadata import SingleTableMetadata
 
@@ -69,8 +70,8 @@ class CTGANGenerator(Generator):
         )
 
         if not (
-                (epsilon is None and delta is None)
-                or (epsilon is not None and delta is not None)
+            (epsilon is None and delta is None)
+            or (epsilon is not None and delta is not None)
         ):
             raise ValueError(
                 "epsilon and delta should either both be specified for differentially private training, "

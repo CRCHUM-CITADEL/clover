@@ -21,7 +21,7 @@ from generators.external.ctgan.synthesizers.ctgan import CTGAN
 
 """Wrapper around CTGAN model."""
 
-#from ctgan import CTGAN
+# from ctgan import CTGAN
 
 from sdv.single_table.base import BaseSingleTableSynthesizer
 from sdv.single_table.utils import detect_discrete_columns
@@ -79,21 +79,37 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
             If ``False``, do not use cuda at all.
     """
 
-    _model_sdtype_transformers = {'categorical': None}
+    _model_sdtype_transformers = {"categorical": None}
 
-    def __init__(self, metadata, enforce_min_max_values=True, enforce_rounding=True, locales=None,
-                 embedding_dim=128, generator_dim=(256, 256), discriminator_dim=(256, 256),
-                 generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4,
-                 discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
-                 log_frequency=True, verbose=False, epochs=300, pac=10,
-                 epsilon=None, delta=None, max_grad_norm=1,
-                 cuda=True):
-
+    def __init__(
+        self,
+        metadata,
+        enforce_min_max_values=True,
+        enforce_rounding=True,
+        locales=None,
+        embedding_dim=128,
+        generator_dim=(256, 256),
+        discriminator_dim=(256, 256),
+        generator_lr=2e-4,
+        generator_decay=1e-6,
+        discriminator_lr=2e-4,
+        discriminator_decay=1e-6,
+        batch_size=500,
+        discriminator_steps=1,
+        log_frequency=True,
+        verbose=False,
+        epochs=300,
+        pac=10,
+        epsilon=None,
+        delta=None,
+        max_grad_norm=1,
+        cuda=True,
+    ):
         super().__init__(
             metadata=metadata,
             enforce_min_max_values=enforce_min_max_values,
             enforce_rounding=enforce_rounding,
-            locales=locales
+            locales=locales,
         )
 
         self.embedding_dim = embedding_dim
@@ -115,23 +131,23 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
         self.cuda = cuda
 
         self._model_kwargs = {
-            'embedding_dim': embedding_dim,
-            'generator_dim': generator_dim,
-            'discriminator_dim': discriminator_dim,
-            'generator_lr': generator_lr,
-            'generator_decay': generator_decay,
-            'discriminator_lr': discriminator_lr,
-            'discriminator_decay': discriminator_decay,
-            'batch_size': batch_size,
-            'discriminator_steps': discriminator_steps,
-            'log_frequency': log_frequency,
-            'verbose': verbose,
-            'epochs': epochs,
-            'pac': pac,
-            'epsilon': epsilon,
-            'delta': delta,
-            'max_grad_norm': max_grad_norm,
-            'cuda': cuda
+            "embedding_dim": embedding_dim,
+            "generator_dim": generator_dim,
+            "discriminator_dim": discriminator_dim,
+            "generator_lr": generator_lr,
+            "generator_decay": generator_decay,
+            "discriminator_lr": discriminator_lr,
+            "discriminator_decay": discriminator_decay,
+            "batch_size": batch_size,
+            "discriminator_steps": discriminator_steps,
+            "log_frequency": log_frequency,
+            "verbose": verbose,
+            "epochs": epochs,
+            "pac": pac,
+            "epsilon": epsilon,
+            "delta": delta,
+            "max_grad_norm": max_grad_norm,
+            "cuda": cuda,
         }
 
     def _fit(self, processed_data):
@@ -145,13 +161,15 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
         self._model = CTGAN(**self._model_kwargs)
 
         if self._model.epsilon is not None:
-            self._model.fit_dp(processed_data,
-                               discrete_columns=discrete_columns,
-                               )
+            self._model.fit_dp(
+                processed_data,
+                discrete_columns=discrete_columns,
+            )
         else:
-            self._model.fit(processed_data,
-                            discrete_columns=discrete_columns,
-                            )
+            self._model.fit(
+                processed_data,
+                discrete_columns=discrete_columns,
+            )
 
     def _sample(self, num_rows, conditions=None):
         """Sample the indicated number of rows from the model.
@@ -171,7 +189,9 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
         if conditions is None:
             return self._model.sample(num_rows)
 
-        raise NotImplementedError("CTGANSynthesizer doesn't support conditional sampling.")
+        raise NotImplementedError(
+            "CTGANSynthesizer doesn't support conditional sampling."
+        )
 
 
 class TVAESynthesizer(BaseSingleTableSynthesizer):
@@ -214,14 +234,26 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
             If ``False``, do not use cuda at all.
     """
 
-    _model_sdtype_transformers = {'categorical': None}
+    _model_sdtype_transformers = {"categorical": None}
 
-    def __init__(self, metadata, enforce_min_max_values=True, enforce_rounding=True,
-                 embedding_dim=128, compress_dims=(128, 128), decompress_dims=(128, 128),
-                 l2scale=1e-5, batch_size=500, epochs=300, loss_factor=2,
-                 epsilon=None, delta=None, max_grad_norm=1, max_physical_batch_size=126,
-                 cuda=True):
-
+    def __init__(
+        self,
+        metadata,
+        enforce_min_max_values=True,
+        enforce_rounding=True,
+        embedding_dim=128,
+        compress_dims=(128, 128),
+        decompress_dims=(128, 128),
+        l2scale=1e-5,
+        batch_size=500,
+        epochs=300,
+        loss_factor=2,
+        epsilon=None,
+        delta=None,
+        max_grad_norm=1,
+        max_physical_batch_size=126,
+        cuda=True,
+    ):
         super().__init__(
             metadata=metadata,
             enforce_min_max_values=enforce_min_max_values,
@@ -241,21 +273,24 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
         self.max_physical_batch_size = max_physical_batch_size
 
         self._model_kwargs = {
-            'embedding_dim': embedding_dim,
-            'compress_dims': compress_dims,
-            'decompress_dims': decompress_dims,
-            'l2scale': l2scale,
-            'batch_size': batch_size,
-            'epochs': epochs,
-            'loss_factor': loss_factor,
-            'epsilon': epsilon,
-            'delta': delta,
-            'max_grad_norm': max_grad_norm,
-            'max_physical_batch_size': max_physical_batch_size,
-            'cuda': cuda
+            "embedding_dim": embedding_dim,
+            "compress_dims": compress_dims,
+            "decompress_dims": decompress_dims,
+            "l2scale": l2scale,
+            "batch_size": batch_size,
+            "epochs": epochs,
+            "loss_factor": loss_factor,
+            "epsilon": epsilon,
+            "delta": delta,
+            "max_grad_norm": max_grad_norm,
+            "max_physical_batch_size": max_physical_batch_size,
+            "cuda": cuda,
         }
 
-    def _fit(self, processed_data,):
+    def _fit(
+        self,
+        processed_data,
+    ):
         """Fit the model to the table.
 
         Args:
@@ -267,13 +302,15 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
         self._model = TVAE(**self._model_kwargs)
 
         if self._model.epsilon is not None:
-            self._model.fit_dp(processed_data,
-                               discrete_columns=discrete_columns,
-                               )
+            self._model.fit_dp(
+                processed_data,
+                discrete_columns=discrete_columns,
+            )
         else:
-            self._model.fit(processed_data,
-                            discrete_columns=discrete_columns,
-                            )
+            self._model.fit(
+                processed_data,
+                discrete_columns=discrete_columns,
+            )
 
     def _sample(self, num_rows, conditions=None):
         """Sample the indicated number of rows from the model.
@@ -293,5 +330,6 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
         if conditions is None:
             return self._model.sample(num_rows)
 
-        raise NotImplementedError("TVAESynthesizer doesn't support conditional sampling.")
-
+        raise NotImplementedError(
+            "TVAESynthesizer doesn't support conditional sampling."
+        )

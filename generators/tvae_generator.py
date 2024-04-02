@@ -37,19 +37,19 @@ class TVAEGenerator(Generator):
     name = "TVAE"
 
     def __init__(
-            self,
-            df: pd.DataFrame,
-            metadata: dict,
-            random_state: int = None,
-            generator_filepath: Union[Path, str] = None,
-            epochs: int = 300,
-            batch_size: int = 100,
-            compress_dims: Tuple[int, int] = (249, 249),
-            decompress_dims: Tuple[int, int] = (249, 249),
-            epsilon: float = None,
-            delta: float = None,
-            max_grad_norm: float = 1,
-            max_physical_batch_size: int = 125,
+        self,
+        df: pd.DataFrame,
+        metadata: dict,
+        random_state: int = None,
+        generator_filepath: Union[Path, str] = None,
+        epochs: int = 300,
+        batch_size: int = 100,
+        compress_dims: Tuple[int, int] = (249, 249),
+        decompress_dims: Tuple[int, int] = (249, 249),
+        epsilon: float = None,
+        delta: float = None,
+        max_grad_norm: float = 1,
+        max_physical_batch_size: int = 125,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
@@ -66,8 +66,8 @@ class TVAEGenerator(Generator):
         self._tvae_metadata = None
 
         if not (
-                (epsilon is None and delta is None)
-                or (epsilon is not None and delta is not None)
+            (epsilon is None and delta is None)
+            or (epsilon is not None and delta is not None)
         ):
             raise ValueError(
                 "epsilon and delta should either both be specified for differentially private training, "
@@ -110,7 +110,7 @@ class TVAEGenerator(Generator):
         self._gen.fit(self._df)
 
         # necessary to be able to pickle the model
-        if self._params['epsilon'] is not None and self._params['delta'] is not None:
+        if self._params["epsilon"] is not None and self._params["delta"] is not None:
             self._gen._model.vae.remove_hooks()
 
         ustandard.save_pickle(

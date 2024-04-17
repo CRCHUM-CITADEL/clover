@@ -1,5 +1,3 @@
-
-
 import numpy as np
 import pandas as pd
 import torch
@@ -276,8 +274,9 @@ class Discriminator_DP(Module):
         self.seq_info = Sequential(*layers[:info])
 
     def forward(self, input):
-        #return (self.seq(input)), self.seq_info(input)
+        # return (self.seq(input)), self.seq_info(input)
         return self.seq(input)
+
 
 def get_seq_info_DP(discriminator_dp, input):
     return discriminator_dp.seq_info(input)
@@ -424,7 +423,7 @@ class CTABGANSynthesizer:
         epsilon=None,
         delta=None,
         max_grad_norm=1,
-        verbose=False
+        verbose=False,
     ):
         self.random_dim = random_dim
         self.class_dim = class_dim
@@ -720,19 +719,23 @@ class CTABGANSynthesizer:
         optimizerG = Adam(self.generator.parameters(), **optimizer_params)
         optimizerD = Adam(discriminator.parameters(), **optimizer_params)
 
-        optimizerD = DPOptimizer(optimizer=optimizerD,
-                                 noise_multiplier=get_noise_multiplier(
-                                     target_epsilon=self.epsilon,
-                                     target_delta=self.delta,
-                                     sample_rate=self.batch_size / len(train_data),
-                                     epochs=self.epochs,
-                                     accountant=accountant.mechanism(),
-                                 ),
-                                 max_grad_norm=self.max_grad_norm,
-                                 expected_batch_size=self.batch_size)
+        optimizerD = DPOptimizer(
+            optimizer=optimizerD,
+            noise_multiplier=get_noise_multiplier(
+                target_epsilon=self.epsilon,
+                target_delta=self.delta,
+                sample_rate=self.batch_size / len(train_data),
+                epochs=self.epochs,
+                accountant=accountant.mechanism(),
+            ),
+            max_grad_norm=self.max_grad_norm,
+            expected_batch_size=self.batch_size,
+        )
 
         optimizerD.attach_step_hook(
-            accountant.get_optimizer_hook_fn(sample_rate=self.batch_size / len(train_data))
+            accountant.get_optimizer_hook_fn(
+                sample_rate=self.batch_size / len(train_data)
+            )
         )
 
         st_ed = None
@@ -744,20 +747,24 @@ class CTABGANSynthesizer:
             optimizerC = optim.Adam(classifier.parameters(), **optimizer_params)
 
             classifier = GradSampleModule(classifier)
-            optimizerC = DPOptimizer(optimizer=optimizerC,
-                                     noise_multiplier=get_noise_multiplier(
-                                        target_epsilon=self.epsilon,
-                                        target_delta=self.delta,
-                                        sample_rate=self.batch_size/len(train_data),
-                                        # the epochs are multiplied by the steps (see later) as well as ci
-                                        # and finally by 2, as there are 2 models attached to the accountant
-                                        epochs=self.epochs*max(1, len(train_data) // self.batch_size),
-                                        accountant=accountant.mechanism(),
-                                     ),
-                                     max_grad_norm=self.max_grad_norm,
-                                     expected_batch_size=self.batch_size)
+            optimizerC = DPOptimizer(
+                optimizer=optimizerC,
+                noise_multiplier=get_noise_multiplier(
+                    target_epsilon=self.epsilon,
+                    target_delta=self.delta,
+                    sample_rate=self.batch_size / len(train_data),
+                    # the epochs are multiplied by the steps (see later) as well as ci
+                    # and finally by 2, as there are 2 models attached to the accountant
+                    epochs=self.epochs * max(1, len(train_data) // self.batch_size),
+                    accountant=accountant.mechanism(),
+                ),
+                max_grad_norm=self.max_grad_norm,
+                expected_batch_size=self.batch_size,
+            )
             optimizerC.attach_step_hook(
-                accountant.get_optimizer_hook_fn(sample_rate=self.batch_size / len(train_data))
+                accountant.get_optimizer_hook_fn(
+                    sample_rate=self.batch_size / len(train_data)
+                )
             )
 
         self.generator.apply(weights_init)
@@ -787,13 +794,14 @@ class CTABGANSynthesizer:
         spent_epsilon = 0
 
         for i in tqdm(range(self.epochs)):
-
             batch = []
             epsilon_values = []
 
             if spent_epsilon > self.epsilon:
-                print("Training stopped early as privacy budget was spent. "
-                      "Consider setting a smaller batch size.")
+                print(
+                    "Training stopped early as privacy budget was spent. "
+                    "Consider setting a smaller batch size."
+                )
                 break
 
             for id_ in range(steps_per_epoch):
@@ -843,8 +851,7 @@ class CTABGANSynthesizer:
                     d_output = discriminator(combined_input)
                     # Split the output into real and fake parts
                     d_real, d_fake = torch.split(
-                        d_output,
-                        [real_cat_d.size(0), fake_cat_d.size(0)], dim=0
+                        d_output, [real_cat_d.size(0), fake_cat_d.size(0)], dim=0
                     )
 
                     # Calculate losses
@@ -860,7 +867,7 @@ class CTABGANSynthesizer:
                     #     self.Dtransformer,
                     #     self.device,
                     # )
-                    #pen.backward()
+                    # pen.backward()
 
                     # Update the discriminator's parameters
                     optimizerD.step()
@@ -951,9 +958,7 @@ class CTABGANSynthesizer:
                 batch.append(id_)
 
             epoch_loss_df = pd.DataFrame(
-                {"Epoch": [i] * len(batch),
-                 "Batch": batch,
-                 "Epsilon": epsilon_values}
+                {"Epoch": [i] * len(batch), "Batch": batch, "Epsilon": epsilon_values}
             )
 
             if not self.loss_values.empty:

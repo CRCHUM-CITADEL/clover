@@ -209,7 +209,6 @@ class CTGAN(BaseSynthesizer):
             Defaults to ``True``.
     """
 
-
     def __init__(
         self,
         embedding_dim=128,

@@ -1,3 +1,26 @@
+"""
+Copyright 2024 - Business Source License 1.1 (https://github.com/sdv-dev/CTGAN)
+The Licensed Work is (c) DataCebo, Inc.
+
+You may make use of the Licensed Work, and derivatives of the Licensed
+Work, provided that you do not use the Licensed Work, or derivatives of
+the Licensed Work, for a Synthetic Data Creation Service.
+
+You may not use this file except in compliance with the License.
+You may obtain a copy of the License at:
+
+https://github.com/sdv-dev/CTGAN/blob/main/LICENSE
+
+The original code was modified in the following ways to accommodate differential private training:
+- Import of opacus, the pytorch DP framework
+- Modification of the structure of the model
+- Addition of the function fit_dp which trains the model with differential privacy
+- Removal of the gradient penalty in the fit_dp function ONLY as the gradient clipping is enough to
+  ensure compliance with the soft 1-Lipschitz constraint on the gradient norms to stabilize convergence with the
+  Wasserstein Distance
+"""
+
+
 """CTGAN module."""
 
 import warnings
@@ -186,6 +209,7 @@ class CTGAN(BaseSynthesizer):
             Defaults to ``True``.
     """
 
+
     def __init__(
         self,
         embedding_dim=128,
@@ -228,7 +252,6 @@ class CTGAN(BaseSynthesizer):
         self.epsilon = epsilon
         self.delta = delta
         self.max_grad_norm = max_grad_norm
-        self.max_physical_batch_size = max_physical_batch_size
 
         if not cuda or not torch.cuda.is_available():
             device = "cpu"

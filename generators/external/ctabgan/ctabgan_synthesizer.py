@@ -26,6 +26,11 @@ from torch.nn import (
 from .model.synthesizer.transformer import ImageTransformer, DataTransformer
 from tqdm import tqdm
 
+from opacus.accountants import RDPAccountant
+from opacus import GradSampleModule
+from opacus.optimizers import DPOptimizer
+from opacus.accountants.utils import get_noise_multiplier
+
 
 class Classifier(Module):
     def __init__(self, input_dim, dis_dims, st_ed):
@@ -262,6 +267,22 @@ class Discriminator(Module):
         return (self.seq(input)), self.seq_info(input)
 
 
+class Discriminator_DP(Module):
+    def __init__(self, side, layers):
+        super(Discriminator_DP, self).__init__()
+        self.side = side
+        info = len(layers) - 2
+        self.seq = Sequential(*layers)
+        self.seq_info = Sequential(*layers[:info])
+
+    def forward(self, input):
+        #return (self.seq(input)), self.seq_info(input)
+        return self.seq(input)
+
+def get_seq_info_DP(discriminator_dp, input):
+    return discriminator_dp.seq_info(input)
+
+
 class Generator(Module):
     def __init__(self, side, layers):
         super(Generator, self).__init__()
@@ -400,6 +421,10 @@ class CTABGANSynthesizer:
         l2scale=1e-5,
         batch_size=500,
         epochs=150,
+        epsilon=None,
+        delta=None,
+        max_grad_norm=1,
+        verbose=False
     ):
         self.random_dim = random_dim
         self.class_dim = class_dim
@@ -410,6 +435,11 @@ class CTABGANSynthesizer:
         self.batch_size = batch_size
         self.epochs = epochs
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.verbose = verbose
+
+        self.epsilon = epsilon
+        self.delta = delta
+        self.max_grad_norm = max_grad_norm
 
     def fit(
         self,
@@ -627,6 +657,311 @@ class CTABGANSynthesizer:
                     optimizerC.zero_grad()
                     loss_cc.backward()
                     optimizerC.step()
+
+            epoch += 1
+
+    def fit_dp(
+        self,
+        train_data=pd.DataFrame,
+        categorical=[],
+        mixed={},
+        general=[],
+        non_categorical=[],
+        type={},
+    ):
+        problem_type = None
+        target_index = None
+        if type:
+            problem_type = list(type.keys())[0]
+            if problem_type:
+                target_index = train_data.columns.get_loc(type[problem_type])
+
+        self.transformer = DataTransformer(
+            train_data=train_data,
+            categorical_list=categorical,
+            mixed_dict=mixed,
+            general_list=general,
+            non_categorical_list=non_categorical,
+        )
+        self.transformer.fit()
+        train_data = self.transformer.transform(train_data.values)
+        data_sampler = Sampler(train_data, self.transformer.output_info)
+        data_dim = self.transformer.output_dim
+        self.cond_generator = Cond(train_data, self.transformer.output_info)
+
+        sides = [4, 8, 16, 24, 32, 64]
+        col_size_d = data_dim + self.cond_generator.n_opt
+        for i in sides:
+            if i * i >= col_size_d:
+                self.dside = i
+                break
+
+        sides = [4, 8, 16, 24, 32, 64]
+        col_size_g = data_dim
+        for i in sides:
+            if i * i >= col_size_g:
+                self.gside = i
+                break
+
+        layers_G = determine_layers_gen(
+            self.gside, self.random_dim + self.cond_generator.n_opt, self.num_channels
+        )
+        layers_D = determine_layers_disc(self.dside, self.num_channels)
+
+        self.generator = Generator(self.gside, layers_G).to(self.device)
+        discriminator = Discriminator_DP(self.dside, layers_D).to(self.device)
+
+        accountant = RDPAccountant()
+        discriminator = GradSampleModule(discriminator)
+
+        optimizer_params = dict(
+            lr=2e-4, betas=(0.5, 0.9), eps=1e-3, weight_decay=self.l2scale
+        )
+        optimizerG = Adam(self.generator.parameters(), **optimizer_params)
+        optimizerD = Adam(discriminator.parameters(), **optimizer_params)
+
+        optimizerD = DPOptimizer(optimizer=optimizerD,
+                                 noise_multiplier=get_noise_multiplier(
+                                     target_epsilon=self.epsilon,
+                                     target_delta=self.delta,
+                                     sample_rate=self.batch_size / len(train_data),
+                                     epochs=self.epochs,
+                                     accountant=accountant.mechanism(),
+                                 ),
+                                 max_grad_norm=self.max_grad_norm,
+                                 expected_batch_size=self.batch_size)
+
+        optimizerD.attach_step_hook(
+            accountant.get_optimizer_hook_fn(sample_rate=self.batch_size / len(train_data))
+        )
+
+        st_ed = None
+        classifier = None
+        optimizerC = None
+        if target_index != None:
+            st_ed = get_st_ed(target_index, self.transformer.output_info)
+            classifier = Classifier(data_dim, self.class_dim, st_ed).to(self.device)
+            optimizerC = optim.Adam(classifier.parameters(), **optimizer_params)
+
+            classifier = GradSampleModule(classifier)
+            optimizerC = DPOptimizer(optimizer=optimizerC,
+                                     noise_multiplier=get_noise_multiplier(
+                                        target_epsilon=self.epsilon,
+                                        target_delta=self.delta,
+                                        sample_rate=self.batch_size/len(train_data),
+                                        # the epochs are multiplied by the steps (see later) as well as ci
+                                        # and finally by 2, as there are 2 models attached to the accountant
+                                        epochs=self.epochs*max(1, len(train_data) // self.batch_size),
+                                        accountant=accountant.mechanism(),
+                                     ),
+                                     max_grad_norm=self.max_grad_norm,
+                                     expected_batch_size=self.batch_size)
+            optimizerC.attach_step_hook(
+                accountant.get_optimizer_hook_fn(sample_rate=self.batch_size / len(train_data))
+            )
+
+        self.generator.apply(weights_init)
+        discriminator.apply(weights_init)
+
+        self.Gtransformer = ImageTransformer(self.gside)
+        self.Dtransformer = ImageTransformer(self.dside)
+
+        epsilon = 0
+        epoch = 0
+        steps = 0
+        ci = 1
+
+        # self.loss_values = pd.DataFrame(columns=["Epoch", "Batch", "Loss_d", "Loss_g", "Loss_c", "Epsilon"])
+        #
+        # iterator = tqdm(range(self.epochs), disable=(not self.verbose))
+        # if self.verbose:
+        #     iterator_description = ("Loss_D: {loss_d:.3f}, "
+        #                             "Loss_G: {loss_g:.3f}, "
+        #                             "Loss_C: {loss_c:.3f}, "
+        #                             "Epsilon: {epsilon:.3f}")
+        #     iterator.set_description(iterator_description.format(loss_d=0, loss_g=0, loss_c=0, epsilon=0))
+
+        steps_per_epoch = max(1, len(train_data) // self.batch_size)
+
+        self.loss_values = pd.DataFrame(columns=["Epoch", "Batch", "Epsilon"])
+        spent_epsilon = 0
+
+        for i in tqdm(range(self.epochs)):
+
+            batch = []
+            epsilon_values = []
+
+            if spent_epsilon > self.epsilon:
+                print("Training stopped early as privacy budget was spent. "
+                      "Consider setting a smaller batch size.")
+                break
+
+            for id_ in range(steps_per_epoch):
+                if spent_epsilon > self.epsilon:
+                    break
+                for _ in range(ci):
+                    if spent_epsilon > self.epsilon:
+                        break
+                    noisez = torch.randn(
+                        self.batch_size, self.random_dim, device=self.device
+                    )
+                    condvec = self.cond_generator.sample_train(self.batch_size)
+
+                    c, m, col, opt = condvec
+                    c = torch.from_numpy(c).to(self.device)
+                    m = torch.from_numpy(m).to(self.device)
+                    noisez = torch.cat([noisez, c], dim=1)
+                    noisez = noisez.view(
+                        self.batch_size,
+                        self.random_dim + self.cond_generator.n_opt,
+                        1,
+                        1,
+                    )
+
+                    perm = np.arange(self.batch_size)
+                    np.random.shuffle(perm)
+                    real = data_sampler.sample(self.batch_size, col[perm], opt[perm])
+                    c_perm = c[perm]
+
+                    real = torch.from_numpy(real.astype("float32")).to(self.device)
+
+                    fake = self.generator(noisez)
+                    faket = self.Gtransformer.inverse_transform(fake)
+                    fakeact = apply_activate(faket, self.transformer.output_info)
+
+                    fake_cat = torch.cat([fakeact, c], dim=1)
+                    real_cat = torch.cat([real, c_perm], dim=1)
+
+                    real_cat_d = self.Dtransformer.transform(real_cat)
+                    fake_cat_d = self.Dtransformer.transform(fake_cat)
+
+                    optimizerD.zero_grad()
+
+                    # Concatenate real and fake inputs along the batch dimension
+                    combined_input = torch.cat((real_cat_d, fake_cat_d), dim=0)
+                    # Forward pass through the discriminator
+                    d_output = discriminator(combined_input)
+                    # Split the output into real and fake parts
+                    d_real, d_fake = torch.split(
+                        d_output,
+                        [real_cat_d.size(0), fake_cat_d.size(0)], dim=0
+                    )
+
+                    # Calculate losses
+                    loss = -torch.mean(d_real) + torch.mean(d_fake)
+
+                    # Backpropagation
+                    loss.backward()
+
+                    # pen = calc_gradient_penalty_slerp(
+                    #     discriminator,
+                    #     real_cat,
+                    #     fake_cat,
+                    #     self.Dtransformer,
+                    #     self.device,
+                    # )
+                    #pen.backward()
+
+                    # Update the discriminator's parameters
+                    optimizerD.step()
+
+                noisez = torch.randn(
+                    self.batch_size, self.random_dim, device=self.device
+                )
+
+                condvec = self.cond_generator.sample_train(self.batch_size)
+
+                c, m, col, opt = condvec
+                c = torch.from_numpy(c).to(self.device)
+                m = torch.from_numpy(m).to(self.device)
+                noisez = torch.cat([noisez, c], dim=1)
+                noisez = noisez.view(
+                    self.batch_size, self.random_dim + self.cond_generator.n_opt, 1, 1
+                )
+
+                optimizerG.zero_grad()
+
+                fake = self.generator(noisez)
+                faket = self.Gtransformer.inverse_transform(fake)
+                fakeact = apply_activate(faket, self.transformer.output_info)
+
+                fake_cat = torch.cat([fakeact, c], dim=1)
+                fake_cat = self.Dtransformer.transform(fake_cat)
+
+                y_fake = discriminator(fake_cat)
+                info_fake = get_seq_info_DP(discriminator, fake_cat)
+
+                cross_entropy = cond_loss(faket, self.transformer.output_info, c, m)
+
+                info_real = get_seq_info_DP(discriminator, real_cat_d)
+
+                g = -torch.mean(y_fake) + cross_entropy
+                g.backward(retain_graph=True)
+                loss_mean = torch.norm(
+                    torch.mean(info_fake.view(self.batch_size, -1), dim=0)
+                    - torch.mean(info_real.view(self.batch_size, -1), dim=0),
+                    1,
+                )
+                loss_std = torch.norm(
+                    torch.std(info_fake.view(self.batch_size, -1), dim=0)
+                    - torch.std(info_real.view(self.batch_size, -1), dim=0),
+                    1,
+                )
+                loss_info = loss_mean + loss_std
+                loss_info.backward()
+                optimizerG.step()
+
+                if problem_type:
+                    fake = self.generator(noisez)
+
+                    faket = self.Gtransformer.inverse_transform(fake)
+
+                    fakeact = apply_activate(faket, self.transformer.output_info)
+
+                    real_pre, real_label = classifier(real)
+                    fake_pre, fake_label = classifier(fakeact)
+
+                    c_loss = CrossEntropyLoss()
+
+                    if (st_ed[1] - st_ed[0]) == 1:
+                        c_loss = SmoothL1Loss()
+                        real_label = real_label.type_as(real_pre)
+                        fake_label = fake_label.type_as(fake_pre)
+                        real_label = torch.reshape(real_label, real_pre.size())
+                        fake_label = torch.reshape(fake_label, fake_pre.size())
+
+                    elif (st_ed[1] - st_ed[0]) == 2:
+                        c_loss = BCELoss()
+                        real_label = real_label.type_as(real_pre)
+                        fake_label = fake_label.type_as(fake_pre)
+
+                    loss_cc = c_loss(real_pre, real_label)
+                    loss_cg = c_loss(fake_pre, fake_label)
+
+                    optimizerG.zero_grad()
+                    loss_cg.backward()
+                    optimizerG.step()
+
+                    optimizerC.zero_grad()
+                    loss_cc.backward()
+                    optimizerC.step()
+
+                spent_epsilon = accountant.get_epsilon(self.delta)
+                epsilon_values.append(spent_epsilon)
+                batch.append(id_)
+
+            epoch_loss_df = pd.DataFrame(
+                {"Epoch": [i] * len(batch),
+                 "Batch": batch,
+                 "Epsilon": epsilon_values}
+            )
+
+            if not self.loss_values.empty:
+                self.loss_values = pd.concat(
+                    [self.loss_values, epoch_loss_df]
+                ).reset_index(drop=True)
+            else:
+                self.loss_values = epoch_loss_df
 
             epoch += 1
 

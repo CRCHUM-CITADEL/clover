@@ -25,9 +25,11 @@ class CTABGANGenerator(Generator):
         "integer".
     :param random_state: for reproducibility purposes
     :param generator_filepath: the path of the generator to sample from if it exists
-    :param mixed_columns: dictionary of "mixed" column names with corresponding categorical modes
-    :param log_columns: list of skewed exponential numerical columns
-    :param integer_columns: list of numeric columns without floating numbers
+    :param mixed_columns: dictionary of "mixed" column names with corresponding categorical modes. Mixed columns are
+        mostly continuous columns while one value or more - modes - hold another meaning (ex: 0).
+    :param log_columns: list of skewed exponential numerical columns. These columns will go through a log transform.
+    :param integer_columns: list of numeric columns without floating numbers. These columns will be rounded in the
+        sampling step.
     :param class_dim: size of each desired linear layer for the auxiliary classifier
     :param random_dim: dimension of the noise vector fed to the generator
     :param num_channels: number of channels in the convolutional layers of both the generator and the discriminator
@@ -53,6 +55,9 @@ class CTABGANGenerator(Generator):
         l2scale: float = 1e-5,
         batch_size: int = 500,
         epochs: int = 150,
+        epsilon=None,
+        delta=None,
+        max_grad_norm=1,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
         self._extra_metadata = {
@@ -79,6 +84,9 @@ class CTABGANGenerator(Generator):
             "l2scale": l2scale,
             "batch_size": batch_size,
             "epochs": epochs,
+            "epsilon": epsilon,
+            "delta": delta,
+            "max_grad_norm": max_grad_norm,
         }
 
     def preprocess(self) -> None:
@@ -113,14 +121,26 @@ class CTABGANGenerator(Generator):
         """
 
         self._gen = CTABGANSynthesizer(**self._params)
-        self._gen.fit(
-            train_data=self._data_prep.df,
-            categorical=self._data_prep.column_types["categorical"],
-            mixed=self._data_prep.column_types["mixed"],
-            # general=self._data_prep.column_types["general"],
-            # non_categorical=self._data_prep.column_types["non_categorical"],
-            type=self._problem_type,
-        )
+
+        if self._params["epsilon"] is not None:
+            self._gen.fit_dp(
+                train_data=self._data_prep.df,
+                categorical=self._data_prep.column_types["categorical"],
+                mixed=self._data_prep.column_types["mixed"],
+                # general=self._data_prep.column_types["general"],
+                # non_categorical=self._data_prep.column_types["non_categorical"],
+                type=self._problem_type,
+            )
+
+        else:
+            self._gen.fit(
+                train_data=self._data_prep.df,
+                categorical=self._data_prep.column_types["categorical"],
+                mixed=self._data_prep.column_types["mixed"],
+                # general=self._data_prep.column_types["general"],
+                # non_categorical=self._data_prep.column_types["non_categorical"],
+                type=self._problem_type,
+            )
 
         ustandard.save_pickle(
             obj=self._gen,

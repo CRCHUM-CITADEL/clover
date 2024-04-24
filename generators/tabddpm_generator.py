@@ -4,10 +4,12 @@ from pathlib import Path
 import tempfile
 import os
 import json
+import contextlib
 
 # 3rd party packages
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import OrdinalEncoder
 
 # Local
 from .base import Generator
@@ -54,7 +56,7 @@ class TabDDPMGenerator(Generator):
         if generator_filepath is None:
             # Load the default configurations
             self._config = tabddpm_lib.load_config(
-                Path("./generators/external/tab_ddpm/config.toml")
+                os.path.join(os.path.dirname(__file__), "external/tab_ddpm/config.toml")
             )
             if layers is not None:
                 self._config["model_params"]["rtdl_params"]["d_layers"] = layers
@@ -119,11 +121,24 @@ class TabDDPMGenerator(Generator):
         #   Split X and y and continuous/categorical
         X_cont = self._df[continuous_cols].to_numpy()
         X_cat = self._df[categorical_cols].to_numpy()
-        y = self._df[self._metadata["variable_to_predict"]].to_numpy()
+
+        # Target need to be encoded for classification task
+        if self._metadata["variable_to_predict"] in self._metadata["categorical"]:
+            self.y_encoder = OrdinalEncoder()
+            self.y_encoder.fit(self._df[[self._metadata["variable_to_predict"]]])
+            y = np.squeeze(
+                self.y_encoder.transform(
+                    self._df[[self._metadata["variable_to_predict"]]]
+                )
+            )
+        else:
+            y = self._df[self._metadata["variable_to_predict"]].to_numpy()
 
         #   Save as numpy files
-        np.save(self._config["real_data_path"] / "X_num_train.npy", X_cont)
-        np.save(self._config["real_data_path"] / "X_cat_train.npy", X_cat)
+        if continuous_cols != []:
+            np.save(self._config["real_data_path"] / "X_num_train.npy", X_cont)
+        if categorical_cols != []:
+            np.save(self._config["real_data_path"] / "X_cat_train.npy", X_cat)
         np.save(self._config["real_data_path"] / "y_train.npy", y)
 
         # Save fake files for val and test splits (not needed here)
@@ -234,15 +249,25 @@ class TabDDPMGenerator(Generator):
             )
 
         # Load the generated samples
-        X_num_generated = np.load(
-            self._config["parent_dir"] / "X_num_train.npy", allow_pickle=True
-        )
-        X_cat_generated = np.load(
-            self._config["parent_dir"] / "X_cat_train.npy", allow_pickle=True
-        )
         y_generated = np.load(
             self._config["parent_dir"] / "y_train.npy", allow_pickle=True
         )
+        if os.path.exists(os.path.join(self._config["parent_dir"], "X_num_train.npy")):
+            X_num_generated = np.load(
+                self._config["parent_dir"] / "X_num_train.npy", allow_pickle=True
+            )
+        else:
+            X_num_generated = np.array([], dtype=np.int64).reshape(
+                y_generated.shape[0], 0
+            )
+        if os.path.exists(os.path.join(self._config["parent_dir"], "X_cat_train.npy")):
+            X_cat_generated = np.load(
+                self._config["parent_dir"] / "X_cat_train.npy", allow_pickle=True
+            )
+        else:
+            X_cat_generated = np.array([], dtype=np.int64).reshape(
+                y_generated.shape[0], 0
+            )
 
         # Rebuild the dataframe
         samples = np.concatenate(
@@ -250,6 +275,14 @@ class TabDDPMGenerator(Generator):
         )
         samples = pd.DataFrame(samples, columns=self._order_num_cat_y_columns)
         samples = samples[self._df.columns]  # same initial columns order
+
+        # Inverse transform the target for classification
+        if self._metadata["variable_to_predict"] in self._metadata["categorical"]:
+            y_encoded = samples[[self._metadata["variable_to_predict"]]].copy()
+            samples[
+                [self._metadata["variable_to_predict"]]
+            ] = self.y_encoder.inverse_transform(y_encoded)
+
         samples = samples.astype(self._df.dtypes.to_dict())
 
         samples.to_csv(
@@ -258,9 +291,11 @@ class TabDDPMGenerator(Generator):
             index=False,
         )
 
-        # Delete the generated split samples
-        os.remove(self._config["parent_dir"] / "X_num_train.npy")
-        os.remove(self._config["parent_dir"] / "X_cat_train.npy")
+        # Delete the generated split samples; ignore error in case the file doesn't exist
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(self._config["parent_dir"] / "X_num_train.npy")
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(self._config["parent_dir"] / "X_cat_train.npy")
         os.remove(self._config["parent_dir"] / "y_train.npy")
 
         return samples

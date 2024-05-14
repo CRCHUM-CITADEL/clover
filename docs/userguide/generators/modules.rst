@@ -5,9 +5,10 @@ Generators
    :maxdepth: 1
 
    datasynthesizer
-   smote
    synthpop
+   smote
    mst
    ctgan
    tvae
+   tabddpm
 

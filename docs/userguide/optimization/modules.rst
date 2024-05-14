@@ -5,3 +5,4 @@ Optimization
    :maxdepth: 1
 
    pso
+   optuna

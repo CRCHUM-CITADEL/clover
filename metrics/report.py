@@ -67,7 +67,7 @@ class Report:
             # Check if the metrics are computed in the Utility or Privacy report or both
             available_metrics = set(report.metrics_mapping.keys())
             metrics_to_compute = (
-                list(set(metrics).intersection(available_metrics))
+                set(metrics).intersection(available_metrics)
                 if metrics is not None
                 else available_metrics
             )

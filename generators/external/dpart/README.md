@@ -15,3 +15,7 @@ MIT License
 * Convert the type of the columns to str type when generating synthetic data.
 * Update maximum number of iterations for logistic regression to fix the convergence issue.
 * Set the entropy to its one-sided limitation when the probability is 0 to avoid returning NA.
+* Remove warnings when methods to generate each variable are not specified.
+* Remove warning from DP-models.
+* Fix typo in warning message for privacy leakage of categorical variables.
+* Fix unshown warning message for the bounds of continuous variables.

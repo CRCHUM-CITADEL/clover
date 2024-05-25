@@ -10,6 +10,10 @@ The following modifications were made to the file:
     - Bug was fixed by converting the type of the columns to str type when generating synthetic data.
     - The privacy budget accountant was implemented to track privacy spend.
     - Maximum number of iterations was added to fix the convergence issue.
+    - Warning for using default method (when not specified) was removed.
+    - Warnings from DP-models were removed.
+    - Typo was fixed in warning message for privacy leakage of categorical variables.
+    - Unshown warning message was fixed for bounds of continuous variables.
 """
 
 import warnings
@@ -100,7 +104,7 @@ class dpart:
                 if col not in self.bounds:
                     if self._epsilon.get("methods", None) is not None:
                         warnings.warn(
-                            f"List of categories not sepecified for column '{col}'",
+                            f"List of categories not specified for column '{col}'",
                             PrivacyLeakWarning,
                         )
 
@@ -117,8 +121,9 @@ class dpart:
                 t_dtype = "float"
                 if col not in self.bounds:
                     if self._epsilon.get("methods", None) is not None:
-                        PrivacyLeakWarning(
-                            f"upper and lower bounds not specified for column '{col}'"
+                        warnings.warn(
+                            f"upper and lower bounds not specified for column '{col}'",
+                            PrivacyLeakWarning,
                         )
                     self.bounds[col] = {"min": series.min(), "max": series.max()}
                 self.encoders[col] = MinMaxScaler(
@@ -180,9 +185,9 @@ class dpart:
                 self.methods[target] = ProbabilityTensor()
             elif target not in self.methods:
                 def_method = self.default_method(self.dtypes[target])
-                warnings.warn(
-                    f"target {target} has no specified method will use default {def_method.__class__.__name__}"
-                )
+                # warnings.warn(
+                #     f"target {target} has no specified method will use default {def_method.__class__.__name__}"
+                # )
                 self.methods[target] = def_method
 
             if self._epsilon["methods"].get(target, None) is not None:
@@ -199,7 +204,11 @@ class dpart:
             )
 
             t_X, t_y = self.methods[target].preprocess(X=X, y=y)
-            self.methods[target].fit(X=t_X, y=t_y)
+
+            # Supress warnings from DP-models
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                self.methods[target].fit(X=t_X, y=t_y)
 
     def denormalise(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()

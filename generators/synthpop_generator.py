@@ -1,5 +1,5 @@
 # Standard library
-from typing import Union, List
+from typing import Dict, Union, List
 from pathlib import Path
 
 # 3rd party packages
@@ -7,13 +7,15 @@ import pandas as pd
 
 # Local
 from .external.synthpop.synthpop import Synthpop
+from .external.dpart.dpart.engines import DPSynthpop
 from .base import Generator
 import utils.standard as ustandard
 
 
 class SynthpopGenerator(Generator):
     """
-    Wrapper of the Synthpop Python implementation https://github.com/hazy/synthpop.
+    Wrapper of the Synthpop Python implementation https://github.com/hazy/synthpop
+    and a Differentially private version based on the dpart framework https://github.com/hazy/dpart.
 
     :cvar name: the name of the generator
     :vartype name: str
@@ -22,10 +24,31 @@ class SynthpopGenerator(Generator):
     :param metadata: a dictionary containing the list of **continuous** and **categorical** variables
     :param random_state: for reproducibility purposes
     :param generator_filepath: the path of the generator to sample from if it exists
-    :param variable_order: the order of the variable to construct the sequential trees
+    :param variable_order: the order of the variable to construct sequentially
+    :param epsilon: the privacy budget of the differential privacy. One can specify how the budget is split between
+        optimizing the visit order (dependency) and training the generator (methods), if prediction_matrix is set to "infer".
+        By default, half the budget is allocated for optimization and half for fitting. The budget for training
+        each model (for each column) can also be specified. Otherwise, the training budget will be divided equally
+        among the columns. For example, epsilon = {"dependency": 0.1, "methods": {"col1": 0.1, "col2": 0.2}...}.
+        If epsilon is set to None, a non-DP model will be trained
     :param min_samples_leaf: the minimum number of samples required in a leaf to expand the tree further
+        (applicable to non-DP generator)
     :param max_depth: the maximum depth of the tree. If None, the tree expands until all leaves are pure or
-        until they contain less than min_samples_leaf samples
+        until they contain less than min_samples_leaf samples (applicable to non-DP generator)
+    :param methods: defines the specific method each column should be modelled by.
+        The default methods to model continuous and discrete columns are DP-Linear Regression
+        and DP-Logistic Regression (applicable to DP generator)
+    :param bounds: specify the range (minimum and maximum) for all numerical columns
+        and the distinct categories for categorical columns. This ensures that no further privacy leakage
+        is happening. For example, bounds = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
+        If not specified, they will be estimated from the real data and a warning will be raised
+        (applicable to DP generator)
+    :param prediction_matrix: specify the collection of already visited columns to be used as features
+        for each unvisited column. It could be set to "infer" to optimize the variable_order
+        by maximizing the information gain. If not None, it will override the variable_order parameter
+        (applicable to DP generator)
+    :param n_parents: maximum number of columns to be considered as features to predict a target
+        (applicable to DP generator)
     """
 
     name = "Synthpop"
@@ -37,21 +60,46 @@ class SynthpopGenerator(Generator):
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         variables_order: List[str] = None,
+        epsilon: Union[float, Dict[str, Union[float, Dict[str, float]]]] = None,
         min_samples_leaf: int = 5,
         max_depth: int = None,
+        methods: dict = None,
+        bounds: Dict[str, List] = None,
+        prediction_matrix: Union[str, Dict[str, List[str]]] = None,
+        n_parents: int = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+        self.epsilon = epsilon
 
-        if generator_filepath is None:
-            self._gen = Synthpop(
-                visit_sequence=variables_order,
-                seed=random_state,
-                minibucket=min_samples_leaf,
-                max_depth=max_depth,
-            )
-        self._df = self._df.copy()
-        self._dtypes = None
-        self._original_dtypes = df.dtypes.to_dict()
+        if self.epsilon is None:  # Initiate non-DP generator
+            if generator_filepath is None:
+                self._gen = Synthpop(
+                    visit_sequence=variables_order,
+                    seed=random_state,
+                    minibucket=min_samples_leaf,
+                    max_depth=max_depth,
+                )
+            self._df = self._df.copy()
+            self._dtypes = None
+            self._original_dtypes = df.dtypes.to_dict()
+        else:  # Initiate DP generator
+            n_col = df.shape[1]
+            if n_parents == None:
+                self.n_parents = n_col
+            else:
+                self.n_parents = n_parents
+
+            if generator_filepath is None:
+                self._gen = DPSynthpop(
+                    methods=methods,
+                    epsilon=self.epsilon,
+                    bounds=bounds,
+                    visit_order=variables_order,
+                    prediction_matrix=prediction_matrix,
+                    n_parents=self.n_parents,
+                )
+            self._df = self._df.copy()
+            self._original_dtypes = df.dtypes.to_dict()
 
     def preprocess(self) -> None:
         """
@@ -66,21 +114,26 @@ class SynthpopGenerator(Generator):
             "category"
         )  # Synthpop requires "category" for categories and not object or str
 
-        self._dtypes = self._df.dtypes.apply(
-            lambda x: x.name.split("64")[0]
-        ).to_dict()  # only 'int' or 'float' supported without any number after
+        if self.epsilon is None:
+            self._dtypes = self._df.dtypes.apply(
+                lambda x: x.name.split("64")[0]
+            ).to_dict()  # Non-dp generator: only 'int' or 'float' supported without any number after
 
     def fit(self, save_path: Union[Path, str]) -> None:
         """
-        Construct the sequential trees.
+        Construct the sequential trees (non-DP generator)
+        or fit a model for each target column (DP generator).
 
         :param save_path: the path to save the generator
         :return: *None*
         """
 
-        # Deactivate the package prints while fitting the trees
+        # Deactivate the package prints while fitting the model
         with ustandard.HiddenPrints():
-            self._gen.fit(self._df, self._dtypes)
+            if self.epsilon is None:
+                self._gen.fit(self._df, self._dtypes)
+            else:
+                self._gen.fit(self._df)
 
         ustandard.save_pickle(
             obj=self._gen,
@@ -91,20 +144,31 @@ class SynthpopGenerator(Generator):
 
     def display(self) -> None:
         """
-        Print the constructed sequential trees.
+        Print the visit order.
 
         :return: *None*
         """
 
-        variable_order = list(self._gen.visit_sequence.sort_values().index)
+        if self.epsilon is None:
+            variable_order = list(self._gen.visit_sequence.sort_values().index)
 
-        print("Constructed sequential trees:")
-        for i, col in enumerate(variable_order):
-            print(f"   {col} has parents {variable_order[:i]}")
+            print("Constructed sequential trees:")
+            for i, col in enumerate(variable_order):
+                print(f"   {col} has parents {variable_order[:i]}")
+        else:
+            variable_order = list(self._gen.dep_manager.visit_order)
+
+            print("Variable visit order:")
+            for i, col in enumerate(variable_order):
+                print(f"   {col} has parents {variable_order[:i]}")
+
+            print("")
+            print("Privacy budget spent:")
+            print(self._gen.epsilon)
 
     def sample(self, save_path: Union[Path, str], num_samples: int = 1) -> pd.DataFrame:
         """
-        Generate samples using the sequential trees trained on the real data.
+        Generate samples using the models trained on the real data.
 
         :param save_path: the path to save the generated samples
         :param num_samples: the number of samples to generate
@@ -112,7 +176,10 @@ class SynthpopGenerator(Generator):
         """
 
         with ustandard.HiddenPrints():  # turn off the prints
-            samples = self._gen.generate(num_samples).astype(self._original_dtypes)
+            if self.epsilon is None:
+                samples = self._gen.generate(num_samples).astype(self._original_dtypes)
+            else:
+                samples = self._gen.sample(num_samples).astype(self._original_dtypes)
 
         samples.to_csv(
             Path(save_path)

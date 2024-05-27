@@ -14,6 +14,7 @@ The following modifications were made to the file:
     - Warnings from DP-models were removed.
     - Typo was fixed in warning message for privacy leakage of categorical variables.
     - Unshown warning message was fixed for bounds of continuous variables.
+    - Privacy leakage for decoding predictions was fixed.
 """
 
 import warnings
@@ -213,7 +214,10 @@ class dpart:
     def denormalise(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         for col in df.columns:
-            df[col] = self.encoders[col].inverse_transform(df[[col]]).squeeze()
+            if isinstance(
+                self.encoders[col], OrdinalEncoder
+            ):  # Only decode categorical variables
+                df[col] = self.encoders[col].inverse_transform(df[[col]]).squeeze()
 
             if self.dtypes[col].kind in "ui":
                 df[col] = df[col].round().astype(int).astype(self.dtypes[col])

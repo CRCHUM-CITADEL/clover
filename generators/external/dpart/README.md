@@ -19,3 +19,4 @@ MIT License
 * Remove warning from DP-models.
 * Fix typo in warning message for privacy leakage of categorical variables.
 * Fix unshown warning message for the bounds of continuous variables.
+* Fix privacy leakage for decoding predictions.

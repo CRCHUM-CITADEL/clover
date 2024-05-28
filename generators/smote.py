@@ -4,6 +4,7 @@ import warnings
 
 from imblearn.over_sampling import SMOTE, SMOTENC, SMOTEN  # 3rd party packages
 from sklearn.preprocessing import MinMaxScaler
+from diffprivlib.utils import PrivacyLeakWarning
 import pandas as pd
 import numpy as np
 
@@ -30,6 +31,10 @@ class SmoteGenerator(Generator):
     :param l_connectivity: the distance to decide the neighborhood (applicable to DP generator)
     :param nu: the granularity parameter of the uniform grid that the data will be partitioned into
         (applicable to DP generator)
+    :param bounds: specify the range (minimum and maximum) for all numerical columns.
+        This ensures that no further privacy leakage is happening. For example,
+        bounds = {"col1": {"min": 0, "max": 1}}. If not specified, they will be estimated from the real data
+        and a warning will be raised (applicable to DP generator)
     :param r: the range each feature will fall into after preprocessing, i.e., [-r, r] (applicable to DP generator)
     """
 
@@ -45,6 +50,7 @@ class SmoteGenerator(Generator):
         k_neighbors: int = 5,
         l_connectivity: int = 2,
         nu: float = 0.25,
+        bounds: dict = None,
         r: float = 1,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
@@ -67,6 +73,11 @@ class SmoteGenerator(Generator):
             self.nu = nu
             self.r = r
             self._original_dtypes = df.dtypes.to_dict()
+
+            # bound dict
+            if bounds is None:
+                bounds = {}
+            self.bounds = bounds
 
     def preprocess(self) -> None:
         """
@@ -93,10 +104,35 @@ class SmoteGenerator(Generator):
             if self._contains_cont_indep_vars and self._contains_cat_indep_vars:
                 self._params["categorical_features"] = cat_indep_vars
         else:  # DP-SMOTE: Rescale features so that each feature contains entries in the same range, i.e., [-r, r]
+            self.encoders_priv = (
+                {}
+            )  # Encoder to scale the range of each variable to provided bounds and no decoding should be performed
             self.encoders = {}
             self.df_transformed = self._df[
                 self._metadata["continuous"]
             ]  # Initiate the transformed data
+
+            # Rescale each variable to the provided bounds to prevent privacy leakage in decoding stage
+            for col, series in self.df_transformed.items():
+                if col not in self.bounds:
+                    warnings.warn(
+                        f"upper and lower bounds not specified for column '{col}'",
+                        PrivacyLeakWarning,
+                    )
+                    self.bounds[col] = {"min": series.min(), "max": series.max()}
+                self.encoders_priv[col] = MinMaxScaler(
+                    feature_range=(self.bounds[col]["min"], self.bounds[col]["max"])
+                )
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    self.df_transformed[col] = pd.Series(
+                        self.encoders_priv[col]
+                        .fit_transform(self.df_transformed[[col]])
+                        .squeeze(),
+                        name=col,
+                        index=self.df_transformed.index,
+                    )
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")

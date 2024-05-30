@@ -37,3 +37,91 @@ def bin_per_column(
     df_tobin_bin = pd.DataFrame.from_dict(df_tobin_bin).astype(int).astype(str)
 
     return df_ref_bin, df_tobin_bin
+
+
+def range_query(df: pd.DataFrame, col: str, a: float or int, b: float or int) -> int:
+    """
+    Performs a range query on a DataFrame.
+
+    :param df: The DataFrame to query.
+    :param col: The name of the column in the DataFrame to apply the range query to.
+    :param a: The lower bound of the range (inclusive).
+    :param b: The upper bound of the range (exclusive).
+
+    :return: The number of rows in the DataFrame where the values in the specified column
+        fall within the range [a, b).
+    """
+    return len(df[(df[col] >= a) & (df[col] < b)])
+
+
+def laplace_mech(
+    v: int or float, sensitivity: int or float, epsilon: int or float
+) -> float:
+    """
+    Return a value with noise added using the Laplace mechanism.
+
+    :param v: The input value.
+    :param sensitivity: The sensitivity of the function.
+    :param epsilon: The privacy parameter.
+
+    :return: The input value(s) with Laplace noise added.
+    """
+    return v + np.random.laplace(loc=0, scale=sensitivity / epsilon)
+
+
+def generate_continuous_dp(
+    df: pd.DataFrame,
+    col: str,
+    min_val: float,
+    max_val: float,
+    epsilon: float,
+    sensitivity=1,
+    num_bins=None,
+    decimals=None,
+):
+    """
+    Generate differentially private continuous samples from a DataFrame.
+
+    :param df: The DataFrame containing the data.
+    :param col: The column in the DataFrame to generate samples from.
+    :param min_val: The minimum value of the range.
+    :param max_val: The maximum value of the range.
+    :param epsilon: The privacy parameter for differential privacy.
+    :param sensitivity: float or int
+        The sensitivity parameter. Defaults to 1.
+    :param num_bins: int, optional
+        The number of bins to discretize the range. If not provided, it's calculated based on the range.
+    :param decimals: int, optional
+        The number of decimal places to round the generated samples.
+        If not provided, the values are rounded to the nearest integer.
+
+    :return: array_like
+        An array of differentially private continuous samples.
+    """
+    assert max_val > min_val
+
+    # Calculate num_bins if not provided
+    if num_bins is None:
+        num_bins = max(round(max_val - min_val, 0), 10)
+
+    # Calculate bin width and generate bins
+    bin_width = (max_val - min_val) / num_bins
+    bins = np.linspace(min_val, max_val, num_bins, endpoint=False)
+
+    # Calculate counts for each bin
+    counts = [range_query(df, col, b, b + bin_width) for b in bins]
+
+    # Apply Laplace mechanism and normalize counts
+    dp_syn_rep = [max(0, laplace_mech(c, sensitivity, epsilon)) for c in counts]
+    syn_normalized = dp_syn_rep / np.sum(dp_syn_rep)
+
+    # Sample from bins based on synthetic representation
+    samples = np.random.choice(bins, len(df), p=syn_normalized)
+    samples_uni = [np.random.uniform(value, value + bin_width) for value in samples]
+
+    if decimals is not None:
+        return np.round(samples_uni, decimals)
+
+    else:
+        return samples_uni
+

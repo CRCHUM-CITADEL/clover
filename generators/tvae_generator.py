@@ -40,6 +40,7 @@ class TVAEGenerator(Generator):
         self,
         df: pd.DataFrame,
         metadata: dict,
+        preprocess_metadata: dict = None,
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         epochs: int = 300,
@@ -47,6 +48,7 @@ class TVAEGenerator(Generator):
         compress_dims: Tuple[int, int] = (249, 249),
         decompress_dims: Tuple[int, int] = (249, 249),
         epsilon: float = None,
+        preprocess_epsilon_pp: float = None,
         delta: float = None,
         max_grad_norm: float = 1,
         max_physical_batch_size: int = 125,
@@ -60,10 +62,12 @@ class TVAEGenerator(Generator):
             "decompress_dims": decompress_dims,
             "delta": delta,
             "epsilon": epsilon,
+            "preprocess_epsilon_pp": preprocess_epsilon_pp,
             "max_grad_norm": max_grad_norm,
             "max_physical_batch_size": max_physical_batch_size,
         }
         self._tvae_metadata = None
+        self._preprocess_metadata = preprocess_metadata
 
         if not (
             (epsilon is None and delta is None)
@@ -73,6 +77,10 @@ class TVAEGenerator(Generator):
                 "epsilon and delta should either both be specified for differentially private training, "
                 "or none should be for non-DP training"
             )
+
+        assert (
+                0 <= preprocess_epsilon_pp <= 1
+        ), "preprocess_epsilon must be in the interval [0, 1]"
 
     def preprocess(self) -> None:
         """
@@ -105,7 +113,7 @@ class TVAEGenerator(Generator):
         :return: *None*
         """
 
-        self._gen = TVAESynthesizer(self._tvae_metadata, **self._params)
+        self._gen = TVAESynthesizer(self._tvae_metadata, self._preprocess_metadata, **self._params)
 
         self._gen.fit(self._df)
 

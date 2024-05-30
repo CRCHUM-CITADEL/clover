@@ -84,6 +84,7 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
     def __init__(
         self,
         metadata,
+        preprocess_metadata=None,
         enforce_min_max_values=True,
         enforce_rounding=True,
         locales=None,
@@ -101,6 +102,7 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
         epochs=300,
         pac=10,
         epsilon=None,
+        preprocess_epsilon_pp=None,
         delta=None,
         max_grad_norm=1,
         cuda=True,
@@ -112,6 +114,7 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
             locales=locales,
         )
 
+        self.preprocess_metadata = preprocess_metadata
         self.embedding_dim = embedding_dim
         self.generator_dim = generator_dim
         self.discriminator_dim = discriminator_dim
@@ -126,6 +129,7 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
         self.epochs = epochs
         self.pac = pac
         self.epsilon = epsilon
+        self.preprocess_epsilon_pp = preprocess_epsilon_pp
         self.delta = delta
         self.max_grad_norm = max_grad_norm
         self.cuda = cuda
@@ -145,10 +149,13 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
             "epochs": epochs,
             "pac": pac,
             "epsilon": epsilon,
+            "preprocess_epsilon_pp": preprocess_epsilon_pp,
             "delta": delta,
             "max_grad_norm": max_grad_norm,
             "cuda": cuda,
         }
+
+
 
     def _fit(self, processed_data):
         """Fit the model to the table.
@@ -164,7 +171,9 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
             self._model.fit_dp(
                 processed_data,
                 discrete_columns=discrete_columns,
+                preprocess_metadata=self.preprocess_metadata,
             )
+
         else:
             self._model.fit(
                 processed_data,
@@ -239,6 +248,7 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
     def __init__(
         self,
         metadata,
+        preprocess_metadata=None,
         enforce_min_max_values=True,
         enforce_rounding=True,
         embedding_dim=128,
@@ -249,6 +259,7 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
         epochs=300,
         loss_factor=2,
         epsilon=None,
+        preprocess_epsilon_pp=None,
         delta=None,
         max_grad_norm=1,
         max_physical_batch_size=126,
@@ -259,6 +270,7 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
             enforce_min_max_values=enforce_min_max_values,
             enforce_rounding=enforce_rounding,
         )
+        self.preprocess_metadata = preprocess_metadata
         self.embedding_dim = embedding_dim
         self.compress_dims = compress_dims
         self.decompress_dims = decompress_dims
@@ -268,6 +280,7 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
         self.loss_factor = loss_factor
         self.cuda = cuda
         self.epsilon = epsilon
+        self.preprocess_epsilon_pp = preprocess_epsilon_pp
         self.delta = delta
         self.max_grad_norm = max_grad_norm
         self.max_physical_batch_size = max_physical_batch_size
@@ -281,6 +294,7 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
             "epochs": epochs,
             "loss_factor": loss_factor,
             "epsilon": epsilon,
+            "preprocess_epsilon_pp": preprocess_epsilon_pp,
             "delta": delta,
             "max_grad_norm": max_grad_norm,
             "max_physical_batch_size": max_physical_batch_size,
@@ -304,6 +318,7 @@ class TVAESynthesizer(BaseSingleTableSynthesizer):
         if self._model.epsilon is not None:
             self._model.fit_dp(
                 processed_data,
+                preprocess_metadata=self.preprocess_metadata,
                 discrete_columns=discrete_columns,
             )
         else:

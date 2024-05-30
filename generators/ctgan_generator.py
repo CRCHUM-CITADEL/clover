@@ -40,12 +40,14 @@ class CTGANGenerator(Generator):
         self,
         df: pd.DataFrame,
         metadata: dict,
+        preprocess_metadata: dict = None,
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         discriminator_steps: int = 4,
         epochs: int = 300,
         batch_size: int = 100,
         epsilon: float = None,
+        preprocess_epsilon_pp: float = None,
         delta: float = None,
         max_grad_norm: float = 1,
         verbose: int = 0,
@@ -58,10 +60,12 @@ class CTGANGenerator(Generator):
             "batch_size": batch_size,
             "delta": delta,
             "epsilon": epsilon,
+            "preprocess_epsilon_pp": preprocess_epsilon_pp,
             "max_grad_norm": max_grad_norm,
             "verbose": verbose,
         }
         self._ctgan_metadata = None
+        self._preprocess_metadata = preprocess_metadata
 
         self._gen = (
             None
@@ -77,6 +81,10 @@ class CTGANGenerator(Generator):
                 "epsilon and delta should either both be specified for differentially private training, "
                 "or none should be for non-DP training"
             )
+
+        assert (
+                0 <= preprocess_epsilon_pp <= 1
+        ), "preprocess_epsilon must be in the interval [0, 1]"
 
     def preprocess(self) -> None:
         """
@@ -113,7 +121,9 @@ class CTGANGenerator(Generator):
         # the discriminator and receiving one label (goal is to mitigate mode collapse) is set to 1.
         pac = 1
 
-        self._gen = CTGANSynthesizer(self._ctgan_metadata, pac=pac, **self._params)
+        self._gen = CTGANSynthesizer(
+            self._ctgan_metadata, self._preprocess_metadata, pac=pac, **self._params
+        )
         self._gen.fit(self._df)
 
         ustandard.save_pickle(

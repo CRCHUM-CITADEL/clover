@@ -42,13 +42,15 @@ from torch.nn import (
 )
 
 from ctgan.data_sampler import DataSampler
-from ctgan.data_transformer import DataTransformer
+from ..data_transformer import DataTransformer
 from ctgan.synthesizers.base import BaseSynthesizer, random_state
 
 from opacus.accountants import RDPAccountant
 from opacus import GradSampleModule
 from opacus.optimizers import DPOptimizer
 from opacus.accountants.utils import get_noise_multiplier
+
+from utils.preprocessing import generate_continuous_dp
 
 
 class Discriminator(Module):
@@ -227,6 +229,7 @@ class CTGAN(BaseSynthesizer):
         epsilon=None,
         delta=None,
         max_grad_norm=1,
+        preprocess_epsilon_pp=None,
         max_physical_batch_size=126,
         cuda=True,
     ):
@@ -251,6 +254,7 @@ class CTGAN(BaseSynthesizer):
         self.epsilon = epsilon
         self.delta = delta
         self.max_grad_norm = max_grad_norm
+        self.preprocess_epsilon_pp = preprocess_epsilon_pp
 
         if not cuda or not torch.cuda.is_available():
             device = "cpu"
@@ -522,7 +526,9 @@ class CTGAN(BaseSynthesizer):
                 )
 
     @random_state
-    def fit_dp(self, train_data, discrete_columns=(), epochs=None):
+    def fit_dp(
+        self, train_data, discrete_columns=(), preprocess_metadata=None, epochs=None
+    ):
         """Fit the CTGAN Synthesizer models to the training data.
 
         Args:
@@ -533,8 +539,18 @@ class CTGAN(BaseSynthesizer):
                 Vector. If ``train_data`` is a Numpy array, this list should
                 contain the integer indices of the columns. Otherwise, if it is
                 a ``pandas.DataFrame``, this list should contain the column names.
+            preprocess_metadata (dict of dict):
+                Dictionary containing the information related to preprocessing of the columns.
+                Minimum, maximum, number of bins and decimal places for continuous variables.
+                List of expected categories for discrete variables.
         """
         self._validate_discrete_columns(train_data, discrete_columns)
+
+        if self.preprocess_epsilon_pp is None:
+            self.preprocess_epsilon_pp = 0.5
+            warnings.warn(
+                "Half of the privacy budget will be used for preprocessing purposes."
+            )
 
         if epochs is None:
             epochs = self._epochs
@@ -547,8 +563,70 @@ class CTGAN(BaseSynthesizer):
                 DeprecationWarning,
             )
 
+        continuous_columns = [
+            col for col in train_data.columns if col not in discrete_columns
+        ]
+
+        if self.preprocess_epsilon_pp == 0:
+            warnings.warn(
+                "preprocess_epsilon_pp was set to 0. No privacy budget will be dedicated to preprocessing. "
+                "It will be based on the properties of the real data, which may not satisfy differential privacy."
+            )
+
+        if preprocess_metadata is None:
+            warnings.warn(
+                "Metadata for preprocessing was not provided. It will be generated based on the properties "
+                "of the real data, which may not satisfy differential privacy."
+            )
+            preprocess_metadata = {}
+
+        for col in train_data.columns:
+            if col not in preprocess_metadata.keys() and col in continuous_columns:
+                warnings.warn(
+                    f"Metadata for preprocessing {col} was not provided. It will be generated based on the properties "
+                    "of the real data, which may not satisfy differential privacy."
+                )
+                preprocess_metadata[col] = {
+                    "min_val": np.min(train_data[col]),
+                    "max_val": np.max(train_data[col]),
+                }
+            elif col in preprocess_metadata.keys() and col in continuous_columns:
+                assert (
+                    "min_val" in preprocess_metadata[col].keys()
+                    and "max_val" in preprocess_metadata[col].keys()
+                ), (
+                    f"Both the minimum and maximum values of {col} need to be specified in the metadata for "
+                    f"preprocessing."
+                )
+            if col not in preprocess_metadata.keys() and col in discrete_columns:
+                preprocess_metadata[col] = train_data[col].unique()
+            elif col in preprocess_metadata.keys() and col in discrete_columns:
+                assert isinstance(preprocess_metadata[col], list) or isinstance(
+                    preprocess_metadata[col], np.ndarray
+                ), (
+                    f"{col} is a categorical variable. The metadata for preprocessing should be a list of unique "
+                    f"categories."
+                )
+
+        preprocess_data = train_data.copy()
+
+        # CHECK IF EPSILON NEEDS TO BE DIVIDED BY THE NUMBER OF COLUMNS
+        if self.preprocess_epsilon_pp > 0:
+            for col in continuous_columns:
+                preprocess_data[col] = generate_continuous_dp(
+                    df=preprocess_data,
+                    col=col,
+                    epsilon=self.epsilon * self.preprocess_epsilon_pp / len(continuous_columns),
+                    sensitivity=1,
+                    **preprocess_metadata[col],
+                )
+
+        categories_dict = {col: preprocess_metadata[col] for col in discrete_columns}
+
         self._transformer = DataTransformer()
-        self._transformer.fit(train_data, discrete_columns)
+        self._transformer.fit(
+            preprocess_data, discrete_columns, categories_dict=categories_dict
+        )
 
         train_data = self._transformer.transform(train_data)
 
@@ -590,7 +668,7 @@ class CTGAN(BaseSynthesizer):
         optimizerD = DPOptimizer(
             optimizer=optimizerD,
             noise_multiplier=get_noise_multiplier(
-                target_epsilon=self.epsilon,
+                target_epsilon=(1 - self.preprocess_epsilon_pp) * self.epsilon,
                 target_delta=self.delta,
                 sample_rate=self._batch_size / len(train_data),
                 epochs=self._discriminator_steps * epochs,
@@ -738,10 +816,6 @@ class CTGAN(BaseSynthesizer):
                         loss_d=loss_d, loss_g=loss_g, epsilon=spent_epsilon
                     )
                 )
-                # print(f'Epoch {i + 1}, Loss G: {loss_g.detach().cpu(): .4f},'  # noqa: T001
-                #       f'Loss D: {loss_d.detach().cpu(): .4f},'
-                #       f'Epsilon: {spent_epsilon: .4f}',
-                #       flush=True)
 
     @random_state
     def sample(self, n, condition_column=None, condition_value=None):

@@ -24,6 +24,7 @@ The original code was modified in the following ways to accommodate differential
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import warnings
 
 import torch
 from torch.nn import Linear, Module, Parameter, ReLU, Sequential
@@ -31,11 +32,13 @@ from torch.nn.functional import cross_entropy
 from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
 
-from ctgan.data_transformer import DataTransformer
+from ..data_transformer import DataTransformer
 from ctgan.synthesizers.base import BaseSynthesizer, random_state
 
 from opacus import PrivacyEngine
 from opacus.utils.batch_memory_manager import BatchMemoryManager
+
+from utils.preprocessing import generate_continuous_dp
 
 
 class Encoder(Module):
@@ -199,6 +202,7 @@ class TVAE(BaseSynthesizer):
         epochs=300,
         loss_factor=2,
         epsilon=None,
+        preprocess_epsilon_pp=None,
         delta=None,
         max_grad_norm=1,
         max_physical_batch_size=126,
@@ -218,6 +222,7 @@ class TVAE(BaseSynthesizer):
         self.delta = delta
         self.max_grad_norm = max_grad_norm
         self.max_physical_batch_size = max_physical_batch_size
+        self.preprocess_epsilon_pp = preprocess_epsilon_pp
 
         self.verbose = verbose
 
@@ -292,6 +297,7 @@ class TVAE(BaseSynthesizer):
         self,
         train_data,
         discrete_columns=(),
+        preprocess_metadata=None,
     ):
         """
         Fit the TVAE Synthesizer models to the training data.
@@ -299,6 +305,10 @@ class TVAE(BaseSynthesizer):
         Args:
             train_data (numpy.ndarray or pandas.DataFrame):
                 Training Data. It must be a 2-dimensional numpy array or a pandas.DataFrame.
+            preprocess_metadata (dict of dict):
+                Dictionary containing the information related to preprocessing of the columns.
+                Minimum, maximum, number of bins and decimal places for continuous variables.
+                List of expected categories for discrete variables.
             epsilon (float):
                 Target privacy parameter (epsilon) for differential privacy.
             delta (float):
@@ -315,8 +325,74 @@ class TVAE(BaseSynthesizer):
                 Whether to print the epochs, loss and epsilon values during training.
         """
 
+        if self.preprocess_epsilon_pp is None:
+            self.preprocess_epsilon_pp = 0.5
+            warnings.warn(
+                "Half of the privacy budget will be used for preprocessing purposes."
+            )
+
+        continuous_columns = [
+            col for col in train_data.columns if col not in discrete_columns
+        ]
+
+        if self.preprocess_epsilon_pp == 0:
+            warnings.warn(
+                "preprocess_epsilon_pp was set to 0. No privacy budget will be dedicated to preprocessing. "
+                "It will be based on the properties of the real data, which may not satisfy differential privacy."
+            )
+
+        if preprocess_metadata is None:
+            warnings.warn(
+                "Metadata for preprocessing was not provided. It will be generated based on the properties "
+                "of the real data, which may not satisfy differential privacy."
+            )
+            preprocess_metadata = {}
+
+        for col in train_data.columns:
+            if col not in preprocess_metadata.keys() and col in continuous_columns:
+                warnings.warn(
+                    f"Metadata for preprocessing {col} was not provided. It will be generated based on the properties "
+                    "of the real data, which may not satisfy differential privacy."
+                )
+                preprocess_metadata[col] = {
+                    "min_val": np.min(train_data[col]),
+                    "max_val": np.max(train_data[col]),
+                }
+            elif col in preprocess_metadata.keys() and col in continuous_columns:
+                assert (
+                    "min_val" in preprocess_metadata[col].keys()
+                    and "max_val" in preprocess_metadata[col].keys()
+                ), (
+                    f"Both the minimum and maximum values of {col} need to be specified in the metadata for "
+                    f"preprocessing."
+                )
+            if col not in preprocess_metadata.keys() and col in discrete_columns:
+                preprocess_metadata[col] = train_data[col].unique()
+            elif col in preprocess_metadata.keys() and col in discrete_columns:
+                assert isinstance(preprocess_metadata[col], list) or isinstance(
+                    preprocess_metadata[col], np.ndarray
+                ), (
+                    f"{col} is a categorical variable. The metadata for preprocessing should be a list of unique "
+                    f"categories."
+                )
+
+        preprocess_data = train_data.copy()
+
+        # CHECK IF EPSILON NEEDS TO BE DIVIDED BY THE NUMBER OF COLUMNS
+        if self.preprocess_epsilon_pp > 0:
+            for col in continuous_columns:
+                preprocess_data[col] = generate_continuous_dp(
+                    df=preprocess_data,
+                    col=col,
+                    epsilon=self.epsilon * self.preprocess_epsilon_pp / len(continuous_columns),
+                    sensitivity=1,
+                    **preprocess_metadata[col],
+                )
+
+        categories_dict = {col: preprocess_metadata[col] for col in discrete_columns}
+
         self.transformer = DataTransformer()
-        self.transformer.fit(train_data, discrete_columns)
+        self.transformer.fit(preprocess_data, discrete_columns, categories_dict=categories_dict)
         train_data = self.transformer.transform(train_data)
         dataset = TensorDataset(
             torch.from_numpy(train_data.astype("float32")).to(self._device)

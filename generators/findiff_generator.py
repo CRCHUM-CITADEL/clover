@@ -206,6 +206,10 @@ class FinDiffGenerator(Generator):
             vocabulary_classes = np.unique(
                 self._df[self.cat_attrs]
             )  # get vocabulary of categorical attributes
+
+            # determine number unique categorical tokens
+            self.n_cat_tokens = len(vocabulary_classes)
+
             self.label_encoder = LabelEncoder()
             self.label_encoder.fit(vocabulary_classes)
             train_cat_scaled = self._df[self.cat_attrs].apply(
@@ -301,6 +305,10 @@ class FinDiffGenerator(Generator):
                 vocabulary_classes += unique_value
 
             vocabulary_classes = np.sort(vocabulary_classes)
+
+            # determine number unique categorical tokens
+            self.n_cat_tokens = len(vocabulary_classes)
+
             self.label_encoder = LabelEncoder()
             self.label_encoder.fit(vocabulary_classes)
             train_cat_scaled = self._df[self.cat_attrs].apply(
@@ -337,9 +345,6 @@ class FinDiffGenerator(Generator):
         """
 
         if self.generator_filepath is None:
-            # determine number unique categorical tokens
-            n_cat_tokens = len(np.unique(self._df[self.cat_attrs]))
-
             # determine total categorical embedding dimension
             cat_dim = self.cat_emb_dim * len(self.cat_attrs)
 
@@ -354,7 +359,7 @@ class FinDiffGenerator(Generator):
                 hidden_layers=self.mpl_layers,
                 activation=self.activation,
                 dim_t=self.dim_t,
-                n_cat_tokens=n_cat_tokens,
+                n_cat_tokens=self.n_cat_tokens,
                 n_cat_emb=self.cat_emb_dim,
                 embedding=None,
                 embedding_learned=False,

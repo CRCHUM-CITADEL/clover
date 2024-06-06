@@ -259,7 +259,7 @@ class FinDiffGenerator(Generator):
                         f"Upper and lower bounds not specified for column '{col}', transformer will be trained on real data for this variable",
                         PrivacyLeakWarning,
                     )
-                    df_num_synth[col] = self._df[col]
+                    df_num_synth[col][: len(self._df)] = self._df[col]
                 else:
                     self.eps_spent_preprocessing += eps_per_var
                     df_num_synth[col] = generate_synth_var(

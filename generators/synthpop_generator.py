@@ -64,7 +64,7 @@ class SynthpopGenerator(Generator):
         min_samples_leaf: int = 5,
         max_depth: int = None,
         methods: dict = None,
-        bounds: Dict[str, List] = None,
+        bounds: Dict[str, dict] = None,
         prediction_matrix: Union[str, Dict[str, List[str]]] = None,
         n_parents: int = None,
     ):

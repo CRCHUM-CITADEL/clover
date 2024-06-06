@@ -295,7 +295,7 @@ class FinDiffGenerator(Generator):
                     )
                     unique_value = list(np.unique(self._df[col]))
                 else:
-                    unique_value_raw = self.bounds[col]
+                    unique_value_raw = self.bounds[col]["categories"]
                     unique_value = [col + "_" + str(val) for val in unique_value_raw]
 
                 vocabulary_classes += unique_value

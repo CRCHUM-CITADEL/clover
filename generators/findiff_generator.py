@@ -70,7 +70,7 @@ class FinDiffGenerator(Generator):
     :param mlp_layers: number of neurons per layer
     :param activation: activation function - "lrelu", "relu", "tanh" or "sigmoid"
     :param dim_t: dimensionality of the intermediate layer for connecting the embeddings.
-    :param cat_emb_dim:dimension of categorical embeddings
+    :param cat_emb_dim: dimension of categorical embeddings
     :param diff_beta_start_end: diffusion start and end betas
     :param scheduler: diffusion scheduler - "linear" or "quad"
     :param epsilon: the privacy budget of the differential privacy.

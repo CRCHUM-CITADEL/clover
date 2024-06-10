@@ -57,10 +57,10 @@ generators.ctabgan_generator
    :undoc-members:
    :show-inheritance:
 
-generators.tabddpm_generator
+generators.findiff_generator
 ----------------------------
 
-.. automodule:: generators.tabddpm_generator
+.. automodule:: generators.findiff_generator
    :members:
    :undoc-members:
    :show-inheritance:

@@ -14,7 +14,7 @@ from generators.synthpop_generator import SynthpopGenerator
 from generators.smote import SmoteGenerator
 from generators.tvae_generator import TVAEGenerator
 from generators.ctgan_generator import CTGANGenerator
-from generators.tabddpm_generator import TabDDPMGenerator  # cannot run without GPUs
+from generators.findiff_generator import FinDiffGenerator
 from generators.mst_generator import MSTGenerator
 from generators.ctabgan_generator import CTABGANGenerator
 

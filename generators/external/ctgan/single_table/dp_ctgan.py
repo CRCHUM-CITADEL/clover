@@ -155,8 +155,6 @@ class CTGANSynthesizer(BaseSingleTableSynthesizer):
             "cuda": cuda,
         }
 
-
-
     def _fit(self, processed_data):
         """Fit the model to the table.
 

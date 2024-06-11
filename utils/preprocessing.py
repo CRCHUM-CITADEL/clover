@@ -124,4 +124,3 @@ def generate_continuous_dp(
 
     else:
         return samples_uni
-

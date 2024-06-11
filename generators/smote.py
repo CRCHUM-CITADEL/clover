@@ -84,6 +84,7 @@ class SmoteGenerator(Generator):
             self.r = r
 
             self._df = self._df.copy()
+            self.df_original = df.copy()
             self._original_dtypes = df.dtypes.to_dict()
             self._original_col_order = df.columns
 
@@ -350,7 +351,7 @@ class SmoteGenerator(Generator):
             # Prepare the X and y depending on the prediction type (classification or regression)
             if self._prediction_type == "Classification":
                 X = self.df_transformed
-                y = self._df[self._metadata["variable_to_predict"]]
+                y = self.df_original[self._metadata["variable_to_predict"]]
             else:
                 # SMOTE is not defined for regression: we add a fake label 0
                 X = self.df_transformed

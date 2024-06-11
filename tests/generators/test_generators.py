@@ -22,13 +22,14 @@ from generators.ctabgan_generator import CTABGANGenerator
 @pytest.mark.parametrize(
     "generator",
     [
-        SynthpopGenerator,
         DataSynthesizerGenerator,
+        SynthpopGenerator,
         SmoteGenerator,
-        TVAEGenerator,
-        CTGANGenerator,
         MSTGenerator,
+        CTGANGenerator,
+        TVAEGenerator,
         CTABGANGenerator,
+        FinDiffGenerator,
     ],
 )
 def test_generation(
@@ -54,25 +55,30 @@ def test_generation(
             "metadata": metadata_wbcd,
             "random_state": 0,
             "generator_filepath": None,
+            "candidate_keys": None,  # datasynthesizer
+            "epsilon": 1,  # datasynthesizer / synthpop / smote / MST / ctgan/ tvae / ctabganplus / findiff
+            "degree": 2,  # datasynthesizer
             "variables_order": None,  # synthpop
             "min_samples_leaf": 5,  # synthpop
             "max_depth": None,  # synthpop
-            "candidate_keys": None,  # datasynthesizer
-            "epsilon": 1,  # datasynthesizer / MST / tvae / ctgan
-            "max_grad_norm": 1,  # tvae / ctgan
-            "max_physical_batch_size": 126,  # tvae / ctgan
-            "degree": 2,  # datasynthesizer
+            "methods": None,  # synthpop
+            "bounds": None,  # synthpop / smote / findiff
+            "prediction_matrix": None,  # synthpop
+            "n_parents": None,  # synthpop
             "k_neighbors": 5,  # smote
-            "epochs": 1,  # tvae / ctgan / ctabganplus
-            "batch_size": 100,  # tvae / ctgan / tabDDPM / ctabganplus
+            "l_connectivity": 2,  # smote
+            "nu": 0.25,  # smote
+            "cat_emb_dim": 2,  # smote / findiff
+            "r": 1,  # smote
+            "delta": 1e-9,  # MST / ctgan / tvae / ctabganplus / findiff
+            "discriminator_steps": 2,  # ctgan
+            "epochs": 50,  # ctgan / tvae / ctabganplus / findiff
+            "batch_size": 100,  # sctgan / tvae / ctabganplus / findiff
+            "max_grad_norm": 1,  # ctgan / tvae / ctabganplus / findiff
+            "verbose": 0,  # ctgan
             "compress_dims": (249, 249),  # tvae
             "decompress_dims": (249, 249),  # tvae
-            "discriminator_steps": 2,  # ctgan
-            "learning_rate": 1e-5,  # tabDDPM
-            "num_timesteps": 2,  # tabDDPM
-            "num_iter": 2,  # tabDDPM
-            "layers": None,  # tabDDPM
-            "delta": 1e-9,  # MST / tvae / ctgan
+            "max_physical_batch_size": 126,  # tvae
             "mixed_columns": None,  # ctabganplus
             "log_columns": None,  # ctabganplus
             "integer_columns": None,  # ctabganplus
@@ -80,7 +86,13 @@ def test_generation(
             "random_dim": 100,  # ctabganplus
             "num_channels": 64,  # ctabganplus
             "l2scale": 1e-5,  # ctabganplus
-            "verbose": 0,  # ctgan
+            "learning_rate": 1e-4,  # findiff
+            "diffusion_steps": 50,  # findiff
+            "mpl_layers": [1024, 1024, 1024, 1024],  # findiff
+            "activation": "lrelu",  # findiff
+            "dim_t": 64,  # findiff
+            "diff_beta_start_end": [1e-4, 0.02],  # findiff
+            "scheduler": "linear",  # findiff
         }
 
         # Select only the expected instance parameters

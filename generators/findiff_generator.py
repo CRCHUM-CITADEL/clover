@@ -151,6 +151,9 @@ class FinDiffGenerator(Generator):
         self.max_grad_norm = max_grad_norm
         self.bounds = bounds
 
+        if epsilon == {"preprocessing": None, "fitting": None}:
+            self.epsilon = None
+
         # Initiate privacy budget
         if epsilon is not None:
             if not isinstance(epsilon, dict):

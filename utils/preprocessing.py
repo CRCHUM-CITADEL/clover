@@ -128,7 +128,9 @@ def generate_continuous_dp(
     samples_uni = [np.random.uniform(value, value + bin_width) for value in samples]
 
     if modes is not None:
-        samples_uni = pd.concat([samples_uni, pd.concat([modes_series], ignore_index=True)])
+        samples_uni = pd.concat(
+            [samples_uni, pd.concat([modes_series], ignore_index=True)]
+        )
 
     if decimals is not None:
         return np.round(samples_uni, decimals)

@@ -750,7 +750,7 @@ class CTABGANSynthesizer:
                 )
 
         preprocess_data = train_data.copy()
-        preprocess_data = pd.concat([preprocess_data]*100, ignore_index=True)
+        preprocess_data = pd.concat([preprocess_data] * 100, ignore_index=True)
         # Each category of columns needs its own mechanism
         # 1. Columns that are in continuous (metadata) but not in mixed (extra_metadata) should be synthesized like
         # they are in CTGAN

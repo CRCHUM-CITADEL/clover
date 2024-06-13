@@ -159,7 +159,6 @@ class DPSmote:
                 chosen_idx = np.unravel_index(chosen_idx_flat, prob.shape)
 
                 # Find the neighbors of the selected point
-                ##############WIP#############################################
                 idx_all = np.array(list(np.ndindex(prob.shape)))
 
                 # Calculate the offsets for all indices
@@ -170,18 +169,6 @@ class DPSmote:
                 idx_valid = np.where((dist > 0) & (dist <= self.l_connectivity))
                 neighbors_index = [tuple(i) for i in idx_all[idx_valid]]
                 neighbors_counts = [noisy_counts[i] for i in neighbors_index]
-                ##############################################################
-                # neighbors_index = []
-                # neighbors_counts = []
-                # for i in np.ndindex(prob.shape):
-                #     offset = np.array(chosen_idx) - np.array(i)
-                #     dist = np.sum(np.absolute(offset))
-                #
-                #     # Select the neighbors according to l connectivity
-                #     if dist > 0 and dist <= self.l_connectivity:
-                #         neighbors_index.append(i)
-                #         neighbors_counts.append(noisy_counts[i])
-                ###############################################################
 
                 if np.sum(np.array(neighbors_counts)) == 0:
                     raise ValueError(

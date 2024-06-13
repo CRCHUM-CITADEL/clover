@@ -42,7 +42,10 @@ class DataTransformer:
                         }
                     )
                 else:
-                    if self.categories_dict is None or index not in self.categories_dict.keys():
+                    if (
+                        self.categories_dict is None
+                        or index not in self.categories_dict.keys()
+                    ):
                         mapper = column.value_counts().index.tolist()
                     else:
                         mapper = self.categories_dict[index]

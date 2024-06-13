@@ -87,7 +87,7 @@ class DataTransformer(object):
                 ohe.dummies.append(np.nan)
 
             ohe.output_properties = {
-                f'value{i}': {'sdtype': 'float', 'next_transformer': None}
+                f"value{i}": {"sdtype": "float", "next_transformer": None}
                 for i in range(len(ohe.dummies))
             }
             # The fit function ends here.

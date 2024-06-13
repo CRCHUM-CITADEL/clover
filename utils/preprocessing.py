@@ -39,19 +39,18 @@ def bin_per_column(
     return df_ref_bin, df_tobin_bin
 
 
-def range_query(df: pd.DataFrame, col: str, a: float or int, b: float or int) -> int:
+def range_query(series: pd.Series, a: float or int, b: float or int) -> int:
     """
     Performs a range query on a DataFrame.
 
-    :param df: The DataFrame to query.
-    :param col: The name of the column in the DataFrame to apply the range query to.
+    :param series: The pandas Series to apply the range query to.
     :param a: The lower bound of the range (inclusive).
     :param b: The upper bound of the range (exclusive).
 
     :return: The number of rows in the DataFrame where the values in the specified column
         fall within the range [a, b).
     """
-    return len(df[(df[col] >= a) & (df[col] < b)])
+    return sum((series >= a) & (series < b))
 
 
 def laplace_mech(
@@ -75,6 +74,7 @@ def generate_continuous_dp(
     min_val: float,
     max_val: float,
     epsilon: float,
+    modes=None,
     sensitivity=1,
     num_bins=None,
     decimals=None,
@@ -87,6 +87,7 @@ def generate_continuous_dp(
     :param min_val: The minimum value of the range.
     :param max_val: The maximum value of the range.
     :param epsilon: The privacy parameter for differential privacy.
+    :param modes: List of modes that should not be synthesized as they are specified by the user.
     :param sensitivity: float or int
         The sensitivity parameter. Defaults to 1.
     :param num_bins: int, optional
@@ -104,24 +105,33 @@ def generate_continuous_dp(
     if num_bins is None:
         num_bins = max(round(max_val - min_val, 0), 10)
 
+    # Exclude modes if specified by the user
+    if modes is not None:
+        cleaned_series = df[~df[col].isin(modes)][col].copy()
+        modes_series = df[df[col].isin(modes)][col].copy()
+    else:
+        cleaned_series = df[col].copy()
+
     # Calculate bin width and generate bins
     bin_width = (max_val - min_val) / num_bins
     bins = np.linspace(min_val, max_val, num_bins, endpoint=False)
 
     # Calculate counts for each bin
-    counts = [range_query(df, col, b, b + bin_width) for b in bins]
+    counts = [range_query(cleaned_series, b, b + bin_width) for b in bins]
 
     # Apply Laplace mechanism and normalize counts
     dp_syn_rep = [max(0, laplace_mech(c, sensitivity, epsilon)) for c in counts]
     syn_normalized = dp_syn_rep / np.sum(dp_syn_rep)
 
     # Sample from bins based on synthetic representation
-    samples = np.random.choice(bins, len(df), p=syn_normalized)
+    samples = np.random.choice(bins, len(cleaned_series), p=syn_normalized)
     samples_uni = [np.random.uniform(value, value + bin_width) for value in samples]
+
+    if modes is not None:
+        samples_uni = pd.concat([samples_uni, modes_series])
 
     if decimals is not None:
         return np.round(samples_uni, decimals)
 
     else:
         return samples_uni
-

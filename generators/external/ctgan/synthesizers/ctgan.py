@@ -610,7 +610,7 @@ class CTGAN(BaseSynthesizer):
 
         preprocess_data = train_data.copy()
 
-        # CHECK IF EPSILON NEEDS TO BE DIVIDED BY THE NUMBER OF COLUMNS
+        # EPSILON NEEDS TO BE DIVIDED BY THE NUMBER OF COLUMNS
         if self.preprocess_epsilon_pp > 0:
             for col in continuous_columns:
                 preprocess_data[col] = generate_continuous_dp(

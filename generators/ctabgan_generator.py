@@ -44,6 +44,7 @@ class CTABGANGenerator(Generator):
         self,
         df: pd.DataFrame,
         metadata: dict,
+        preprocess_metadata: dict = None,
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         mixed_columns: dict = None,
@@ -56,6 +57,7 @@ class CTABGANGenerator(Generator):
         batch_size: int = 500,
         epochs: int = 150,
         epsilon=None,
+        preprocess_epsilon_pp: float = None,
         delta=None,
         max_grad_norm=1,
     ):
@@ -76,6 +78,7 @@ class CTABGANGenerator(Generator):
         self._problem_type = {prediction: metadata["variable_to_predict"]}
 
         self._data_prep = None
+        self._preprocess_metadata = preprocess_metadata
 
         self._params = {
             "class_dim": class_dim,
@@ -85,9 +88,23 @@ class CTABGANGenerator(Generator):
             "batch_size": batch_size,
             "epochs": epochs,
             "epsilon": epsilon,
+            "preprocess_epsilon_pp": preprocess_epsilon_pp,
             "delta": delta,
             "max_grad_norm": max_grad_norm,
         }
+
+        if not (
+            (epsilon is None and delta is None)
+            or (epsilon is not None and delta is not None)
+        ):
+            raise ValueError(
+                "epsilon and delta should either both be specified for differentially private training, "
+                "or none should be for non-DP training"
+            )
+
+        assert (
+                0 <= preprocess_epsilon_pp <= 1
+        ), "preprocess_epsilon must be in the interval [0, 1]"
 
     def preprocess(self) -> None:
         """
@@ -130,6 +147,7 @@ class CTABGANGenerator(Generator):
                 # general=self._data_prep.column_types["general"],
                 # non_categorical=self._data_prep.column_types["non_categorical"],
                 type=self._problem_type,
+                preprocess_metadata=self._preprocess_metadata,
             )
 
         else:

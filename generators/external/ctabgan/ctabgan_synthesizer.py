@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import warnings
+
 import torch
 import torch.utils.data
 import torch.optim as optim
@@ -28,6 +30,8 @@ from opacus.accountants import RDPAccountant
 from opacus import GradSampleModule
 from opacus.optimizers import DPOptimizer
 from opacus.accountants.utils import get_noise_multiplier
+
+from utils.preprocessing import generate_continuous_dp
 
 
 class Classifier(Module):
@@ -421,6 +425,7 @@ class CTABGANSynthesizer:
         batch_size=500,
         epochs=150,
         epsilon=None,
+        preprocess_epsilon_pp=None,
         delta=None,
         max_grad_norm=1,
         verbose=False,
@@ -439,6 +444,7 @@ class CTABGANSynthesizer:
         self.epsilon = epsilon
         self.delta = delta
         self.max_grad_norm = max_grad_norm
+        self.preprocess_epsilon_pp = preprocess_epsilon_pp
 
     def fit(
         self,
@@ -667,6 +673,7 @@ class CTABGANSynthesizer:
         general=[],
         non_categorical=[],
         type={},
+        preprocess_metadata=None,
     ):
         problem_type = None
         target_index = None
@@ -675,12 +682,124 @@ class CTABGANSynthesizer:
             if problem_type:
                 target_index = train_data.columns.get_loc(type[problem_type])
 
+        # We need to add DP to the preprocessing steps
+        continuous_columns = [
+            column
+            for column_index, column in enumerate(train_data.columns)
+            if column_index not in categorical and column_index not in mixed.keys()
+        ]
+
+        print("categorical: ", categorical)
+        print("continuous_columns: ", continuous_columns)
+
+        if self.preprocess_epsilon_pp == 0:
+            warnings.warn(
+                "preprocess_epsilon_pp was set to 0. No privacy budget will be dedicated to preprocessing. "
+                "It will be based on the properties of the real data, which may not satisfy differential privacy."
+            )
+
+        if self.preprocess_epsilon_pp is None:
+            self.preprocess_epsilon_pp = 0.5
+            warnings.warn(
+                "Half of the privacy budget will be used for preprocessing purposes."
+            )
+
+        if preprocess_metadata is None:
+            warnings.warn(
+                "Metadata for preprocessing was not provided. It will be generated based on the properties "
+                "of the real data, which may not satisfy differential privacy."
+            )
+            preprocess_metadata = {}
+
+        for col in train_data.columns:
+            if col not in preprocess_metadata.keys() and col in continuous_columns:
+                warnings.warn(
+                    f"Metadata for preprocessing {col} was not provided. It will be generated based on the properties "
+                    "of the real data, which may not satisfy differential privacy."
+                )
+                preprocess_metadata[col] = {
+                    "min_val": np.min(train_data[col]),
+                    "max_val": np.max(train_data[col]),
+                }
+            elif col not in preprocess_metadata.keys() and col in mixed.keys():
+                warnings.warn(
+                    f"Metadata for preprocessing {col} was not provided. It will be generated based on the properties "
+                    "of the real data, which may not satisfy differential privacy."
+                )
+                preprocess_metadata[col] = {
+                    "min_val": np.min(
+                        train_data[~train_data[col].isin(mixed[col])][col]
+                    ),
+                    "max_val": np.max(
+                        train_data[~train_data[col].isin(mixed[col])][col]
+                    ),
+                }
+            elif col in preprocess_metadata.keys() and col in continuous_columns:
+                print(col)
+                assert (
+                    "min_val" in preprocess_metadata[col].keys()
+                    and "max_val" in preprocess_metadata[col].keys()
+                ), (
+                    f"Both the minimum and maximum values of {col} need to be specified in the metadata for "
+                    f"preprocessing."
+                )
+            if col not in preprocess_metadata.keys() and col in categorical:
+                preprocess_metadata[col] = train_data[col].unique()
+            elif col in preprocess_metadata.keys() and col in categorical:
+                assert isinstance(preprocess_metadata[col], list) or isinstance(
+                    preprocess_metadata[col], np.ndarray
+                ), (
+                    f"{col} is a categorical variable. The metadata for preprocessing should be a list of unique "
+                    f"categories."
+                )
+
+        preprocess_data = train_data.copy()
+        # Each category of columns needs its own mechanism
+        # 1. Columns that are in continuous (metadata) but not in mixed (extra_metadata) should be synthesized like
+        # they are in CTGAN
+        if self.preprocess_epsilon_pp > 0:
+            for col in continuous_columns:
+                preprocess_data[col] = generate_continuous_dp(
+                    df=preprocess_data,
+                    col=col,
+                    epsilon=self.epsilon
+                    * self.preprocess_epsilon_pp
+                    / len(continuous_columns + list(mixed.keys())),
+                    sensitivity=1,
+                    **preprocess_metadata[col],
+                )
+            # 2. Columns that are in mixed (extra_metadata) should only be synthesized on the values that are not
+            # equal to the specified modes
+            for col in mixed.keys():
+                preprocess_data[col] = generate_continuous_dp(
+                    df=preprocess_data,
+                    col=col,
+                    epsilon=self.epsilon
+                    * self.preprocess_epsilon_pp
+                    / len(continuous_columns + list(mixed.keys())),
+                    sensitivity=1,
+                    modes=mixed[col],
+                    **preprocess_metadata[col],
+                )
+        # 3. Categorical columns should be able to receive a specified list of categories
+        # This will be specified directly in DataTransformer through the argument categories.
+        if len(categorical) > 0:
+            categories_dict = {
+                train_data.columns[column_index]: preprocess_metadata[
+                    train_data.columns[column_index]
+                ]
+                for column_index in categorical
+            }
+        else:
+            categories_dict = None
+
         self.transformer = DataTransformer(
-            train_data=train_data,
+            train_data=preprocess_data,
             categorical_list=categorical,
             mixed_dict=mixed,
             general_list=general,
             non_categorical_list=non_categorical,
+            categories_dict=categories_dict,
         )
         self.transformer.fit()
         train_data = self.transformer.transform(train_data.values)

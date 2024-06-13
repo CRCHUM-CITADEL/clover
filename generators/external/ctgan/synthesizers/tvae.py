@@ -382,8 +382,7 @@ class TVAE(BaseSynthesizer):
         if self.preprocess_epsilon_pp > 0:
             for col in continuous_columns:
                 preprocess_data[col] = generate_continuous_dp(
-                    df=preprocess_data,
-                    col=col,
+                    series=preprocess_data[col],
                     epsilon=self.epsilon * self.preprocess_epsilon_pp / len(continuous_columns),
                     sensitivity=1,
                     **preprocess_metadata[col],

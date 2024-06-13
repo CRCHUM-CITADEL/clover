@@ -12,6 +12,7 @@ class DataTransformer:
         mixed_dict={},
         general_list=[],
         non_categorical_list=[],
+        categories_dict=None,
         n_clusters=10,
         eps=0.005,
     ):
@@ -20,6 +21,7 @@ class DataTransformer:
         self.eps = eps
         self.train_data = train_data
         self.categorical_columns = categorical_list
+        self.categories_dict = categories_dict
         self.mixed_columns = mixed_dict
         self.general_columns = general_list
         self.non_categorical_columns = non_categorical_list
@@ -40,7 +42,10 @@ class DataTransformer:
                         }
                     )
                 else:
-                    mapper = column.value_counts().index.tolist()
+                    if self.categories_dict is None or index not in self.categories_dict.keys():
+                        mapper = column.value_counts().index.tolist()
+                    else:
+                        mapper = self.categories_dict[index]
                     meta.append(
                         {
                             "name": index,

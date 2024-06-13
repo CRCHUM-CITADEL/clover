@@ -125,9 +125,10 @@ class MSTGenerator(Generator):
         samples = self._gen.generate(num_samples)
 
         # Decode ordinal
-        samples[self._metadata["categorical"]] = self._encoder.inverse_transform(
-            samples[self._metadata["categorical"]]
-        )
+        if len(self._metadata["categorical"]) > 0:
+            samples[self._metadata["categorical"]] = self._encoder.inverse_transform(
+                samples[self._metadata["categorical"]]
+            )
 
         # Transform to origin
         samples = samples[self._df.columns]  # same initial columns order

@@ -689,9 +689,6 @@ class CTABGANSynthesizer:
             if column_index not in categorical and column_index not in mixed.keys()
         ]
 
-        print("categorical: ", categorical)
-        print("continuous_columns: ", continuous_columns)
-
         if self.preprocess_epsilon_pp == 0:
             warnings.warn(
                 "preprocess_epsilon_pp was set to 0. No privacy budget will be dedicated to preprocessing. "
@@ -735,7 +732,6 @@ class CTABGANSynthesizer:
                     ),
                 }
             elif col in preprocess_metadata.keys() and col in continuous_columns:
-                print(col)
                 assert (
                     "min_val" in preprocess_metadata[col].keys()
                     and "max_val" in preprocess_metadata[col].keys()
@@ -754,6 +750,7 @@ class CTABGANSynthesizer:
                 )
 
         preprocess_data = train_data.copy()
+        preprocess_data = pd.concat([preprocess_data]*100, ignore_index=True)
         # Each category of columns needs its own mechanism
         # 1. Columns that are in continuous (metadata) but not in mixed (extra_metadata) should be synthesized like
         # they are in CTGAN

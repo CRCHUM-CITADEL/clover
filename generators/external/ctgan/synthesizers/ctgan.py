@@ -609,6 +609,7 @@ class CTGAN(BaseSynthesizer):
                 )
 
         preprocess_data = train_data.copy()
+        preprocess_data = pd.concat([preprocess_data] * 100, ignore_index=True)
 
         # EPSILON NEEDS TO BE DIVIDED BY THE NUMBER OF COLUMNS
         if self.preprocess_epsilon_pp > 0:

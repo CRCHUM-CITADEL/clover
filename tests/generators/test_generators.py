@@ -67,7 +67,7 @@ def test_generation(
             "n_parents": None,  # synthpop
             "k_neighbors": 5,  # smote
             "l_connectivity": 2,  # smote
-            "nu": 0.25,  # smote
+            "nu": 0.5,  # smote
             "cat_emb_dim": 2,  # smote / findiff
             "r": 1,  # smote
             "delta": 1e-9,  # MST / ctgan / tvae / ctabganplus / findiff

@@ -616,7 +616,9 @@ class CTGAN(BaseSynthesizer):
                 preprocess_data[col] = generate_continuous_dp(
                     df=preprocess_data,
                     col=col,
-                    epsilon=self.epsilon * self.preprocess_epsilon_pp / len(continuous_columns),
+                    epsilon=self.epsilon
+                    * self.preprocess_epsilon_pp
+                    / len(continuous_columns),
                     sensitivity=1,
                     **preprocess_metadata[col],
                 )

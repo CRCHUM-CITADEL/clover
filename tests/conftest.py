@@ -27,6 +27,10 @@ def df_wbcd() -> dict[str, pd.DataFrame]:
     df["test"] = data.drop(index=df["train"].index).reset_index(drop=True)
     df["train"] = df["train"].reset_index(drop=True)
 
+    # Remove the underscores from the column names
+    df["train"].rename(columns=lambda x: x.replace("_", ""), inplace=True)
+    df["test"].rename(columns=lambda x: x.replace("_", ""), inplace=True)
+
     return df
 
 
@@ -41,16 +45,16 @@ def metadata_wbcd() -> dict:
 
     metadata = {
         "continuous": [
-            "Clump_Thickness",
-            "Uniformity_of_Cell_Size",
-            "Uniformity_of_Cell_Shape",
-            "Marginal_Adhesion",
-            "Single_Epithelial_Cell_Size",
-            "Bland_Chromatin",
+            "ClumpThickness",
+            "UniformityofCellSize",
+            "UniformityofCellShape",
+            "MarginalAdhesion",
+            "SingleEpithelialCellSize",
+            "BlandChromatin",
             "Mitoses",
-            "Bare_Nuclei",
+            "BareNuclei",
         ],
-        "categorical": ["Class", "Normal_Nucleoli"],
+        "categorical": ["Class", "NormalNucleoli"],
         "variable_to_predict": "Class",
     }
 

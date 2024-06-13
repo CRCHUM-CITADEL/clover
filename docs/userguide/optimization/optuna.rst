@@ -1,5 +1,5 @@
-Hyperparameters tuning with Optuna
-==================================
+Hyperparameter tuning with Optuna
+=================================
 
 What is Optuna?
 ---------------

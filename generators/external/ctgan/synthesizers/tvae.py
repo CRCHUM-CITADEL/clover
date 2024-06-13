@@ -382,8 +382,11 @@ class TVAE(BaseSynthesizer):
         if self.preprocess_epsilon_pp > 0:
             for col in continuous_columns:
                 preprocess_data[col] = generate_continuous_dp(
-                    series=preprocess_data[col],
-                    epsilon=self.epsilon * self.preprocess_epsilon_pp / len(continuous_columns),
+                    df=preprocess_data,
+                    col=col,
+                    epsilon=self.epsilon
+                    * self.preprocess_epsilon_pp
+                    / len(continuous_columns),
                     sensitivity=1,
                     **preprocess_metadata[col],
                 )
@@ -391,7 +394,9 @@ class TVAE(BaseSynthesizer):
         categories_dict = {col: preprocess_metadata[col] for col in discrete_columns}
 
         self.transformer = DataTransformer()
-        self.transformer.fit(preprocess_data, discrete_columns, categories_dict=categories_dict)
+        self.transformer.fit(
+            preprocess_data, discrete_columns, categories_dict=categories_dict
+        )
         train_data = self.transformer.transform(train_data)
         dataset = TensorDataset(
             torch.from_numpy(train_data.astype("float32")).to(self._device)

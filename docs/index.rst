@@ -32,7 +32,7 @@ Useful Links
 Current Features
 ================
 
-* Synthetic data generators, supporting continuous and categorical variables (unique identifiers are not handled):
+* Synthetic data generators incorporating integrated differential privacy, supporting continuous and categorical variables (unique identifiers are not handled):
    - `DataSynthesizer <https://github.com/DataResponsibly/DataSynthesizer>`_
    - `Synthpop <https://github.com/hazy/synthpop>`_
    - `SMOTE (Synthetic Minority Oversampling TEchnique) <https://imbalanced-learn.org/stable/over_sampling.html#from-random-over-sampling-to-smote-and-adasyn>`_
@@ -40,7 +40,7 @@ Current Features
    - `CTGAN <https://github.com/sdv-dev>`_
    - `TVAE <https://github.com/sdv-dev>`_
    - `CTAB-GAN+ <https://github.com/Team-TUD/CTAB-GAN-Plus>`_
-   - `TabDDPM <https://github.com/hazy/synthpop>`_
+   - `FinDiff <https://github.com/sattarov/FinDiff>`_
 * Utility report to assess the fidelity of the synthetic data:
    - Summary table
    - Detailed report with figures
@@ -64,6 +64,13 @@ Current Features
    - Reidentification metrics
       + Distance to Closest Record
       + Nearest Neighbor Distance Ratio
+   - Membership inference attack (MIA)
+      + GAN-Leaks
+      + Monte Carlo membership inference attack
+      + Logan
+      + TableGan
+      + Detector
+      + Collision
 * Metareport to compare several synthetic datasets with respect to the metrics
 
 See the documentation of each component in the User Guide section for more details.
@@ -71,8 +78,6 @@ See the documentation of each component in the User Guide section for more detai
 Ongoing Work - Next Steps
 =========================
 
-* Integrate Differential Privacy in to each generator
-* Implement privacy metrics
 * Improve data coverage (direct identifiers, missing data, etc.)
 * Improve the utility metrics (better discretization, learning algorithms, etc.)
 * Create a benchmark of the synthetic data generator in different settings

@@ -6,3 +6,4 @@ Optimization
 
    pso
    optuna
+   raytune

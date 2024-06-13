@@ -79,7 +79,7 @@ class TVAEGenerator(Generator):
             )
 
         assert (
-                0 <= preprocess_epsilon_pp <= 1
+            0 <= preprocess_epsilon_pp <= 1
         ), "preprocess_epsilon must be in the interval [0, 1]"
 
     def preprocess(self) -> None:
@@ -113,7 +113,9 @@ class TVAEGenerator(Generator):
         :return: *None*
         """
 
-        self._gen = TVAESynthesizer(self._tvae_metadata, self._preprocess_metadata, **self._params)
+        self._gen = TVAESynthesizer(
+            self._tvae_metadata, self._preprocess_metadata, **self._params
+        )
 
         self._gen.fit(self._df)
 

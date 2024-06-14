@@ -46,7 +46,7 @@ Nb: The branch `gh-pages` is recreated each time the main branch is modified on 
 
 ## Current Features
 
-* Synthetic data generators, supporting continuous and categorical variables (unique identifiers are not handled):
+* Synthetic data generators incorporating integrated differential privacy, supporting continuous and categorical variables (unique identifiers are not handled):
    - [DataSynthesizer](https://github.com/DataResponsibly/DataSynthesizer)
    - [Synthpop](https://github.com/hazy/synthpop)
    - [SMOTE](https://imbalanced-learn.org/stable/over_sampling.html#from-random-over-sampling-to-smote-and-adasyn)
@@ -54,7 +54,7 @@ Nb: The branch `gh-pages` is recreated each time the main branch is modified on 
    - [CTGAN](https://github.com/sdv-dev)
    - [TVAE](https://github.com/sdv-dev)
    - [CTAB-GAN+](https://github.com/Team-TUD/CTAB-GAN-Plus)
-   - [TabDDPM](https://github.com/hazy/synthpop)
+   - [FinDiff](https://github.com/sattarov/FinDiff)
 * Utility and privacy reports to assess the fidelity of the synthetic data:
    - Summary table
    - Detailed report with figures
@@ -78,6 +78,13 @@ Nb: The branch `gh-pages` is recreated each time the main branch is modified on 
    - Reidentification metrics 
      - Distance to Closest Record 
      - Nearest Neighbor Distance Ratio
+   - Membership inference attack (MIA)
+     - GAN-Leaks
+     - Monte Carlo membership inference attack
+     - Logan
+     - TableGan
+     - Detector
+     - Collision
 * Metareport to compare several synthetic datasets with respect to the metrics
 
 See the [documentation](#documentation) for more details.
@@ -115,8 +122,6 @@ The required packages for development can be found in the [dev-requirements file
 The documentation was generated with Sphinx.
 
 ## Ongoing Work - Next Steps
-* Integrate Differential Privacy in to each generator
-* Implement privacy metrics
 * Improve data coverage (direct identifiers, missing data, etc.)
 * Improve the utility metrics (better discretisation, learning algorithms, etc.)
 * Create a benchmark of the synthetic data generator in different settings

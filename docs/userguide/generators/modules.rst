@@ -10,5 +10,5 @@ Generators
    mst
    ctgan
    tvae
-   tabddpm
+   findiff
 

@@ -71,9 +71,11 @@ def test_generation(
             "cat_emb_dim": 2,  # smote / findiff
             "r": 1,  # smote
             "delta": 1e-9,  # MST / ctgan / tvae / ctabganplus / findiff
+            "preprocess_metadata": None,  # ctgan / tvae / ctabganplus
             "discriminator_steps": 2,  # ctgan
             "epochs": 50,  # ctgan / tvae / ctabganplus / findiff
-            "batch_size": 100,  # sctgan / tvae / ctabganplus / findiff
+            "batch_size": 100,  # ctgan / tvae / ctabganplus / findiff
+            "preprocess_epsilon_pp": None,  # ctgan / tvae / ctabganplus
             "max_grad_norm": 1,  # ctgan / tvae / ctabganplus / findiff
             "verbose": 0,  # ctgan
             "compress_dims": (249, 249),  # tvae

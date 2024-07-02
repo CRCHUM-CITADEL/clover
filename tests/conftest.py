@@ -14,22 +14,20 @@ def df_wbcd() -> dict[str, pd.DataFrame]:
 
     data = pd.read_csv(config.WBCD_DATASET_FILEPATH)
     data = data.drop(columns="Sample_code_number")  # identifier not needed
+
+    # Remove the underscores from the column names
+    data.rename(columns=lambda x: x.replace("_", ""), inplace=True)
+
     data["Class"] = (data["Class"] / 2 - 1).astype(
         "int"
     )  # Class 0 or 1 instead of 2 and 4
-    data["Normal_Nucleoli"] = data["Normal_Nucleoli"].astype(
-        str
-    )  # Categorical variable
+    data["NormalNucleoli"] = data["NormalNucleoli"].astype(str)  # Categorical variable
 
     # Split train / test
     df = {}
     df["train"] = data.sample(frac=0.8, replace=False, random_state=66)
     df["test"] = data.drop(index=df["train"].index).reset_index(drop=True)
     df["train"] = df["train"].reset_index(drop=True)
-
-    # Remove the underscores from the column names
-    df["train"].rename(columns=lambda x: x.replace("_", ""), inplace=True)
-    df["test"].rename(columns=lambda x: x.replace("_", ""), inplace=True)
 
     return df
 

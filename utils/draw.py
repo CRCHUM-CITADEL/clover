@@ -511,6 +511,58 @@ def kde_plot_hue_plot_per_col(
             ax=axes[i] if axes is not None else None,
         )
 
+        sns.move_legend(axes[i], "upper left", bbox_to_anchor=(1, 1), frameon=False)
+
+    plt.suptitle(title)
+
+
+def count_plot_hue_plot_per_col(
+    df: pd.DataFrame,
+    df_nested: pd.DataFrame,
+    original_name: str,
+    nested_name: str,
+    hue_name: str,
+    title: str,
+    axes: np.ndarray = None,
+) -> None:
+    """
+    Draw a categorical variable distribution (normalized to 1) with one plot per variable.
+
+    :param df: the original dataframe
+    :param df_nested: the nested dataframe
+    :param original_name: the name of the original dataframe
+    :param nested_name: the name of the nested dataframe
+    :param hue_name: the name of the nested group
+    :param title: the title of the plot
+    :param axes: the *Axes* list to draw the plot onto, otherwise use the current *Axes*
+    :return: *None*
+    """
+    assert set(df.columns) == set(df_nested.columns)
+    if axes is not None:
+        assert len(axes) >= df.shape[1]
+
+    for i, col in enumerate(df.columns):
+        vc_original = df[col].value_counts(normalize=True)
+        vc_nested = df_nested[col].value_counts(normalize=True)
+
+        # Combine value counts into a single DataFrame
+        df_combined = pd.DataFrame(
+            {original_name: vc_original, nested_name: vc_nested}
+        ).fillna(0)
+
+        df_combined.plot(
+            kind="bar",
+            colormap="tab20",
+            alpha=0.8,
+            ax=axes[i] if axes is not None else None,
+        )
+        axes[i].set_xlabel(col)
+        axes[i].tick_params(axis="x", rotation=45)
+        axes[i].set_ylabel("Proportion")
+        axes[i].legend(
+            loc="upper left", bbox_to_anchor=(1, 1), frameon=False, title=hue_name
+        )
+
     plt.suptitle(title)
 
 

@@ -1,11 +1,14 @@
-from typing import Union, List  # standard library
+from typing import Union, List, Dict  # standard library
 from pathlib import Path
 import tempfile
+import warnings
+import json
 
 import pandas as pd  # 3rd party packages
 from DataSynthesizer.DataDescriber import DataDescriber
 from DataSynthesizer.DataGenerator import DataGenerator
 from DataSynthesizer.lib.utils import read_json_file, display_bayesian_network
+from diffprivlib.utils import PrivacyLeakWarning
 
 from generators.base import Generator  # local
 import utils.standard as ustandard
@@ -30,6 +33,11 @@ class DataSynthesizerGenerator(Generator):
     :param candidate_keys: the candidate keys of the original database
     :param epsilon: the epsilon-DP for the Differential Privacy (0 for no added noise)
     :param degree: the maximum numbers of parents in the Bayesian Network
+    :param bounds: specify the range (minimum and maximum) for all numerical columns
+        and the distinct categories for categorical columns. This ensures that no further privacy leakage
+        is happening. For example, bounds = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
+        If not specified, they will be estimated from the real data and a warning will be raised
+        (for differentially private model)
     """
 
     name = "DataSynthesizer"
@@ -41,8 +49,9 @@ class DataSynthesizerGenerator(Generator):
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         candidate_keys: List[str] = None,
-        epsilon: int = 0,
+        epsilon: int = None,
         degree: int = 5,
+        bounds: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
@@ -50,9 +59,42 @@ class DataSynthesizerGenerator(Generator):
         self._candidate_keys = candidate_keys if candidate_keys is not None else []
         self._attribute_to_is_candidate_key = {}
         self._threshold = None
-        self._epsilon = epsilon
         self._degree = degree
         self._generator_filepath = generator_filepath
+
+        if epsilon is None:
+            self._epsilon = 0  # No differential privacy
+        else:
+            self._epsilon = epsilon
+
+        if bounds is None:
+            bounds = {}
+
+        self.categorical_attribute_domain = {}
+        self.numerical_attribute_ranges = {}
+
+        for col in self._metadata["categorical"]:
+            if col in bounds:
+                self.categorical_attribute_domain["col"] = bounds[col]["categories"]
+            else:
+                if self._epsilon != 0:
+                    warnings.warn(
+                        f"List of categories not specified for column '{col}', categories will be extracted from real data for this variable",
+                        PrivacyLeakWarning,
+                    )
+
+        for col in self._metadata["continuous"]:
+            if col in bounds:
+                self.numerical_attribute_ranges["col"] = [
+                    bounds[col]["min"],
+                    bounds[col]["max"],
+                ]
+            else:
+                if self._epsilon != 0:
+                    warnings.warn(
+                        f"upper and lower bounds not specified for column '{col}'",
+                        PrivacyLeakWarning,
+                    )
 
     def preprocess(self) -> None:
         """
@@ -61,7 +103,7 @@ class DataSynthesizerGenerator(Generator):
         :return: *None*
         """
 
-        # Max numbers of categories
+        # Max numbers of categories; this decides if a variable not specified as categorical can be treated as such
         self._threshold = self._df.value_counts().max()
 
         # Fill categorical vars and candidate keys dictionaries
@@ -83,6 +125,13 @@ class DataSynthesizerGenerator(Generator):
             datapath = Path(temp_dir) / "real_data.csv"
             self._df.to_csv(datapath, index=False)
 
+            categorical_attribute_domain_file = (
+                f"{temp_dir}/categorical_attribute_domain.json"
+            )
+
+            with open(categorical_attribute_domain_file, "w") as json_file:
+                json.dump(self.categorical_attribute_domain, json_file)
+
             with ustandard.HiddenPrints():  # turn off the prints
                 describer = DataDescriber(category_threshold=self._threshold)
                 describer.describe_dataset_in_correlated_attribute_mode(
@@ -91,6 +140,8 @@ class DataSynthesizerGenerator(Generator):
                     k=self._degree,
                     attribute_to_is_categorical=self._attribute_to_is_categorical,
                     attribute_to_is_candidate_key=self._attribute_to_is_candidate_key,
+                    categorical_attribute_domain_file=categorical_attribute_domain_file,
+                    numerical_attribute_ranges=self.numerical_attribute_ranges,
                     seed=self._random_state,
                 )
 

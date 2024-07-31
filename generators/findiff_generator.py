@@ -117,9 +117,10 @@ class FinDiffGenerator(Generator):
         ), "Please remove the '_' from column names for correct inverse decoding"
 
         # set seeds
-        np.random.seed(random_state)
-        torch.manual_seed(random_state)
-        torch.cuda.manual_seed(random_state)
+        if random_state is not None:
+            np.random.seed(random_state)
+            torch.manual_seed(random_state)
+            torch.cuda.manual_seed(random_state)
 
         # set the device
         self.device = torch.device(

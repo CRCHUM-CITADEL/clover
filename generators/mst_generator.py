@@ -1,11 +1,13 @@
 # Standard library
-from typing import Union, Type
+from typing import Dict, Union, Type
 from pathlib import Path
+import warnings
 
 # 3rd party packages
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import KBinsDiscretizer, OneHotEncoder, OrdinalEncoder
+from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, MinMaxScaler
+from diffprivlib.utils import PrivacyLeakWarning
 
 # Local
 from generators.base import Generator
@@ -29,6 +31,11 @@ class MSTGenerator(Generator):
     :param generator_filepath: the path of the generator to sample from if it exists
     :param epsilon: the privacy budget of the differential privacy
     :param delta: the failure probability of the differential privacy
+    :param bounds: specify the range (minimum and maximum) for all numerical columns
+        and the distinct categories for categorical columns. This ensures that no further privacy leakage
+        is happening. For example, bounds = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
+        If not specified, they will be estimated from the real data and a warning will be raised
+        (for differentially private model)
     """
 
     name = "MST"
@@ -41,6 +48,7 @@ class MSTGenerator(Generator):
         generator_filepath: Union[Path, str] = None,
         epsilon: float = 1.0,
         delta: float = 1e-9,
+        bounds: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
@@ -51,7 +59,15 @@ class MSTGenerator(Generator):
         self._delta = delta
 
         # Encoding
+        self._scaler = {}
+        self._kbins = None
         self._encoder = None
+
+        # Bounds
+        if bounds is None:
+            self.bounds = {}
+        else:
+            self.bounds = bounds
 
     def preprocess(self) -> None:
         """
@@ -60,17 +76,51 @@ class MSTGenerator(Generator):
         :return: *None*
         """
 
+        # Rescale continuous variables to min and max to prevent privacy leakage
+        df_cont_rescaled = pd.DataFrame(columns=self._metadata["continuous"])
+
+        for col, series in self._df[self._metadata["continuous"]].items():
+            if col not in self.bounds:
+                warnings.warn(
+                    f"upper and lower bounds not specified for column '{col}'",
+                    PrivacyLeakWarning,
+                )
+                self.bounds[col] = {"min": series.min(), "max": series.max()}
+            self._scaler[col] = MinMaxScaler(
+                feature_range=(self.bounds[col]["min"], self.bounds[col]["max"])
+            )
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                df_cont_rescaled[col] = pd.Series(
+                    self._scaler[col].fit_transform(self._df[[col]]).squeeze(),
+                    name=col,
+                    index=self._df.index,
+                )
+
         # The continuous columns must be converted into categorical ones
-        kbins = KBinsDiscretizer(n_bins=100, encode="ordinal", strategy="uniform")
-        kbins.fit(self._df[self._metadata["continuous"]])
+        self._kbins = KBinsDiscretizer(n_bins=100, encode="ordinal", strategy="uniform")
+        self._kbins.fit(df_cont_rescaled[self._metadata["continuous"]])
         df_cont = pd.DataFrame(
-            kbins.transform(self._df[self._metadata["continuous"]]),
+            self._kbins.transform(df_cont_rescaled[self._metadata["continuous"]]),
             columns=self._metadata["continuous"],
         ).astype(int)
 
         # Encode the categorical columns
-        self._encoder = (
-            OrdinalEncoder()
+        categories = []
+        for col in self._metadata["categorical"]:
+            if col in self.bounds:
+                categories.append(self.bounds[col]["categories"])
+            else:
+                categories.append(list(self._df[col].unique()))
+
+                warnings.warn(
+                    f"List of categories not specified for column '{col}', categories will be extracted from real data for this variable",
+                    PrivacyLeakWarning,
+                )
+
+        self._encoder = OrdinalEncoder(
+            categories=categories
         )  # One-Hot encoder does not work with the method
         data = self._encoder.fit_transform(self._df[self._metadata["categorical"]])
 
@@ -132,11 +182,31 @@ class MSTGenerator(Generator):
 
         # Transform to origin
         samples = samples[self._df.columns]  # same initial columns order
-        samples[self._metadata["continuous"]] = samples[
-            self._metadata["continuous"]
-        ].apply(
-            lambda x: x + np.round(np.random.rand(len(x)) * 0.5, decimals=2)
-        )  # back to "real" floats if the variable type was not ordinal
+        samples[self._metadata["continuous"]] = self._kbins.inverse_transform(
+            samples[self._metadata["continuous"]]
+        )
+
+        for idx, col in enumerate(self._metadata["continuous"]):
+            half_bin_width = (
+                self._kbins.bin_edges_[idx][1] - self._kbins.bin_edges_[idx][0] / 2
+            )
+
+            samples[col] = samples[col] + np.random.uniform(
+                -half_bin_width, half_bin_width, size=len(samples)
+            )
+
+            # Align the precision
+            precision = (
+                self._df[col]
+                .apply(
+                    lambda x: len(str(x).split(".")[-1]) if isinstance(x, float) else 0
+                )
+                .max()
+            )
+            samples[col] = samples[col].apply(
+                lambda x: round(x, precision) if isinstance(x, float) else x
+            )
+
         samples = samples.astype(self._df.dtypes.to_dict())
 
         samples.to_csv(

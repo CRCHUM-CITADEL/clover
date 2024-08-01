@@ -340,6 +340,24 @@ class SmoteGenerator(Generator):
                 )
             samples = samples.reset_index(drop=True)
 
+            # Align the precision
+            for col in self._metadata["continuous"]:
+                precision = (
+                    self._df[col]
+                    .apply(
+                        lambda x: len(str(x).split(".")[-1])
+                        if isinstance(x, float)
+                        else 0
+                    )
+                    .max()
+                )
+                samples[col] = samples[col].apply(
+                    lambda x: round(x, precision) if isinstance(x, float) else x
+                )
+
+                if self._df[col].dtype == "int":
+                    samples[col] = samples[col].astype(int)
+
             samples.to_csv(
                 Path(save_path)
                 / f"{ustandard.get_date()}_{SmoteGenerator.name}_{num_samples}samples.csv",

@@ -12,6 +12,7 @@ from torch import nn
 
 from generators.base import Generator  # local
 from generators.models.dpsmote import DPSmote
+from utils.postprocessing import convert_precision
 import utils.standard as ustandard
 
 
@@ -340,23 +341,12 @@ class SmoteGenerator(Generator):
                 )
             samples = samples.reset_index(drop=True)
 
-            # Align the precision
-            for col in self._metadata["continuous"]:
-                precision = (
-                    self._df[col]
-                    .apply(
-                        lambda x: len(str(x).split(".")[-1])
-                        if isinstance(x, float)
-                        else 0
-                    )
-                    .max()
-                )
-                samples[col] = samples[col].apply(
-                    lambda x: round(x, precision) if isinstance(x, float) else x
-                )
-
-                if self._df[col].dtype == "int":
-                    samples[col] = samples[col].astype(int)
+            # Align the decimal place
+            samples = convert_precision(
+                df_ref=self._df,
+                df_to_trans=samples,
+                cont_col=self._metadata["continuous"],
+            )
 
             samples.to_csv(
                 Path(save_path)
@@ -457,23 +447,12 @@ class SmoteGenerator(Generator):
             df_final = df_final.astype(self._original_dtypes)
             df_final = df_final[self._original_col_order]
 
-            # Align the precision
-            for col in self.num_attrs:
-                precision = (
-                    self._df[col]
-                    .apply(
-                        lambda x: len(str(x).split(".")[-1])
-                        if isinstance(x, float)
-                        else 0
-                    )
-                    .max()
-                )
-                df_final[col] = df_final[col].apply(
-                    lambda x: round(x, precision) if isinstance(x, float) else x
-                )
-
-                if self._df[col].dtype == "int":
-                    df_final[col] = df_final[col].astype(int)
+            # Align the decimal place
+            df_final = convert_precision(
+                df_ref=self._df,
+                df_to_trans=df_final,
+                cont_col=self.num_attrs,
+            )
 
             df_final.to_csv(
                 Path(save_path)

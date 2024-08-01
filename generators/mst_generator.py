@@ -14,6 +14,7 @@ from generators.base import Generator
 from generators.external.private_pgm.mechanisms import mst
 from generators.external.private_pgm.mbi.dataset import Dataset
 from generators.external.private_pgm.mbi.domain import Domain
+from utils.postprocessing import convert_precision
 import utils.standard as ustandard
 
 
@@ -195,17 +196,10 @@ class MSTGenerator(Generator):
                 -half_bin_width, half_bin_width, size=len(samples)
             )
 
-            # Align the precision
-            precision = (
-                self._df[col]
-                .apply(
-                    lambda x: len(str(x).split(".")[-1]) if isinstance(x, float) else 0
-                )
-                .max()
-            )
-            samples[col] = samples[col].apply(
-                lambda x: round(x, precision) if isinstance(x, float) else x
-            )
+        # Align the decimal place
+        samples = convert_precision(
+            df_ref=self._df, df_to_trans=samples, cont_col=self._metadata["continuous"]
+        )
 
         samples = samples.astype(self._df.dtypes.to_dict())
 

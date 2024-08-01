@@ -33,9 +33,9 @@ class DataSynthesizerGenerator(Generator):
     :param candidate_keys: the candidate keys of the original database
     :param epsilon: the epsilon-DP for the Differential Privacy (0 for no added noise)
     :param degree: the maximum numbers of parents in the Bayesian Network
-    :param bounds: specify the range (minimum and maximum) for all numerical columns
+    :param preprocess_metadata: specify the range (minimum and maximum) for all numerical columns
         and the distinct categories for categorical columns. This ensures that no further privacy leakage
-        is happening. For example, bounds = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
+        is happening. For example, preprocess_metadata = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
         If not specified, they will be estimated from the real data and a warning will be raised
         (for differentially private model)
     """
@@ -49,11 +49,13 @@ class DataSynthesizerGenerator(Generator):
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         candidate_keys: List[str] = None,
-        epsilon: int = None,
+        epsilon: float = None,
         degree: int = 5,
-        bounds: Dict[str, dict] = None,
+        preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+
+        bounds = preprocess_metadata
 
         self._attribute_to_is_categorical = {}
         self._candidate_keys = candidate_keys if candidate_keys is not None else []

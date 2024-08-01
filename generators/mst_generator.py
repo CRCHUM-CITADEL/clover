@@ -32,9 +32,9 @@ class MSTGenerator(Generator):
     :param generator_filepath: the path of the generator to sample from if it exists
     :param epsilon: the privacy budget of the differential privacy
     :param delta: the failure probability of the differential privacy
-    :param bounds: specify the range (minimum and maximum) for all numerical columns
+    :param preprocess_metadata: specify the range (minimum and maximum) for all numerical columns
         and the distinct categories for categorical columns. This ensures that no further privacy leakage
-        is happening. For example, bounds = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
+        is happening. For example, preprocess_metadata = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
         If not specified, they will be estimated from the real data and a warning will be raised
         (for differentially private model)
     """
@@ -49,9 +49,11 @@ class MSTGenerator(Generator):
         generator_filepath: Union[Path, str] = None,
         epsilon: float = 1.0,
         delta: float = 1e-9,
-        bounds: Dict[str, dict] = None,
+        preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+
+        bounds = preprocess_metadata
 
         self._dataset = None
 

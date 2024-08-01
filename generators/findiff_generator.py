@@ -81,9 +81,9 @@ class FinDiffGenerator(Generator):
     :param delta: target delta to be achieved for fitting (for differentially private model)
     :param max_grad_norm: the maximum norm of the per-sample gradients.
         Any gradient with norm higher than this will be clipped to this value. (for differentially private model)
-    :param bounds: specify the range (minimum and maximum) for all numerical columns
+    :param preprocess_metadata: specify the range (minimum and maximum) for all numerical columns
         and the distinct categories for categorical columns. This ensures that no further privacy leakage
-        is happening. For example, bounds = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
+        is happening. For example, preprocess_metadata = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
         If not specified, they will be estimated from the real data and a warning will be raised
         (for differentially private model)
     """
@@ -109,9 +109,12 @@ class FinDiffGenerator(Generator):
         epsilon: Union[float, Dict[str, float]] = None,
         delta: float = None,
         max_grad_norm: float = None,
-        bounds: Dict[str, dict] = None,
+        preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+
+        bounds = preprocess_metadata
+
         assert not any(
             df.columns.str.contains("_")
         ), "Please remove the '_' from column names for correct inverse decoding"

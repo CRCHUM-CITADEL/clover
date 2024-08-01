@@ -1,4 +1,4 @@
-from typing import Union, List  # standard library
+from typing import Dict, Union  # standard library
 from pathlib import Path
 import warnings
 
@@ -34,13 +34,13 @@ class SmoteGenerator(Generator):
     :param l_connectivity: the distance to decide the neighborhood (applicable to DP generator)
     :param nu: the granularity parameter of the uniform grid that the data will be partitioned into
         (applicable to DP generator)
-    :param bounds: specify the range (minimum and maximum) for all numerical columns
-        and the distinct categories for categorical columns. This ensures that no further privacy leakage
-        is happening. For example, bounds = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
-        If not specified, they will be estimated from the real data and a warning will be raised
-        (applicable to DP generator)
     :param cat_emb_dim: dimension of categorical embeddings (applicable to DP generator)
     :param r: the range each feature will fall into after preprocessing, i.e., [-r, r] (applicable to DP generator)
+    :param preprocess_metadata: specify the range (minimum and maximum) for all numerical columns
+        and the distinct categories for categorical columns. This ensures that no further privacy leakage
+        is happening. For example, preprocess_metadata = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
+        If not specified, they will be estimated from the real data and a warning will be raised
+        (applicable to DP generator)
     """
 
     name = "SMOTE"
@@ -55,11 +55,13 @@ class SmoteGenerator(Generator):
         k_neighbors: int = 5,
         l_connectivity: int = 2,
         nu: float = 0.25,
-        bounds: dict = None,
         cat_emb_dim: int = 2,
         r: float = 1,
+        preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+
+        bounds = preprocess_metadata
 
         self.epsilon = epsilon
         self._params = self._gen.get_params() if self._gen is not None else None

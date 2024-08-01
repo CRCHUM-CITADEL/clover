@@ -1,4 +1,4 @@
-from typing import Union, Tuple  # standard library
+from typing import Dict, Union, Tuple  # standard library
 
 import pandas as pd  # 3rd party packages
 from pathlib import Path
@@ -32,6 +32,20 @@ class TVAEGenerator(Generator):
     :param batch_size: the batch size for training.
     :param compress_dims: the size of the hidden layers in the encoder.
     :param decompress_dims: the size of the hidden layers in the decoder.
+    :param epsilon: the privacy budget of the differential privacy.
+        One can specify how the budget is split between pre-processing and fitting the model.
+        For example, epsilon = {"preprocessing": 0.1, "fitting": 0.9}.
+        If a single float number is provide, half the budget is allocated for pre-processing
+        and half for fitting.
+    :param delta: target delta to be achieved for fitting (for differentially private model)
+    :param max_grad_norm: the maximum norm of the per-sample gradients.
+        Any gradient with norm higher than this will be clipped to this value. (for differentially private model)
+    :param max_physical_batch_size: maximum number of samples processed at a time during training
+    :param preprocess_metadata: specify the range (minimum and maximum) and optionally num_bins and decimals
+        (to generate differentially private continuous samples) for all numerical columns
+        and the distinct categories for categorical columns. This ensures that no further privacy leakage
+        is happening (for differentially private model).
+        For example, preprocess_metadata = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
     """
 
     name = "TVAE"
@@ -40,20 +54,40 @@ class TVAEGenerator(Generator):
         self,
         df: pd.DataFrame,
         metadata: dict,
-        preprocess_metadata: dict = None,
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         epochs: int = 300,
         batch_size: int = 100,
         compress_dims: Tuple[int, int] = (249, 249),
         decompress_dims: Tuple[int, int] = (249, 249),
-        epsilon: float = None,
-        preprocess_epsilon_pp: float = None,
+        epsilon: Union[float, Dict[str, float]] = None,
         delta: float = None,
-        max_grad_norm: float = 1,
+        max_grad_norm: float = 1.0,
         max_physical_batch_size: int = 125,
+        preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+
+        # Initiate privacy budget
+        if (epsilon is None) or isinstance(epsilon, float) or isinstance(epsilon, int):
+            preprocess_epsilon_pp = None
+        else:
+            if isinstance(epsilon, dict):
+                epsilon_total = epsilon["preprocessing"] + epsilon["fitting"]
+                preprocess_epsilon_pp = epsilon["preprocessing"] / epsilon_total
+                epsilon = epsilon_total
+
+        # Convert the preprocess_metadata to the required format
+        for col in preprocess_metadata:
+            if col in metadata["categorical"]:
+                preprocess_metadata[col] = preprocess_metadata[col]["categories"]
+            elif col in metadata["continuous"]:
+                preprocess_metadata[col]["min_val"] = preprocess_metadata[col].pop(
+                    "min"
+                )
+                preprocess_metadata[col]["max_val"] = preprocess_metadata[col].pop(
+                    "max"
+                )
 
         self._params = {
             "epochs": epochs,

@@ -38,16 +38,16 @@ class SynthpopGenerator(Generator):
     :param methods: defines the specific method each column should be modelled by.
         The default methods to model continuous and discrete columns are DP-Linear Regression
         and DP-Logistic Regression (applicable to DP generator)
-    :param bounds: specify the range (minimum and maximum) for all numerical columns
-        and the distinct categories for categorical columns. This ensures that no further privacy leakage
-        is happening. For example, bounds = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
-        If not specified, they will be estimated from the real data and a warning will be raised
-        (applicable to DP generator)
     :param prediction_matrix: specify the collection of already visited columns to be used as features
         for each unvisited column. It could be set to "infer" to optimize the variable_order
         by maximizing the information gain. If not None, it will override the variable_order parameter
         (applicable to DP generator)
     :param n_parents: maximum number of columns to be considered as features to predict a target
+        (applicable to DP generator)
+    :param preprocess_metadata: specify the range (minimum and maximum) for all numerical columns
+        and the distinct categories for categorical columns. This ensures that no further privacy leakage
+        is happening. For example, preprocess_metadata = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
+        If not specified, they will be estimated from the real data and a warning will be raised
         (applicable to DP generator)
     """
 
@@ -64,11 +64,14 @@ class SynthpopGenerator(Generator):
         min_samples_leaf: int = 5,
         max_depth: int = None,
         methods: dict = None,
-        bounds: Dict[str, dict] = None,
         prediction_matrix: Union[str, Dict[str, List[str]]] = None,
         n_parents: int = None,
+        preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+
+        bounds = preprocess_metadata
+
         self.epsilon = epsilon
 
         if self.epsilon is None:  # Initiate non-DP generator

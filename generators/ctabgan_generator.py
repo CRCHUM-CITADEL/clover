@@ -103,7 +103,7 @@ class CTABGANGenerator(Generator):
             )
 
         assert (
-            0 <= preprocess_epsilon_pp <= 1 or preprocess_epsilon_pp is None
+            preprocess_epsilon_pp is None or 0 <= preprocess_epsilon_pp <= 1
         ), "preprocess_epsilon must be in the interval [0, 1]"
 
     def preprocess(self) -> None:

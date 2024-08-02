@@ -11,6 +11,7 @@ from DataSynthesizer.lib.utils import read_json_file, display_bayesian_network
 from diffprivlib.utils import PrivacyLeakWarning
 
 from generators.base import Generator  # local
+from utils.postprocessing import transform_data
 import utils.standard as ustandard
 
 
@@ -189,5 +190,15 @@ class DataSynthesizerGenerator(Generator):
         )
         generator.save_synthetic_data(filepath)
         samples = pd.read_csv(filepath)
+
+        # Post-processing
+        samples = transform_data(
+            df_ref=self._df,
+            df_to_trans=samples,
+            cont_col=self._metadata["continuous"],
+        )
+
+        # Re-save the processed data
+        samples.to_csv(filepath, index=False)
 
         return samples

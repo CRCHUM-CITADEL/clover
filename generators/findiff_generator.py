@@ -16,6 +16,7 @@ from diffprivlib.utils import PrivacyLeakWarning
 # Local
 from .base import Generator
 from .external.findiff.findiff import FinDiff
+from utils.postprocessing import transform_data
 import utils.standard as ustandard
 
 tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
@@ -135,8 +136,6 @@ class FinDiffGenerator(Generator):
         self.num_attrs = metadata["continuous"]
 
         self._df = self._df.copy()
-        self._original_dtypes = df.dtypes.to_dict()
-        self._original_col_order = df.columns
 
         self.generator_filepath = generator_filepath
         self.learning_rate = learning_rate
@@ -444,8 +443,12 @@ class FinDiffGenerator(Generator):
         for cat_attr in self.cat_attrs:
             samples[cat_attr] = samples[cat_attr].str.split("_", n=1).str.get(-1)
 
-        samples = samples.astype(self._original_dtypes)
-        samples = samples[self._original_col_order]
+        # Post-processing
+        samples = transform_data(
+            df_ref=self._df,
+            df_to_trans=samples,
+            cont_col=self._metadata["continuous"],
+        )
 
         samples.to_csv(
             Path(save_path)

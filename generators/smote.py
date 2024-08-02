@@ -12,7 +12,7 @@ from torch import nn
 
 from generators.base import Generator  # local
 from generators.models.dpsmote import DPSmote
-from utils.postprocessing import convert_precision
+from utils.postprocessing import transform_data
 import utils.standard as ustandard
 
 
@@ -88,8 +88,6 @@ class SmoteGenerator(Generator):
 
             self._df = self._df.copy()
             self.df_original = df.copy()
-            self._original_dtypes = df.dtypes.to_dict()
-            self._original_col_order = df.columns
 
             # Determine categorical and numerical attributes
             self.num_attrs = metadata["continuous"]
@@ -343,8 +341,8 @@ class SmoteGenerator(Generator):
                 )
             samples = samples.reset_index(drop=True)
 
-            # Align the decimal place
-            samples = convert_precision(
+            # Post-processing
+            samples = transform_data(
                 df_ref=self._df,
                 df_to_trans=samples,
                 cont_col=self._metadata["continuous"],
@@ -445,12 +443,8 @@ class SmoteGenerator(Generator):
             if self._prediction_type == "Classification":
                 df_final[self._metadata["variable_to_predict"]] = target
 
-            # reorder cols as original df
-            df_final = df_final.astype(self._original_dtypes)
-            df_final = df_final[self._original_col_order]
-
-            # Align the decimal place
-            df_final = convert_precision(
+            # Post-processing
+            df_final = transform_data(
                 df_ref=self._df,
                 df_to_trans=df_final,
                 cont_col=self.num_attrs,

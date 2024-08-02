@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .base import Generator  # local
 import utils.standard as ustandard
+from utils.postprocessing import transform_data
 from generators.external.ctabgan.ctabgan_synthesizer import CTABGANSynthesizer
 from .external.ctabgan.data_preparation import DataPrep
 
@@ -201,6 +202,16 @@ class CTABGANGenerator(Generator):
             date=True,
         )
 
+    def display(self) -> None:
+        """
+        Print information about the generator.
+
+        :return: *None*
+        """
+        print("CTAB-GAN+ Synthesizer parameters: \n")
+        for key, value in self._gen.__dict__.items():
+            print(str(key) + ": " + str(value))
+
     def sample(self, save_path: Union[Path, str], num_samples: int = 1) -> pd.DataFrame:
         """
         Generate samples using the synthesizer trained on the real data.
@@ -213,6 +224,13 @@ class CTABGANGenerator(Generator):
         samples = self._gen.sample(num_samples)
         samples = self._data_prep.inverse_prep(samples)
 
+        # Post-processing
+        samples = transform_data(
+            df_ref=self._df,
+            df_to_trans=samples,
+            cont_col=self._metadata["continuous"],
+        )
+
         samples.to_csv(
             Path(save_path)
             / f"{ustandard.get_date()}_{CTABGANGenerator.name}_{num_samples}samples.csv",
@@ -220,13 +238,3 @@ class CTABGANGenerator(Generator):
         )
 
         return samples
-
-    def display(self) -> None:
-        """
-        Print information about the generator.
-
-        :return: *None*
-        """
-        print("CTAB-GAN+ Synthesizer parameters: \n")
-        for key, value in self._gen.__dict__.items():
-            print(str(key) + ": " + str(value))

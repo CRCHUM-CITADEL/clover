@@ -9,6 +9,7 @@ import pandas as pd
 from .external.synthpop.synthpop import Synthpop
 from .external.dpart.dpart.engines import DPSynthpop
 from .base import Generator
+from utils.postprocessing import transform_data
 import utils.standard as ustandard
 
 
@@ -84,7 +85,6 @@ class SynthpopGenerator(Generator):
                 )
             self._df = self._df.copy()
             self._dtypes = None
-            self._original_dtypes = df.dtypes.to_dict()
         else:  # Initiate DP generator
             n_col = df.shape[1]
             if n_parents == None:
@@ -102,7 +102,6 @@ class SynthpopGenerator(Generator):
                     n_parents=self.n_parents,
                 )
             self._df = self._df.copy()
-            self._original_dtypes = df.dtypes.to_dict()
 
     def preprocess(self) -> None:
         """
@@ -180,9 +179,16 @@ class SynthpopGenerator(Generator):
 
         with ustandard.HiddenPrints():  # turn off the prints
             if self.epsilon is None:
-                samples = self._gen.generate(num_samples).astype(self._original_dtypes)
+                samples = self._gen.generate(num_samples)
             else:
-                samples = self._gen.sample(num_samples).astype(self._original_dtypes)
+                samples = self._gen.sample(num_samples)
+
+        # Post-processing
+        samples = transform_data(
+            df_ref=self._df,
+            df_to_trans=samples,
+            cont_col=self._metadata["continuous"],
+        )
 
         samples.to_csv(
             Path(save_path)

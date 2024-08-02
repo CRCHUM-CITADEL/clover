@@ -8,6 +8,7 @@ from generators.external.ctgan.single_table.dp_ctgan import CTGANSynthesizer
 from sdv.metadata import SingleTableMetadata
 
 from generators.base import Generator  # local
+from utils.postprocessing import transform_data
 import utils.standard as ustandard
 
 
@@ -183,6 +184,13 @@ class CTGANGenerator(Generator):
         """
 
         samples = self._gen.sample(num_rows=num_samples)
+
+        # Post-processing
+        samples = transform_data(
+            df_ref=self._df,
+            df_to_trans=samples,
+            cont_col=self._metadata["continuous"],
+        )
 
         samples.to_csv(
             Path(save_path)

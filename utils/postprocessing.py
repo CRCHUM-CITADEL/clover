@@ -1,17 +1,25 @@
 import pandas as pd  # 3rd party packages
 
 
-def convert_precision(
+def transform_data(
     df_ref: pd.DataFrame, df_to_trans: pd.DataFrame, cont_col: list = None
 ) -> pd.DataFrame:
     """
-    Convert the continuous variables of a dataframe to the same decimal place as its reference variable
+    Transform the target dataframe:
+
+    * Set the columns order to be same as the reference dataframe
+    * Convert the continuous variables to the same decimal place as its reference variable
+    * Convert the type of data of each column according to the type of the reference dataframe
 
     :param df_ref: the reference dataframe
     :param df_to_trans: the dataframe to be transformed
     :param cont_col: the continuous variables (must exist in both dataframes)
     :return: the transformed dataframes
     """
+
+    re_col_order = df_ref.columns
+    ref_dtypes = df_ref.dtypes.to_dict()
+
     for col in cont_col:
         precision = (
             df_ref[col]
@@ -22,7 +30,7 @@ def convert_precision(
             lambda x: round(x, precision) if isinstance(x, float) else x
         )
 
-        if df_ref[col].dtype == "int":
-            df_to_trans[col] = df_to_trans[col].astype(int)
+    df_to_trans = df_to_trans.astype(ref_dtypes)
+    df_to_trans = df_to_trans[re_col_order]
 
     return df_to_trans

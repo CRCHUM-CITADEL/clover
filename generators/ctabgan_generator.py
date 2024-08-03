@@ -86,16 +86,17 @@ class CTABGANGenerator(Generator):
                 epsilon = epsilon_total
 
         # Convert the preprocess_metadata to the required format
-        for col in preprocess_metadata:
-            if col in metadata["categorical"]:
-                preprocess_metadata[col] = preprocess_metadata[col]["categories"]
-            elif col in metadata["continuous"]:
-                preprocess_metadata[col]["min_val"] = preprocess_metadata[col].pop(
-                    "min"
-                )
-                preprocess_metadata[col]["max_val"] = preprocess_metadata[col].pop(
-                    "max"
-                )
+        if preprocess_metadata is not None:
+            for col in preprocess_metadata:
+                if col in metadata["categorical"]:
+                    preprocess_metadata[col] = preprocess_metadata[col]["categories"]
+                elif col in metadata["continuous"]:
+                    preprocess_metadata[col]["min_val"] = preprocess_metadata[col].pop(
+                        "min"
+                    )
+                    preprocess_metadata[col]["max_val"] = preprocess_metadata[col].pop(
+                        "max"
+                    )
 
         self._extra_metadata = {
             "mixed_columns": mixed_columns if mixed_columns is not None else {},

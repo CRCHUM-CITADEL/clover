@@ -175,26 +175,27 @@ class CTABGANGenerator(Generator):
 
         self._gen = CTABGANSynthesizer(**self._params)
 
-        if self._params["epsilon"] is not None:
-            self._gen.fit_dp(
-                train_data=self._data_prep.df,
-                categorical=self._data_prep.column_types["categorical"],
-                mixed=self._data_prep.column_types["mixed"],
-                # general=self._data_prep.column_types["general"],
-                # non_categorical=self._data_prep.column_types["non_categorical"],
-                type=self._problem_type,
-                preprocess_metadata=self._preprocess_metadata,
-            )
+        with ustandard.HiddenPrints():  # turn off the prints
+            if self._params["epsilon"] is not None:
+                self._gen.fit_dp(
+                    train_data=self._data_prep.df,
+                    categorical=self._data_prep.column_types["categorical"],
+                    mixed=self._data_prep.column_types["mixed"],
+                    # general=self._data_prep.column_types["general"],
+                    # non_categorical=self._data_prep.column_types["non_categorical"],
+                    type=self._problem_type,
+                    preprocess_metadata=self._preprocess_metadata,
+                )
 
-        else:
-            self._gen.fit(
-                train_data=self._data_prep.df,
-                categorical=self._data_prep.column_types["categorical"],
-                mixed=self._data_prep.column_types["mixed"],
-                # general=self._data_prep.column_types["general"],
-                # non_categorical=self._data_prep.column_types["non_categorical"],
-                type=self._problem_type,
-            )
+            else:
+                self._gen.fit(
+                    train_data=self._data_prep.df,
+                    categorical=self._data_prep.column_types["categorical"],
+                    mixed=self._data_prep.column_types["mixed"],
+                    # general=self._data_prep.column_types["general"],
+                    # non_categorical=self._data_prep.column_types["non_categorical"],
+                    type=self._problem_type,
+                )
 
         ustandard.save_pickle(
             obj=self._gen,

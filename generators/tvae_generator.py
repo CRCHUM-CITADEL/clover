@@ -31,6 +31,7 @@ class TVAEGenerator(Generator):
     :param generator_filepath: the path of the generator to sample from if it exists
     :param epochs: the number of training epochs.
     :param batch_size: the batch size for training.
+    :param max_physical_batch_size: maximum number of samples processed at a time during training.
     :param compress_dims: the size of the hidden layers in the encoder.
     :param decompress_dims: the size of the hidden layers in the decoder.
     :param epsilon: the privacy budget of the differential privacy.
@@ -41,7 +42,6 @@ class TVAEGenerator(Generator):
     :param delta: target delta to be achieved for fitting (for differentially private model)
     :param max_grad_norm: the maximum norm of the per-sample gradients.
         Any gradient with norm higher than this will be clipped to this value. (for differentially private model)
-    :param max_physical_batch_size: maximum number of samples processed at a time during training
     :param preprocess_metadata: specify the range (minimum and maximum) and optionally num_bins and decimals
         (to generate differentially private continuous samples) for all numerical columns
         and the distinct categories for categorical columns. This ensures that no further privacy leakage
@@ -59,12 +59,12 @@ class TVAEGenerator(Generator):
         generator_filepath: Union[Path, str] = None,
         epochs: int = 300,
         batch_size: int = 100,
+        max_physical_batch_size: int = 125,
         compress_dims: Tuple[int, int] = (249, 249),
         decompress_dims: Tuple[int, int] = (249, 249),
         epsilon: Union[float, Dict[str, float]] = None,
         delta: float = None,
         max_grad_norm: float = 1.0,
-        max_physical_batch_size: int = 125,
         preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)

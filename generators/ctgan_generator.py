@@ -1,4 +1,5 @@
 from typing import Dict, Union  # standard library
+import copy
 
 import pandas as pd  # 3rd party packages
 from pathlib import Path
@@ -78,6 +79,7 @@ class CTGANGenerator(Generator):
                 epsilon = epsilon_total
 
         # Convert the preprocess_metadata to the required format
+        preprocess_metadata = copy.deepcopy(preprocess_metadata)
         if preprocess_metadata is not None:
             for col in preprocess_metadata:
                 if col in metadata["categorical"]:

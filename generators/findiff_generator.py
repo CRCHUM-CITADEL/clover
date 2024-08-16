@@ -136,6 +136,9 @@ class FinDiffGenerator(Generator):
         self.num_attrs = metadata["continuous"]
 
         self._df = self._df.copy()
+        self.df_original = (
+            self._df.copy()
+        )  # self._df will be altered, so keep an original copy
 
         self.generator_filepath = generator_filepath
         self.learning_rate = learning_rate
@@ -445,7 +448,7 @@ class FinDiffGenerator(Generator):
 
         # Post-processing
         samples = transform_data(
-            df_ref=self._df,
+            df_ref=self.df_original,
             df_to_trans=samples,
             cont_col=self._metadata["continuous"],
         )

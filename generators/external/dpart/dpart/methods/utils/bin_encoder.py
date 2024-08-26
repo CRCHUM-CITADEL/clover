@@ -1,3 +1,7 @@
+"""
+The following modifications were made to the file:
+    - Hardcoded bin number was fixed.
+"""
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder
@@ -5,7 +9,7 @@ from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder
 
 class BinEncoder:
     def __init__(self, n_bins=20):
-        self.n_bins = 20
+        self.n_bins = n_bins
         self.encoder = None
         self.dkind = None
 

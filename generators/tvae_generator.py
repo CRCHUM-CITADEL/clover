@@ -155,7 +155,9 @@ class TVAEGenerator(Generator):
             self._tvae_metadata, self._preprocess_metadata, **self._params
         )
 
-        self._gen.fit(self._df)
+        # Deactivate the package prints while fitting the model
+        with ustandard.HiddenPrints():
+            self._gen.fit(self._df)
 
         # necessary to be able to pickle the model
         if self._params["epsilon"] is not None and self._params["delta"] is not None:

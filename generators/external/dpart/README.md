@@ -21,3 +21,4 @@ MIT License
 * Fix unshown warning message for the bounds of continuous variables.
 * Fix privacy leakage for decoding predictions.
 * Fix hardcoded bin number in bin_encoder.
+* Used tree model as default model.

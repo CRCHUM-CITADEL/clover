@@ -79,6 +79,12 @@ class Distinguishability(Metric):
         """
         return [
             {
+                "submetric": "propensity_mse",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            },
+            {
                 "submetric": "prediction_mse",
                 "min": 0,
                 "max": 1,
@@ -123,6 +129,7 @@ class Distinguishability(Metric):
     def compute(
         self,
         df_real: dict[str, pd.DataFrame],
+
         df_synthetic: dict[str, pd.DataFrame],
         metadata: dict,
     ) -> dict:
@@ -248,6 +255,7 @@ class Distinguishability(Metric):
             y_pred_synth = y_pred_proba[len(df_test) // 2 :]
             mse_synth = self.propensity_mse(y_pred_synth)
             auc_rescaled = max(0.5, auc) * 2 - 1  # scale between 0 and 1
+            pred_mse = 1/2 * (self.propensity_mse(np.maximum(0.5, y_pred_real)) + self.propensity_mse(np.minimum(0.5, y_pred_synth)))
 
             # Average scores on kfolds
             dist_scores.append(
@@ -256,6 +264,7 @@ class Distinguishability(Metric):
                     mse_real,
                     mse_synth,
                     auc_rescaled,
+                    pred_mse
                 ]
             )
             prediction_real.extend(y_pred_real)
@@ -265,24 +274,27 @@ class Distinguishability(Metric):
 
         # Average scores on repetitions
         (
-            prediction_mse,
+            propensity_mse,
             prediction_mse_real,
             prediction_mse_synth,
             prediction_auc_rescaled,
+            prediction_mse
         ) = np.mean(dist_scores, axis=0)
 
         res = {
             "average": {
-                "prediction_mse": prediction_mse,
+                "propensity_mse": propensity_mse,
                 "prediction_mse_real": prediction_mse_real,
                 "prediction_mse_synth": prediction_mse_synth,
                 "prediction_auc_rescaled": prediction_auc_rescaled,
+                "prediction_mse": prediction_mse,
             },
             "detailed": {
-                "prediction_mse": dist_scores[:, 0],
+                "propensity_mse": dist_scores[:, 0],
                 "prediction_mse_real": dist_scores[:, 1],
                 "prediction_mse_synth": dist_scores[:, 2],
                 "prediction_auc_rescaled": dist_scores[:, 3],
+                "prediction_mse": dist_scores[:, 4],
                 "prediction_real": np.array(prediction_real),
                 "prediction_synth": np.array(prediction_synth),
             },
@@ -303,7 +315,7 @@ class Distinguishability(Metric):
         assert all(
             key in report
             for key in [
-                "prediction_mse",
+                "propensity_mse",
                 "prediction_mse_real",
                 "prediction_mse_synth",
                 "prediction_auc_rescaled",
@@ -317,7 +329,7 @@ class Distinguishability(Metric):
 
         data = pd.DataFrame(
             {
-                "prediction_mse": report["prediction_mse"],
+                "propensity_mse": report["propensity_mse"],
                 "prediction_mse_real": report["prediction_mse_real"],
                 "prediction_mse_synth": report["prediction_mse_synth"],
                 "prediction_auc_rescaled": report["prediction_auc_rescaled"],

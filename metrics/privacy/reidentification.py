@@ -70,6 +70,7 @@ class DistanceToClosestRecord(Metric):
                 "min": 0,
                 "max": np.inf,
                 "objective": "max",
+
             },
             {
                 "submetric": "nndr_5th_percent_synthreal_train",
@@ -78,7 +79,19 @@ class DistanceToClosestRecord(Metric):
                 "objective": "max",
             },
             {
+                "submetric": "nndr_5th_percent_train_test_ref",
+                "min": 0,
+                "max": 1,
+                "objective": "max",
+            },
+            {
                 "submetric": "dcr_5th_percent_synthreal_control",
+                "min": 0,
+                "max": np.inf,
+                "objective": "max",
+            },
+            {
+                "submetric": "dcr_5th_percent_train_test_ref",
                 "min": 0,
                 "max": np.inf,
                 "objective": "max",
@@ -97,6 +110,12 @@ class DistanceToClosestRecord(Metric):
             },
             {
                 "submetric": "ratio_match_synthreal_control",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            },
+            {
+                "submetric": "ratio_match_train_test_ref",
                 "min": 0,
                 "max": 1,
                 "objective": "min",
@@ -201,6 +220,13 @@ class DistanceToClosestRecord(Metric):
             nndr_percent_synthreal_control,
         ) = pipeline(synth, real_control)
 
+        (
+            dist_train_test_ref,
+            ratio_train_test_ref,
+            dcr_percent_train_test_ref,
+            nndr_percent_train_test_ref,
+        ) = pipeline(real_control, real_train)
+
         dist_real_train, ratio_real_train, _, _ = pipeline(real_train)
         dist_real_control, ratio_real_control, _, _ = pipeline(real_control)
         dist_synth, ratio_synth, _, _ = pipeline(synth)
@@ -213,23 +239,32 @@ class DistanceToClosestRecord(Metric):
             dist_synthreal_control[:, 0] < 0.01
         ) / len(dist_synthreal_control)
 
+        ratio_match_train_test_ref = np.sum(
+            dist_train_test_ref[:, 0] < 0.01
+        ) / len(dist_train_test_ref)
+
         res = {
             "average": {
                 "dcr_5th_percent_synthreal_train": dcr_percent_synthreal_train,
                 "nndr_5th_percent_synthreal_train": nndr_percent_synthreal_train,
                 "dcr_5th_percent_synthreal_control": dcr_percent_synthreal_control,
                 "nndr_5th_percent_synthreal_control": nndr_percent_synthreal_control,
+                "dcr_5th_percent_train_test_ref": dcr_percent_train_test_ref,
+                "nndr_5th_percent_train_test_ref": nndr_percent_train_test_ref,
                 "ratio_match_synthreal_train": ratio_match_synthreal_train,
                 "ratio_match_synthreal_control": ratio_match_synthreal_control,
+                "ratio_match_train_test_ref": ratio_match_train_test_ref,
             },
             "detailed": {
                 "dcr_synthreal_train": dist_synthreal_train[:, 0],
                 "dcr_synthreal_control": dist_synthreal_control[:, 0],
+                "dcr_train_test_ref": dist_train_test_ref[:, 0],
                 "dcr_real_train": dist_real_train[:, 0],
                 "dcr_real_control": dist_real_control[:, 0],
                 "dcr_synth": dist_synth[:, 0],
                 "nndr_synthreal_train": ratio_synthreal_train,
                 "nndr_synthreal_control": ratio_synthreal_control,
+                "nndr_train_test_ref": ratio_train_test_ref,
                 "nndr_real_train": ratio_real_train,
                 "nndr_real_control": ratio_real_control,
                 "nndr_synth": ratio_synth,

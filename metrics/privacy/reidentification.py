@@ -70,7 +70,6 @@ class DistanceToClosestRecord(Metric):
                 "min": 0,
                 "max": np.inf,
                 "objective": "max",
-
             },
             {
                 "submetric": "nndr_5th_percent_synthreal_train",
@@ -239,9 +238,9 @@ class DistanceToClosestRecord(Metric):
             dist_synthreal_control[:, 0] < 0.01
         ) / len(dist_synthreal_control)
 
-        ratio_match_train_test_ref = np.sum(
-            dist_train_test_ref[:, 0] < 0.01
-        ) / len(dist_train_test_ref)
+        ratio_match_train_test_ref = np.sum(dist_train_test_ref[:, 0] < 0.01) / len(
+            dist_train_test_ref
+        )
 
         res = {
             "average": {

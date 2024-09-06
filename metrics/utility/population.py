@@ -117,7 +117,6 @@ class Distinguishability(Metric):
     def compute(
         self,
         df_real: dict[str, pd.DataFrame],
-
         df_synthetic: dict[str, pd.DataFrame],
         metadata: dict,
     ) -> dict:
@@ -243,18 +242,17 @@ class Distinguishability(Metric):
             y_pred_synth = y_pred_proba[len(df_test) // 2 :]
             mse_synth = self.propensity_mse(y_pred_synth)
             auc_rescaled = max(0.5, auc) * 2 - 1  # scale between 0 and 1
-            pred_mse = 1/2 * (self.propensity_mse(np.maximum(0.5, y_pred_real)) + self.propensity_mse(np.minimum(0.5, y_pred_synth)))
+            pred_mse = (
+                1
+                / 2
+                * (
+                    self.propensity_mse(np.maximum(0.5, y_pred_real))
+                    + self.propensity_mse(np.minimum(0.5, y_pred_synth))
+                )
+            )
 
             # Average scores on kfolds
-            dist_scores.append(
-                [
-                    mse,
-                    mse_real,
-                    mse_synth,
-                    auc_rescaled,
-                    pred_mse
-                ]
-            )
+            dist_scores.append([mse, mse_real, mse_synth, auc_rescaled, pred_mse])
             prediction_real.extend(y_pred_real)
             prediction_synth.extend(y_pred_synth)
 
@@ -266,7 +264,7 @@ class Distinguishability(Metric):
             prediction_mse_real,
             prediction_mse_synth,
             prediction_auc_rescaled,
-            prediction_mse
+            prediction_mse,
         ) = np.mean(dist_scores, axis=0)
 
         res = {

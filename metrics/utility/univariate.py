@@ -805,12 +805,24 @@ class ContinuousUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMeta
         df_ref_test_bin = {"train": df_real_test_bin_ref, "test": None}
 
         res = super().compute(df_real_bin, df_synthetic_bin, metadata_cont)
-        res['average'][f"{self.__class__.distance_name}_train_test_ref"] = super().compute(
-                    df_real_bin, df_ref_test_bin, metadata_cont, train_test_ref=True
-                )['average'][f"{self.__class__.distance_name}"]
-        res['detailed'][f"{self.__class__.distance_name}_train_test_ref"] = super().compute(
-                    df_real_bin, df_ref_test_bin, metadata_cont, train_test_ref=True
-                )['detailed'][f"{self.__class__.distance_name}"]
+        res["average"][
+            f"{self.__class__.distance_name}_train_test_ref"
+        ] = super().compute(
+            df_real_bin, df_ref_test_bin, metadata_cont, train_test_ref=True
+        )[
+            "average"
+        ][
+            f"{self.__class__.distance_name}"
+        ]
+        res["detailed"][
+            f"{self.__class__.distance_name}_train_test_ref"
+        ] = super().compute(
+            df_real_bin, df_ref_test_bin, metadata_cont, train_test_ref=True
+        )[
+            "detailed"
+        ][
+            f"{self.__class__.distance_name}"
+        ]
 
         return res
 
@@ -872,15 +884,25 @@ class CategoricalUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMet
         df_real_test_cat = {"train": df_real_test_cat, "test": None}
         df_synth_cat = {"train": df_synth_cat, "test": None}
 
-        res = super().compute(
-                    df_real_cat, df_synth_cat, metadata_cat
-                )
-        res['average'][f"{self.__class__.distance_name}_train_test_ref"] = super().compute(
-                    df_real_cat, df_real_test_cat, metadata_cat, train_test_ref=True
-                )['average'][f"{self.__class__.distance_name}"]
-        res['detailed'][f"{self.__class__.distance_name}_train_test_ref"] = super().compute(
-                    df_real_cat, df_real_test_cat, metadata_cat, train_test_ref=True
-                )['detailed'][f"{self.__class__.distance_name}"]
+        res = super().compute(df_real_cat, df_synth_cat, metadata_cat)
+        res["average"][
+            f"{self.__class__.distance_name}_train_test_ref"
+        ] = super().compute(
+            df_real_cat, df_real_test_cat, metadata_cat, train_test_ref=True
+        )[
+            "average"
+        ][
+            f"{self.__class__.distance_name}"
+        ]
+        res["detailed"][
+            f"{self.__class__.distance_name}_train_test_ref"
+        ] = super().compute(
+            df_real_cat, df_real_test_cat, metadata_cat, train_test_ref=True
+        )[
+            "detailed"
+        ][
+            f"{self.__class__.distance_name}"
+        ]
 
         return res
 

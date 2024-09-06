@@ -1,11 +1,12 @@
-from abc import ABC
-from typing import Union  # standard library
+from typing import Dict, Union  # standard library
+import copy
 
 import pandas as pd  # 3rd party packages
 from pathlib import Path
 
 from .base import Generator  # local
 import utils.standard as ustandard
+from utils.postprocessing import transform_data
 from generators.external.ctabgan.ctabgan_synthesizer import CTABGANSynthesizer
 from .external.ctabgan.data_preparation import DataPrep
 
@@ -36,6 +37,19 @@ class CTABGANGenerator(Generator):
     :param l2scale: rate of weight decay used in the optimizer of the generator, discriminator and auxiliary classifier
     :param batch_size: batch size for training
     :param epochs: number of training epochs
+    :param epsilon: the privacy budget of the differential privacy.
+        One can specify how the budget is split between pre-processing and fitting the model.
+        For example, epsilon = {"preprocessing": 0.1, "fitting": 0.9}.
+        If a single float number is provide, half the budget is allocated for pre-processing
+        and half for fitting.
+    :param delta: target delta to be achieved for fitting (for differentially private model)
+    :param max_grad_norm: the maximum norm of the per-sample gradients.
+        Any gradient with norm higher than this will be clipped to this value. (for differentially private model)
+    :param preprocess_metadata: specify the range (minimum and maximum) and optionally num_bins and decimals
+        (to generate differentially private continuous samples) for all numerical columns
+        and the distinct categories for categorical columns. This ensures that no further privacy leakage
+        is happening (for differentially private model).
+        For example, preprocess_metadata = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
     """
 
     name = "CTABGAN"
@@ -44,7 +58,6 @@ class CTABGANGenerator(Generator):
         self,
         df: pd.DataFrame,
         metadata: dict,
-        preprocess_metadata: dict = None,
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         mixed_columns: dict = None,
@@ -56,12 +69,36 @@ class CTABGANGenerator(Generator):
         l2scale: float = 1e-5,
         batch_size: int = 500,
         epochs: int = 150,
-        epsilon=None,
-        preprocess_epsilon_pp: float = None,
-        delta=None,
-        max_grad_norm=1,
+        epsilon: Union[float, Dict[str, float]] = None,
+        delta: float = None,
+        max_grad_norm: float = 1.0,
+        preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+
+        # Initiate privacy budget
+        if (epsilon is None) or isinstance(epsilon, float) or isinstance(epsilon, int):
+            preprocess_epsilon_pp = None
+        else:
+            if isinstance(epsilon, dict):
+                epsilon_total = epsilon["preprocessing"] + epsilon["fitting"]
+                preprocess_epsilon_pp = epsilon["preprocessing"] / epsilon_total
+                epsilon = epsilon_total
+
+        # Convert the preprocess_metadata to the required format
+        preprocess_metadata = copy.deepcopy(preprocess_metadata)
+        if preprocess_metadata is not None:
+            for col in preprocess_metadata:
+                if col in metadata["categorical"]:
+                    preprocess_metadata[col] = preprocess_metadata[col]["categories"]
+                elif col in metadata["continuous"]:
+                    preprocess_metadata[col]["min_val"] = preprocess_metadata[col].pop(
+                        "min"
+                    )
+                    preprocess_metadata[col]["max_val"] = preprocess_metadata[col].pop(
+                        "max"
+                    )
+
         self._extra_metadata = {
             "mixed_columns": mixed_columns if mixed_columns is not None else {},
             "log_columns": log_columns if log_columns is not None else [],
@@ -103,7 +140,7 @@ class CTABGANGenerator(Generator):
             )
 
         assert (
-            0 <= preprocess_epsilon_pp <= 1 or preprocess_epsilon_pp is None
+            preprocess_epsilon_pp is None or 0 <= preprocess_epsilon_pp <= 1
         ), "preprocess_epsilon must be in the interval [0, 1]"
 
     def preprocess(self) -> None:
@@ -139,26 +176,27 @@ class CTABGANGenerator(Generator):
 
         self._gen = CTABGANSynthesizer(**self._params)
 
-        if self._params["epsilon"] is not None:
-            self._gen.fit_dp(
-                train_data=self._data_prep.df,
-                categorical=self._data_prep.column_types["categorical"],
-                mixed=self._data_prep.column_types["mixed"],
-                # general=self._data_prep.column_types["general"],
-                # non_categorical=self._data_prep.column_types["non_categorical"],
-                type=self._problem_type,
-                preprocess_metadata=self._preprocess_metadata,
-            )
+        with ustandard.HiddenPrints():  # turn off the prints
+            if self._params["epsilon"] is not None:
+                self._gen.fit_dp(
+                    train_data=self._data_prep.df,
+                    categorical=self._data_prep.column_types["categorical"],
+                    mixed=self._data_prep.column_types["mixed"],
+                    # general=self._data_prep.column_types["general"],
+                    # non_categorical=self._data_prep.column_types["non_categorical"],
+                    type=self._problem_type,
+                    preprocess_metadata=self._preprocess_metadata,
+                )
 
-        else:
-            self._gen.fit(
-                train_data=self._data_prep.df,
-                categorical=self._data_prep.column_types["categorical"],
-                mixed=self._data_prep.column_types["mixed"],
-                # general=self._data_prep.column_types["general"],
-                # non_categorical=self._data_prep.column_types["non_categorical"],
-                type=self._problem_type,
-            )
+            else:
+                self._gen.fit(
+                    train_data=self._data_prep.df,
+                    categorical=self._data_prep.column_types["categorical"],
+                    mixed=self._data_prep.column_types["mixed"],
+                    # general=self._data_prep.column_types["general"],
+                    # non_categorical=self._data_prep.column_types["non_categorical"],
+                    type=self._problem_type,
+                )
 
         ustandard.save_pickle(
             obj=self._gen,
@@ -166,6 +204,16 @@ class CTABGANGenerator(Generator):
             filename=CTABGANGenerator.name,
             date=True,
         )
+
+    def display(self) -> None:
+        """
+        Print information about the generator.
+
+        :return: *None*
+        """
+        print("CTAB-GAN+ Synthesizer parameters: \n")
+        for key, value in self._gen.__dict__.items():
+            print(str(key) + ": " + str(value))
 
     def sample(self, save_path: Union[Path, str], num_samples: int = 1) -> pd.DataFrame:
         """
@@ -179,6 +227,13 @@ class CTABGANGenerator(Generator):
         samples = self._gen.sample(num_samples)
         samples = self._data_prep.inverse_prep(samples)
 
+        # Post-processing
+        samples = transform_data(
+            df_ref=self._df,
+            df_to_trans=samples,
+            cont_col=self._metadata["continuous"],
+        )
+
         samples.to_csv(
             Path(save_path)
             / f"{ustandard.get_date()}_{CTABGANGenerator.name}_{num_samples}samples.csv",
@@ -186,13 +241,3 @@ class CTABGANGenerator(Generator):
         )
 
         return samples
-
-    def display(self) -> None:
-        """
-        Print information about the generator.
-
-        :return: *None*
-        """
-        print("CTAB-GAN+ Synthesizer parameters: \n")
-        for key, value in self._gen.__dict__.items():
-            print(str(key) + ": " + str(value))

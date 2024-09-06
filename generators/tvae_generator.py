@@ -1,4 +1,5 @@
-from typing import Union, Tuple  # standard library
+from typing import Dict, Union, Tuple  # standard library
+import copy
 
 import pandas as pd  # 3rd party packages
 from pathlib import Path
@@ -6,6 +7,7 @@ from generators.external.ctgan.single_table.dp_ctgan import TVAESynthesizer
 from sdv.metadata import SingleTableMetadata
 
 from generators.base import Generator  # local
+from utils.postprocessing import transform_data
 import utils.standard as ustandard
 
 
@@ -30,8 +32,22 @@ class TVAEGenerator(Generator):
     :param generator_filepath: the path of the generator to sample from if it exists
     :param epochs: the number of training epochs.
     :param batch_size: the batch size for training.
+    :param max_physical_batch_size: maximum number of samples processed at a time during training.
     :param compress_dims: the size of the hidden layers in the encoder.
     :param decompress_dims: the size of the hidden layers in the decoder.
+    :param epsilon: the privacy budget of the differential privacy.
+        One can specify how the budget is split between pre-processing and fitting the model.
+        For example, epsilon = {"preprocessing": 0.1, "fitting": 0.9}.
+        If a single float number is provide, half the budget is allocated for pre-processing
+        and half for fitting.
+    :param delta: target delta to be achieved for fitting (for differentially private model)
+    :param max_grad_norm: the maximum norm of the per-sample gradients.
+        Any gradient with norm higher than this will be clipped to this value. (for differentially private model)
+    :param preprocess_metadata: specify the range (minimum and maximum) and optionally num_bins and decimals
+        (to generate differentially private continuous samples) for all numerical columns
+        and the distinct categories for categorical columns. This ensures that no further privacy leakage
+        is happening (for differentially private model).
+        For example, preprocess_metadata = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
     """
 
     name = "TVAE"
@@ -40,20 +56,42 @@ class TVAEGenerator(Generator):
         self,
         df: pd.DataFrame,
         metadata: dict,
-        preprocess_metadata: dict = None,
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
         epochs: int = 300,
         batch_size: int = 100,
+        max_physical_batch_size: int = 125,
         compress_dims: Tuple[int, int] = (249, 249),
         decompress_dims: Tuple[int, int] = (249, 249),
-        epsilon: float = None,
-        preprocess_epsilon_pp: float = None,
+        epsilon: Union[float, Dict[str, float]] = None,
         delta: float = None,
-        max_grad_norm: float = 1,
-        max_physical_batch_size: int = 125,
+        max_grad_norm: float = 1.0,
+        preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+
+        # Initiate privacy budget
+        if (epsilon is None) or isinstance(epsilon, float) or isinstance(epsilon, int):
+            preprocess_epsilon_pp = None
+        else:
+            if isinstance(epsilon, dict):
+                epsilon_total = epsilon["preprocessing"] + epsilon["fitting"]
+                preprocess_epsilon_pp = epsilon["preprocessing"] / epsilon_total
+                epsilon = epsilon_total
+
+        # Convert the preprocess_metadata to the required format
+        preprocess_metadata = copy.deepcopy(preprocess_metadata)
+        if preprocess_metadata is not None:
+            for col in preprocess_metadata:
+                if col in metadata["categorical"]:
+                    preprocess_metadata[col] = preprocess_metadata[col]["categories"]
+                elif col in metadata["continuous"]:
+                    preprocess_metadata[col]["min_val"] = preprocess_metadata[col].pop(
+                        "min"
+                    )
+                    preprocess_metadata[col]["max_val"] = preprocess_metadata[col].pop(
+                        "max"
+                    )
 
         self._params = {
             "epochs": epochs,
@@ -79,7 +117,7 @@ class TVAEGenerator(Generator):
             )
 
         assert (
-            0 <= preprocess_epsilon_pp <= 1 or preprocess_epsilon_pp is None
+            preprocess_epsilon_pp is None or 0 <= preprocess_epsilon_pp <= 1
         ), "preprocess_epsilon must be in the interval [0, 1]"
 
     def preprocess(self) -> None:
@@ -117,7 +155,9 @@ class TVAEGenerator(Generator):
             self._tvae_metadata, self._preprocess_metadata, **self._params
         )
 
-        self._gen.fit(self._df)
+        # Deactivate the package prints while fitting the model
+        with ustandard.HiddenPrints():
+            self._gen.fit(self._df)
 
         # necessary to be able to pickle the model
         if self._params["epsilon"] is not None and self._params["delta"] is not None:
@@ -146,6 +186,13 @@ class TVAEGenerator(Generator):
         """
 
         samples = self._gen.sample(num_rows=num_samples)
+
+        # Post-processing
+        samples = transform_data(
+            df_ref=self._df,
+            df_to_trans=samples,
+            cont_col=self._metadata["continuous"],
+        )
 
         samples.to_csv(
             Path(save_path)

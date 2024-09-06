@@ -7,16 +7,17 @@ The following modifications were made to the file:
     - The paths of imported modules were modified to be relative.
     - The differential private synthpop class was modified to include more arguments.
     - The type hints were updated.
+    - Tree model was used as default model.
 """
 
 from typing import Dict, Union, List
 from .. import dpart
-from ..methods import LogisticRegression, LinearRegression
+from ..methods import RandomForestClassifier, LinearRegression
 
 
 class DPSynthpop(dpart):
     default_numerical = LinearRegression
-    default_categorical = LogisticRegression
+    default_categorical = RandomForestClassifier
 
     def __init__(
         self,
@@ -27,6 +28,7 @@ class DPSynthpop(dpart):
         visit_order: List[str] = None,
         prediction_matrix: Union[str, Dict[str, List[str]]] = None,
         n_parents: int = None,
+        **kwargs
     ):
         super().__init__(
             methods=methods,
@@ -36,4 +38,5 @@ class DPSynthpop(dpart):
             visit_order=visit_order,
             prediction_matrix=prediction_matrix,
             n_parents=n_parents,
+            **kwargs
         )

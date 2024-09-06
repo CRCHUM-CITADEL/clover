@@ -1,14 +1,19 @@
 # Standard library
 from typing import Dict, Union, List
 from pathlib import Path
+import warnings
 
 # 3rd party packages
+import numpy as np
 import pandas as pd
+from sklearn.preprocessing import KBinsDiscretizer, MinMaxScaler
+from diffprivlib.utils import PrivacyLeakWarning
 
 # Local
 from .external.synthpop.synthpop import Synthpop
 from .external.dpart.dpart.engines import DPSynthpop
 from .base import Generator
+from utils.postprocessing import transform_data
 import utils.standard as ustandard
 
 
@@ -34,20 +39,21 @@ class SynthpopGenerator(Generator):
     :param min_samples_leaf: the minimum number of samples required in a leaf to expand the tree further
         (applicable to non-DP generator)
     :param max_depth: the maximum depth of the tree. If None, the tree expands until all leaves are pure or
-        until they contain less than min_samples_leaf samples (applicable to non-DP generator)
+        until they contain less than min_samples_leaf samples (applicable to both DP and non-DP generator)
+    :param n_bins: number of bins to apply when transforming continuous variables into categorical ones (applicable to DP generator)
     :param methods: defines the specific method each column should be modelled by.
         The default methods to model continuous and discrete columns are DP-Linear Regression
         and DP-Logistic Regression (applicable to DP generator)
-    :param bounds: specify the range (minimum and maximum) for all numerical columns
-        and the distinct categories for categorical columns. This ensures that no further privacy leakage
-        is happening. For example, bounds = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
-        If not specified, they will be estimated from the real data and a warning will be raised
-        (applicable to DP generator)
     :param prediction_matrix: specify the collection of already visited columns to be used as features
         for each unvisited column. It could be set to "infer" to optimize the variable_order
         by maximizing the information gain. If not None, it will override the variable_order parameter
         (applicable to DP generator)
     :param n_parents: maximum number of columns to be considered as features to predict a target
+        (applicable to DP generator)
+    :param preprocess_metadata: specify the range (minimum and maximum) for all numerical columns
+        and the distinct categories for categorical columns. This ensures that no further privacy leakage
+        is happening. For example, preprocess_metadata = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
+        If not specified, they will be estimated from the real data and a warning will be raised
         (applicable to DP generator)
     """
 
@@ -63,12 +69,16 @@ class SynthpopGenerator(Generator):
         epsilon: Union[float, Dict[str, Union[float, Dict[str, float]]]] = None,
         min_samples_leaf: int = 5,
         max_depth: int = None,
+        n_bins: int = 100,
         methods: dict = None,
-        bounds: Dict[str, dict] = None,
         prediction_matrix: Union[str, Dict[str, List[str]]] = None,
         n_parents: int = None,
+        preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+
+        bounds = preprocess_metadata
+
         self.epsilon = epsilon
 
         if self.epsilon is None:  # Initiate non-DP generator
@@ -81,7 +91,6 @@ class SynthpopGenerator(Generator):
                 )
             self._df = self._df.copy()
             self._dtypes = None
-            self._original_dtypes = df.dtypes.to_dict()
         else:  # Initiate DP generator
             n_col = df.shape[1]
             if n_parents == None:
@@ -89,17 +98,31 @@ class SynthpopGenerator(Generator):
             else:
                 self.n_parents = n_parents
 
+            self.bounds = bounds
+            self.bounds_trans = bounds.copy()
+            self._df = self._df.copy()
+            self.n_bins = n_bins
+
+            # Encoding
+            self._scaler = {}
+            self._kbins = None
+
+            # New bounds after discretization of continuous variables
+            for cont_col in metadata["continuous"]:
+                self.bounds_trans[cont_col] = {
+                    "categories": list(map(str, list(range(n_bins))))
+                }
+
             if generator_filepath is None:
                 self._gen = DPSynthpop(
                     methods=methods,
                     epsilon=self.epsilon,
-                    bounds=bounds,
+                    bounds=self.bounds_trans,
+                    max_depth=max_depth,
                     visit_order=variables_order,
                     prediction_matrix=prediction_matrix,
                     n_parents=self.n_parents,
                 )
-            self._df = self._df.copy()
-            self._original_dtypes = df.dtypes.to_dict()
 
     def preprocess(self) -> None:
         """
@@ -118,6 +141,43 @@ class SynthpopGenerator(Generator):
             self._dtypes = self._df.dtypes.apply(
                 lambda x: x.name.split("64")[0]
             ).to_dict()  # Non-dp generator: only 'int' or 'float' supported without any number after
+        else:  # DP mode
+            # Rescale continuous variables to min and max to prevent privacy leakage
+            df_cont_rescaled = pd.DataFrame(columns=self._metadata["continuous"])
+
+            for col, series in self._df[self._metadata["continuous"]].items():
+                if col not in self.bounds:
+                    warnings.warn(
+                        f"upper and lower bounds not specified for column '{col}'",
+                        PrivacyLeakWarning,
+                    )
+                    self.bounds[col] = {"min": series.min(), "max": series.max()}
+                self._scaler[col] = MinMaxScaler(
+                    feature_range=(self.bounds[col]["min"], self.bounds[col]["max"])
+                )
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    df_cont_rescaled[col] = pd.Series(
+                        self._scaler[col].fit_transform(self._df[[col]]).squeeze(),
+                        name=col,
+                        index=self._df.index,
+                    )
+
+            # Convert continuous columns into categorical ones
+            self._kbins = KBinsDiscretizer(
+                n_bins=self.n_bins, encode="ordinal", strategy="uniform"
+            )
+            self._kbins.fit(df_cont_rescaled[self._metadata["continuous"]])
+            df_cont = pd.DataFrame(
+                self._kbins.transform(df_cont_rescaled[self._metadata["continuous"]]),
+                columns=self._metadata["continuous"],
+            ).astype("category")
+
+            df_cat = self._df[self._metadata["categorical"]]
+
+            # Merge the preprocessed dataframes
+            self._df_trans = pd.concat([df_cont, df_cat], axis=1)
 
     def fit(self, save_path: Union[Path, str]) -> None:
         """
@@ -133,7 +193,7 @@ class SynthpopGenerator(Generator):
             if self.epsilon is None:
                 self._gen.fit(self._df, self._dtypes)
             else:
-                self._gen.fit(self._df)
+                self._gen.fit(self._df_trans)
 
         ustandard.save_pickle(
             obj=self._gen,
@@ -177,9 +237,31 @@ class SynthpopGenerator(Generator):
 
         with ustandard.HiddenPrints():  # turn off the prints
             if self.epsilon is None:
-                samples = self._gen.generate(num_samples).astype(self._original_dtypes)
+                samples = self._gen.generate(num_samples)
             else:
-                samples = self._gen.sample(num_samples).astype(self._original_dtypes)
+                samples = self._gen.sample(num_samples)
+
+        # Transform discretized variables to origin continuous ones
+        samples = samples[self._df.columns]  # same initial columns order
+        samples[self._metadata["continuous"]] = self._kbins.inverse_transform(
+            samples[self._metadata["continuous"]]
+        )
+
+        for idx, col in enumerate(self._metadata["continuous"]):
+            half_bin_width = (
+                self._kbins.bin_edges_[idx][1] - self._kbins.bin_edges_[idx][0]
+            ) / 2
+
+            samples[col] = samples[col] + np.random.uniform(
+                -half_bin_width, half_bin_width, size=len(samples)
+            )
+
+        # Post-processing
+        samples = transform_data(
+            df_ref=self._df,
+            df_to_trans=samples,
+            cont_col=self._metadata["continuous"],
+        )
 
         samples.to_csv(
             Path(save_path)

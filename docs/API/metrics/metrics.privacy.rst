@@ -9,6 +9,14 @@ metrics.privacy.reidentification
    :undoc-members:
    :show-inheritance:
 
+metrics.privacy.membership
+--------------------------
+
+.. automodule:: metrics.privacy.membership
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 metrics.privacy.report
 ----------------------
 

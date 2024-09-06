@@ -16,6 +16,7 @@ from diffprivlib.utils import PrivacyLeakWarning
 # Local
 from .base import Generator
 from .external.findiff.findiff import FinDiff
+from utils.postprocessing import transform_data
 import utils.standard as ustandard
 
 tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
@@ -81,9 +82,9 @@ class FinDiffGenerator(Generator):
     :param delta: target delta to be achieved for fitting (for differentially private model)
     :param max_grad_norm: the maximum norm of the per-sample gradients.
         Any gradient with norm higher than this will be clipped to this value. (for differentially private model)
-    :param bounds: specify the range (minimum and maximum) for all numerical columns
+    :param preprocess_metadata: specify the range (minimum and maximum) for all numerical columns
         and the distinct categories for categorical columns. This ensures that no further privacy leakage
-        is happening. For example, bounds = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
+        is happening. For example, preprocess_metadata = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
         If not specified, they will be estimated from the real data and a warning will be raised
         (for differentially private model)
     """
@@ -109,17 +110,21 @@ class FinDiffGenerator(Generator):
         epsilon: Union[float, Dict[str, float]] = None,
         delta: float = None,
         max_grad_norm: float = None,
-        bounds: Dict[str, dict] = None,
+        preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+
+        bounds = preprocess_metadata
+
         assert not any(
             df.columns.str.contains("_")
         ), "Please remove the '_' from column names for correct inverse decoding"
 
         # set seeds
-        np.random.seed(random_state)
-        torch.manual_seed(random_state)
-        torch.cuda.manual_seed(random_state)
+        if random_state is not None:
+            np.random.seed(random_state)
+            torch.manual_seed(random_state)
+            torch.cuda.manual_seed(random_state)
 
         # set the device
         self.device = torch.device(
@@ -131,8 +136,9 @@ class FinDiffGenerator(Generator):
         self.num_attrs = metadata["continuous"]
 
         self._df = self._df.copy()
-        self._original_dtypes = df.dtypes.to_dict()
-        self._original_col_order = df.columns
+        self.df_original = (
+            self._df.copy()
+        )  # self._df will be altered, so keep an original copy
 
         self.generator_filepath = generator_filepath
         self.learning_rate = learning_rate
@@ -440,8 +446,12 @@ class FinDiffGenerator(Generator):
         for cat_attr in self.cat_attrs:
             samples[cat_attr] = samples[cat_attr].str.split("_", n=1).str.get(-1)
 
-        samples = samples.astype(self._original_dtypes)
-        samples = samples[self._original_col_order]
+        # Post-processing
+        samples = transform_data(
+            df_ref=self.df_original,
+            df_to_trans=samples,
+            cont_col=self._metadata["continuous"],
+        )
 
         samples.to_csv(
             Path(save_path)

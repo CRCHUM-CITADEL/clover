@@ -737,7 +737,7 @@ class ContinuousUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMeta
             return {}
 
         df_real_bin, df_synthetic_bin = upreprocessing.bin_per_column(
-            df_ref=df_real_cont, df_tobin=df_synth_cont, bin_size=10
+            df_ref=df_real_cont, df_tobin=df_synth_cont, bin_size=5
         )
 
         df_real_bin = {"train": df_real_bin, "test": None}

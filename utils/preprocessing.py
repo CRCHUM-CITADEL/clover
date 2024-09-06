@@ -103,7 +103,7 @@ def generate_continuous_dp(
 
     # Calculate num_bins if not provided
     if num_bins is None:
-        num_bins = max(round(max_val - min_val, 0), 10)
+        num_bins = int(max(round(max_val - min_val, 0), 10))
 
     # Exclude modes if specified by the user
     if modes is not None:

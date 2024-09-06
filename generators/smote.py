@@ -1,4 +1,4 @@
-from typing import Union, List  # standard library
+from typing import Dict, Union  # standard library
 from pathlib import Path
 import warnings
 
@@ -12,6 +12,7 @@ from torch import nn
 
 from generators.base import Generator  # local
 from generators.models.dpsmote import DPSmote
+from utils.postprocessing import transform_data
 import utils.standard as ustandard
 
 
@@ -33,13 +34,13 @@ class SmoteGenerator(Generator):
     :param l_connectivity: the distance to decide the neighborhood (applicable to DP generator)
     :param nu: the granularity parameter of the uniform grid that the data will be partitioned into
         (applicable to DP generator)
-    :param bounds: specify the range (minimum and maximum) for all numerical columns
-        and the distinct categories for categorical columns. This ensures that no further privacy leakage
-        is happening. For example, bounds = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
-        If not specified, they will be estimated from the real data and a warning will be raised
-        (applicable to DP generator)
     :param cat_emb_dim: dimension of categorical embeddings (applicable to DP generator)
     :param r: the range each feature will fall into after preprocessing, i.e., [-r, r] (applicable to DP generator)
+    :param preprocess_metadata: specify the range (minimum and maximum) for all numerical columns
+        and the distinct categories for categorical columns. This ensures that no further privacy leakage
+        is happening. For example, preprocess_metadata = {"col1": {"min": 0, "max": 1}, "col2": {"categories": ["cat1", "cat2"]}}.
+        If not specified, they will be estimated from the real data and a warning will be raised
+        (applicable to DP generator)
     """
 
     name = "SMOTE"
@@ -54,11 +55,13 @@ class SmoteGenerator(Generator):
         k_neighbors: int = 5,
         l_connectivity: int = 2,
         nu: float = 0.25,
-        bounds: dict = None,
         cat_emb_dim: int = 2,
         r: float = 1,
+        preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
+
+        bounds = preprocess_metadata
 
         self.epsilon = epsilon
         self._params = self._gen.get_params() if self._gen is not None else None
@@ -85,8 +88,6 @@ class SmoteGenerator(Generator):
 
             self._df = self._df.copy()
             self.df_original = df.copy()
-            self._original_dtypes = df.dtypes.to_dict()
-            self._original_col_order = df.columns
 
             # Determine categorical and numerical attributes
             self.num_attrs = metadata["continuous"]
@@ -340,6 +341,13 @@ class SmoteGenerator(Generator):
                 )
             samples = samples.reset_index(drop=True)
 
+            # Post-processing
+            samples = transform_data(
+                df_ref=self._df,
+                df_to_trans=samples,
+                cont_col=self._metadata["continuous"],
+            )
+
             samples.to_csv(
                 Path(save_path)
                 / f"{ustandard.get_date()}_{SmoteGenerator.name}_{num_samples}samples.csv",
@@ -435,27 +443,12 @@ class SmoteGenerator(Generator):
             if self._prediction_type == "Classification":
                 df_final[self._metadata["variable_to_predict"]] = target
 
-            # reorder cols as original df
-            df_final = df_final.astype(self._original_dtypes)
-            df_final = df_final[self._original_col_order]
-
-            # Align the precision
-            for col in self.num_attrs:
-                precision = (
-                    self._df[col]
-                    .apply(
-                        lambda x: len(str(x).split(".")[-1])
-                        if isinstance(x, float)
-                        else 0
-                    )
-                    .max()
-                )
-                df_final[col] = df_final[col].apply(
-                    lambda x: round(x, precision) if isinstance(x, float) else x
-                )
-
-                if self._df[col].dtype == "int":
-                    df_final[col] = df_final[col].astype(int)
+            # Post-processing
+            df_final = transform_data(
+                df_ref=self._df,
+                df_to_trans=df_final,
+                cont_col=self.num_attrs,
+            )
 
             df_final.to_csv(
                 Path(save_path)

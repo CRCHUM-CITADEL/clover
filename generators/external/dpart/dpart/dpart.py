@@ -15,6 +15,8 @@ The following modifications were made to the file:
     - Typo was fixed in warning message for privacy leakage of categorical variables.
     - Unshown warning message was fixed for bounds of continuous variables.
     - Privacy leakage for decoding predictions was fixed.
+    - Tree models were added.
+    - max_depth parameter was added for tree model.
 """
 
 import warnings
@@ -27,7 +29,13 @@ from diffprivlib import BudgetAccountant
 from diffprivlib.utils import PrivacyLeakWarning
 
 from .utils.dependencies import DependencyManager
-from .methods import ProbabilityTensor, LinearRegression, LogisticRegression
+from .methods import (
+    ProbabilityTensor,
+    LinearRegression,
+    LogisticRegression,
+    DecisionTreeClassifier,
+    RandomForestClassifier,
+)
 
 
 logger = getLogger("dpart")
@@ -47,10 +55,10 @@ class dpart:
         bounds: dict = None,
         slack: float = 0.0,
         # dependencies
-        dependency_manager=None,
         visit_order: list = None,
         prediction_matrix: dict = None,
         n_parents=None,
+        **kwargs,
     ):
         # Private budget
         if epsilon is not None:
@@ -63,6 +71,7 @@ class dpart:
             epsilon = {"dependency": None, "methods": {}}
         self._epsilon = epsilon
         self.slack = slack
+        self.params = kwargs
         self.dep_manager = DependencyManager(
             epsilon=self._epsilon.get("dependency", None),
             visit_order=visit_order,
@@ -142,7 +151,17 @@ class dpart:
     def default_method(self, dtype):
         if dtype.kind in "OSb":
             if self.default_categorical == LogisticRegression:
-                return self.default_categorical(max_iter=10000)
+                return self.default_categorical(
+                    max_iter=self.params.get("max_iter", 10000)
+                )
+            elif self.default_categorical == DecisionTreeClassifier:
+                return self.default_categorical(
+                    max_depth=self.params.get("max_depth", 5)
+                )
+            elif self.default_categorical == RandomForestClassifier:
+                return self.default_categorical(
+                    max_depth=self.params.get("max_depth", 5)
+                )
             else:
                 return self.default_categorical()
         return self.default_numerical()

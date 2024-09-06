@@ -89,19 +89,19 @@ class Distinguishability(Metric):
                 "min": 0,
                 "max": 1,
                 "objective": "min",
-            },
-            {
-                "submetric": "prediction_mse_real",
-                "min": 0,
-                "max": 1,
-                "objective": "min",
-            },
-            {
-                "submetric": "prediction_mse_synth",
-                "min": 0,
-                "max": 1,
-                "objective": "min",
-            },
+            # },
+            # {
+            #     "submetric": "prediction_mse_real",
+            #     "min": 0,
+            #     "max": 1,
+            #     "objective": "min",
+            # },
+            # {
+            #     "submetric": "prediction_mse_synth",
+            #     "min": 0,
+            #     "max": 1,
+            #     "objective": "min",
+            # },
             {
                 "submetric": "prediction_auc_rescaled",
                 "min": 0,

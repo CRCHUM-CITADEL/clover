@@ -112,6 +112,7 @@ class Metric(metaclass=ABCMeta):
         df_real: dict[str, pd.DataFrame],
         df_synthetic: dict[str, pd.DataFrame],
         metadata: dict,
+        train_test_ref: bool = False,
     ) -> None:
         """
         Assert that the compute method parameters are consistent.
@@ -120,15 +121,18 @@ class Metric(metaclass=ABCMeta):
         :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
+        :param train_test_ref: a boolean parameter indicating whether the metric is calculated for synthetic data
+          or for the test set as a reference. It triggers or not the consistency check on the length of the sets.
         :return: *None*
         """
 
-        assert (
-            df_real["train"].shape == df_synthetic["train"].shape
-        ), "Train sets must have the same shape"
-        assert (df_real["test"] is None and df_synthetic["test"] is None) or (
-            df_real["test"].shape == df_synthetic["test"].shape
-        ), "Test sets must have the same shape"
+        if train_test_ref is False:
+            assert (
+                df_real["train"].shape == df_synthetic["train"].shape
+            ), "Train sets must have the same shape"
+            assert (df_real["test"] is None and df_synthetic["test"] is None) or (
+                df_real["test"].shape == df_synthetic["test"].shape
+            ), "Test sets must have the same shape"
 
         assert set(df_real["train"].columns) == set(
             df_synthetic["train"].columns

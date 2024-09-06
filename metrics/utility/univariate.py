@@ -263,7 +263,19 @@ class ContinuousStatistics(Metric):
                 "objective": "min",
             },
             {
+                "submetric": "median_l1_distance_train_test_ref",
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            },
+            {
                 "submetric": "iqr_l1_distance",
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            },
+            {
+                "submetric": "iqr_l1_distance_train_test_ref",
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
@@ -296,11 +308,16 @@ class ContinuousStatistics(Metric):
         df_real_cont = df_real["train"].drop(columns=metadata["categorical"])
         df_synth_cont = df_synthetic["train"].drop(columns=metadata["categorical"])
 
+        df_real_cont_test = df_real["test"].drop(columns=metadata["categorical"])
+
         if df_real_cont.shape[1] == 0:
             return {}
 
         median_l1_distance = {}
         iqr_l1_distance = {}
+
+        median_l1_distance_train_test_ref = {}
+        iqr_l1_distance_train_test_ref = {}
 
         for col in df_real_cont.columns:
             min_real = df_real_cont[col].min()
@@ -322,10 +339,43 @@ class ContinuousStatistics(Metric):
                 abs((q75_synth - q25_synth) - (q75_real - q25_real)) / norm_range
             )
 
+            # Run the same measurement for the reference value (between real train and test)
+
+            mini_train_test_ref = min(min_real, df_real_cont_test[col].min())
+            maxi_train_test_ref = max(max_real, df_real_cont_test[col].max())
+            norm_range_train_test_ref = maxi_train_test_ref - mini_train_test_ref
+            if norm_range_train_test_ref == 0:  # divide by 0
+                norm_range_train_test_ref = 1
+
+            median_l1_distance_train_test_ref[col] = (
+                abs(df_real_cont_test[col].median() - df_real_cont[col].median())
+                / norm_range_train_test_ref
+            )
+
+            q75_real_train_test_ref, q25_real_train_test_ref = np.percentile(
+                df_real_cont[col], [75, 25]
+            )
+            q75_synth_train_test_ref, q25_synth_train_test_ref = np.percentile(
+                df_real_cont_test[col], [75, 25]
+            )
+            iqr_l1_distance_train_test_ref[col] = (
+                abs(
+                    (q75_synth_train_test_ref - q25_synth_train_test_ref)
+                    - (q75_real_train_test_ref - q25_real_train_test_ref)
+                )
+                / norm_range_train_test_ref
+            )
+
         res = {
             "average": {
                 "median_l1_distance": np.mean(list(median_l1_distance.values())),
+                "median_l1_distance_train_test_ref": np.mean(
+                    list(median_l1_distance_train_test_ref.values())
+                ),
                 "iqr_l1_distance": np.mean(list(iqr_l1_distance.values())),
+                "iqr_l1_distance_train_test_ref": np.mean(
+                    list(iqr_l1_distance_train_test_ref.values())
+                ),
             },
             "detailed": {
                 "df_real": df_real_cont,
@@ -359,7 +409,7 @@ class ContinuousStatistics(Metric):
             fig, axes_f = plt.subplots(
                 ncols=max_plot_per_window, figsize=figsize, layout="constrained"
             )
-            fig.suptitle(f"Metric: {cls.name} ({f+1}/{num_win})")
+            fig.suptitle(f"Metric: {cls.name} ({f + 1}/{num_win})")
             axes.extend(axes_f)
 
         for i, col in enumerate(report["df_real"].columns):
@@ -514,7 +564,7 @@ class CategoricalStatistics(Metric):
             fig, axes_f = plt.subplots(
                 nrows=max_plot_per_window, figsize=figsize, layout="constrained"
             )
-            fig.suptitle(f"Metric: {cls.name} ({f+1}/{num_win})")
+            fig.suptitle(f"Metric: {cls.name} ({f + 1}/{num_win})")
             axes.extend(axes_f)
 
         for i, col in enumerate(report["real_counts"]):
@@ -613,6 +663,7 @@ class UnivariateDiscreteDistance(Metric, metaclass=ABCMeta):
         df_real: dict[str, pd.DataFrame],
         df_synthetic: dict[str, pd.DataFrame],
         metadata: dict,
+        train_test_ref: bool = False,
     ) -> dict:
         """
         Measure the discrete distance between the real and the synthetic data for each variable.
@@ -622,6 +673,8 @@ class UnivariateDiscreteDistance(Metric, metaclass=ABCMeta):
         :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
+        :param train_test_ref: a boolean parameter indicating whether the metric is calculated for synthetic data
+          or for the test set as a reference. It triggers or not the consistency check on the length of the sets.
         :return: a dictionary with two keys pointing to dictionaries
 
             * **average** -- the average distance
@@ -630,7 +683,9 @@ class UnivariateDiscreteDistance(Metric, metaclass=ABCMeta):
               and the distance between the real and synthetic data
         """
 
-        super().check_consistency_compute_parameters(df_real, df_synthetic, metadata)
+        super().check_consistency_compute_parameters(
+            df_real, df_synthetic, metadata, train_test_ref=train_test_ref
+        )
 
         distance = {}
         for col in df_real["train"].columns:
@@ -648,7 +703,7 @@ class UnivariateDiscreteDistance(Metric, metaclass=ABCMeta):
 
         res = {
             "average": {
-                f"{self.__class__.distance_name}": np.mean(list(distance.values()))
+                f"{self.__class__.distance_name}": np.mean(list(distance.values())),
             },
             "detailed": {f"{self.__class__.distance_name}": distance},
         }
@@ -726,6 +781,7 @@ class ContinuousUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMeta
 
         # Defined for continuous variables only
         df_real_cont = df_real["train"].drop(columns=metadata["categorical"])
+        df_real_cont_test = df_real["test"].drop(columns=metadata["categorical"])
         df_synth_cont = df_synthetic["train"].drop(columns=metadata["categorical"])
         metadata_cont = {
             "continuous": metadata["continuous"],
@@ -740,10 +796,21 @@ class ContinuousUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMeta
             df_ref=df_real_cont, df_tobin=df_synth_cont, bin_size=5
         )
 
+        df_real_bin_ref, df_real_test_bin_ref = upreprocessing.bin_per_column(
+            df_ref=df_real_cont, df_tobin=df_real_cont_test, bin_size=10
+        )
+
         df_real_bin = {"train": df_real_bin, "test": None}
         df_synthetic_bin = {"train": df_synthetic_bin, "test": None}
+        df_ref_test_bin = {"train": df_real_test_bin_ref, "test": None}
 
         res = super().compute(df_real_bin, df_synthetic_bin, metadata_cont)
+        res['average'][f"{self.__class__.distance_name}_train_test_ref"] = super().compute(
+                    df_real_bin, df_ref_test_bin, metadata_cont, train_test_ref=True
+                )['average'][f"{self.__class__.distance_name}"]
+        res['detailed'][f"{self.__class__.distance_name}_train_test_ref"] = super().compute(
+                    df_real_bin, df_ref_test_bin, metadata_cont, train_test_ref=True
+                )['detailed'][f"{self.__class__.distance_name}"]
 
         return res
 
@@ -790,6 +857,7 @@ class CategoricalUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMet
 
         # Defined for categorical variables only
         df_real_cat = df_real["train"].drop(columns=metadata["continuous"])
+        df_real_test_cat = df_real["test"].drop(columns=metadata["continuous"])
         df_synth_cat = df_synthetic["train"].drop(columns=metadata["continuous"])
         metadata_cat = {
             "continuous": [],
@@ -801,9 +869,18 @@ class CategoricalUnivariateDistance(UnivariateDiscreteDistance, metaclass=ABCMet
             return {}
 
         df_real_cat = {"train": df_real_cat, "test": None}
+        df_real_test_cat = {"train": df_real_test_cat, "test": None}
         df_synth_cat = {"train": df_synth_cat, "test": None}
 
-        res = super().compute(df_real_cat, df_synth_cat, metadata_cat)
+        res = super().compute(
+                    df_real_cat, df_synth_cat, metadata_cat
+                )
+        res['average'][f"{self.__class__.distance_name}_train_test_ref"] = super().compute(
+                    df_real_cat, df_real_test_cat, metadata_cat, train_test_ref=True
+                )['average'][f"{self.__class__.distance_name}"]
+        res['detailed'][f"{self.__class__.distance_name}_train_test_ref"] = super().compute(
+                    df_real_cat, df_real_test_cat, metadata_cat, train_test_ref=True
+                )['detailed'][f"{self.__class__.distance_name}"]
 
         return res
 
@@ -841,7 +918,13 @@ class ContinuousUnivariateHellingerDistance(ContinuousUnivariateDistance):
                 "min": 0,
                 "max": 1,
                 "objective": "min",
-            }
+            },
+            {
+                "submetric": cls.distance_name + "_train_test_ref",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            },
         ]
 
     @staticmethod
@@ -889,7 +972,13 @@ class CategoricalUnivariateHellingerDistance(CategoricalUnivariateDistance):
                 "min": 0,
                 "max": 1,
                 "objective": "min",
-            }
+            },
+            {
+                "submetric": cls.distance_name + "_train_test_ref",
+                "min": 0,
+                "max": 1,
+                "objective": "min",
+            },
         ]
 
     @staticmethod
@@ -937,7 +1026,13 @@ class ContinuousUnivariateKLDivergence(ContinuousUnivariateDistance):
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
-            }
+            },
+            {
+                "submetric": cls.distance_name + "_train_test_ref",
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            },
         ]
 
     @staticmethod
@@ -985,7 +1080,13 @@ class CategoricalUnivariateKLDivergence(CategoricalUnivariateDistance):
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
-            }
+            },
+            {
+                "submetric": cls.distance_name + "_train_test_ref",
+                "min": 0,
+                "max": np.inf,
+                "objective": "min",
+            },
         ]
 
     @staticmethod

@@ -53,6 +53,7 @@ class DistanceToClosestRecord(Metric):
         sampling_frac: float = 0.2,
     ):
         super().__init__(random_state)
+        self._random_state = random_state
         self._sampling_frac = sampling_frac
 
     @classmethod
@@ -151,12 +152,19 @@ class DistanceToClosestRecord(Metric):
             n=int(self._sampling_frac * len(df_real["test"])),
             replace=False,
             ignore_index=True,
+            random_state=self._random_state,
         )
         real_control = df_real["test"].sample(
-            frac=self._sampling_frac, replace=False, ignore_index=True
+            frac=self._sampling_frac,
+            replace=False,
+            ignore_index=True,
+            random_state=self._random_state,
         )
         synth = df_synthetic["test"].sample(
-            frac=self._sampling_frac, replace=False, ignore_index=True
+            frac=self._sampling_frac,
+            replace=False,
+            ignore_index=True,
+            random_state=self._random_state,
         )
         if real_train.shape[1] == 0:
             return {}

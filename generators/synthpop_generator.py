@@ -243,18 +243,19 @@ class SynthpopGenerator(Generator):
 
         # Transform discretized variables to origin continuous ones
         samples = samples[self._df.columns]  # same initial columns order
-        samples[self._metadata["continuous"]] = self._kbins.inverse_transform(
-            samples[self._metadata["continuous"]]
-        )
-
-        for idx, col in enumerate(self._metadata["continuous"]):
-            half_bin_width = (
-                self._kbins.bin_edges_[idx][1] - self._kbins.bin_edges_[idx][0]
-            ) / 2
-
-            samples[col] = samples[col] + np.random.uniform(
-                -half_bin_width, half_bin_width, size=len(samples)
+        if self.epsilon is not None:
+            samples[self._metadata["continuous"]] = self._kbins.inverse_transform(
+                samples[self._metadata["continuous"]]
             )
+
+            for idx, col in enumerate(self._metadata["continuous"]):
+                half_bin_width = (
+                    self._kbins.bin_edges_[idx][1] - self._kbins.bin_edges_[idx][0]
+                ) / 2
+
+                samples[col] = samples[col] + np.random.uniform(
+                    -half_bin_width, half_bin_width, size=len(samples)
+                )
 
         # Post-processing
         samples = transform_data(

@@ -6,6 +6,7 @@ import warnings
 # 3rd party packages
 import pandas as pd
 import numpy as np
+from pandas.core.dtypes.common import is_numeric_dtype
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, MinMaxScaler
 from diffprivlib.utils import PrivacyLeakWarning
 
@@ -113,14 +114,23 @@ class MSTGenerator(Generator):
         categories = []
         for col in self._metadata["categorical"]:
             if col in self.bounds:
-                categories.append(self.bounds[col]["categories"])
+                if is_numeric_dtype(self._df[col]):
+                    categories.append(sorted(self.bounds[col]["categories"]))
+                else:
+                    categories.append(self.bounds[col]["categories"])
             else:
-                categories.append(list(self._df[col].unique()))
+                if is_numeric_dtype(self._df[col]):
+                    categories.append(sorted(list(self._df[col].unique())))
+                else:
+                    categories.append(list(self._df[col].unique()))
 
                 warnings.warn(
                     f"List of categories not specified for column '{col}', categories will be extracted from real data for this variable",
                     PrivacyLeakWarning,
                 )
+
+
+
 
         self._encoder = OrdinalEncoder(
             categories=categories

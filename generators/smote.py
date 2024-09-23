@@ -480,7 +480,7 @@ class SmoteGenerator(Generator):
 
             # Post-processing
             df_final = transform_data(
-                df_ref=self._df,
+                df_ref=self.df_original,
                 df_to_trans=df_final,
                 cont_col=self.num_attrs,
             )

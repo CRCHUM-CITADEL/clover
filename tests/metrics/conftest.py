@@ -9,7 +9,7 @@ def df_mock_wbcd(df_wbcd: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
     Generate the continuous mock Wisconsin Breast Cancer Dataset wbcd without ids.
 
     :param df_wbcd: the wbcd dataset fixture, split into **train** and **test** sets
-    :return: the dataframe containing the mock wbcd dataset, split into **train** and **test** sets
+    :return: the dataframe containing the mock wbcd dataset, split into **train**, **test** and **2nd_gen** sets
     """
     # Shuffle each column with replacement
 

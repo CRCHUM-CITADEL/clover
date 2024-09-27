@@ -77,9 +77,9 @@ class SmoteGenerator(Generator):
             self._contains_cont_indep_vars = None
             self._contains_cat_indep_vars = None
         else:  # Initiate DP generator
-            assert not any(
-                df.columns.str.contains("_")
-            ), "Please remove the '_' from column names for correct inverse decoding"
+            # assert not any(
+            #     df.columns.str.contains("_")
+            # ), "Please remove the '_' from column names for correct inverse decoding"
 
             self.l_connectivity = l_connectivity
             self.nu = nu
@@ -130,71 +130,83 @@ class SmoteGenerator(Generator):
         # 1. Transform categorical features into continuous features
         # 2. Rescale features so that each feature contains entries in the same range, i.e., [-r, r]
         else:
-            # Process categorical variables
-            self._df[self.cat_attrs] = self._df[self.cat_attrs].astype("category")
+            if len(self.cat_attrs) > 0:
+                # Process categorical variables
+                self._df[self.cat_attrs] = self._df[self.cat_attrs].astype("category")
+                # Create a dictionary with all the unique categories (all columns in one dict)
+                # This will then be used to map back the created names to the original names of the categories
+                self._cat_dict = {}
 
-            for cat_attr in self.cat_attrs:
-                # add col name to every categorical entry to make them distinguishable for embedding
-                self._df[cat_attr] = cat_attr + "_" + self._df[cat_attr].astype("str")
+                for cat_attr in self.cat_attrs:
+                    # Add unique values and their mapping to the mapping dictionary created above
+                    unique_values = self._df[cat_attr].unique()
+                    unique_dict = {f"{cat_attr}_{value}": value for value in unique_values}
+                    self._cat_dict.update(unique_dict)
+                    # add col name to every categorical entry to make them distinguishable for embedding
+                    self._df[cat_attr] = cat_attr + "_" + self._df[cat_attr].astype("str")
 
-            # Reorder cols
-            self._df = self._df[[*self.cat_attrs, *self.num_attrs]]
+                # Reorder cols
+                self._df = self._df[[*self.cat_attrs, *self.num_attrs]]
 
-            # Transform the categorical attributes into ordinal numbers
-            vocabulary_classes = []
+                # Transform the categorical attributes into ordinal numbers
+                vocabulary_classes = []
 
-            for col, series in self._df[self.cat_attrs].items():
-                if col not in self.bounds:
-                    warnings.warn(
-                        f"List of categories not specified for column '{col}', categories will be extracted from real data for this variable",
-                        PrivacyLeakWarning,
-                    )
-                    unique_value = list(np.unique(self._df[col]))
-                else:
-                    unique_value_raw = self.bounds[col]["categories"]
-                    unique_value = [col + "_" + str(val) for val in unique_value_raw]
+                for col, series in self._df[self.cat_attrs].items():
+                    if col not in self.bounds:
+                        warnings.warn(
+                            f"List of categories not specified for column '{col}', categories will be extracted from real data for this variable",
+                            PrivacyLeakWarning,
+                        )
+                        unique_value = list(np.unique(self._df[col]))
+                    else:
+                        unique_value_raw = self.bounds[col]["categories"]
+                        unique_value = [col + "_" + str(val) for val in unique_value_raw]
+                        print(col, ' ', unique_value) # TO DELETE
 
-                vocabulary_classes += unique_value
+                    vocabulary_classes += unique_value
 
-            vocabulary_classes = np.sort(vocabulary_classes)
-            self.label_encoder = LabelEncoder()
-            self.label_encoder.fit(vocabulary_classes)
-            train_cat_scaled = self._df[self.cat_attrs].apply(
-                self.label_encoder.transform
-            )
+                vocabulary_classes = np.sort(vocabulary_classes)
+                print(vocabulary_classes)
+                self.label_encoder = LabelEncoder()
+                self.label_encoder.fit(vocabulary_classes)
+                train_cat_scaled = self._df[self.cat_attrs].apply(
+                    self.label_encoder.transform
+                )
 
-            # collect unique values of each categorical attribute
-            self.vocab_per_attr = {
-                cat_attr: set(train_cat_scaled[cat_attr]) for cat_attr in self.cat_attrs
-            }
+                # collect unique values of each categorical attribute
+                self.vocab_per_attr = {
+                    cat_attr: set(train_cat_scaled[cat_attr]) for cat_attr in self.cat_attrs
+                }
 
-            # Convert to tensor
-            train_cat_torch = torch.LongTensor(train_cat_scaled.values)
+                # Convert to tensor
+                train_cat_torch = torch.LongTensor(train_cat_scaled.values)
 
-            # determine number unique categorical tokens
-            n_cat_tokens = len(vocabulary_classes)
+                # determine number unique categorical tokens
+                n_cat_tokens = len(vocabulary_classes)
 
-            self.embedding = nn.Embedding(
-                n_cat_tokens, self.cat_emb_dim, max_norm=None, scale_grad_by_freq=False
-            )  # each value is converted ot a n_cat_emb dimension vector
-            self.embedding.weight.requires_grad = False
+                self.embedding = nn.Embedding(
+                    n_cat_tokens, self.cat_emb_dim, max_norm=None, scale_grad_by_freq=False
+                )  # each value is converted to an n_cat_emb dimension vector
+                self.embedding.weight.requires_grad = False
 
-            x_cat_emb = self.embedding(train_cat_torch)  # tensor
-            x_cat_emb = x_cat_emb.view(
-                -1, x_cat_emb.shape[1] * x_cat_emb.shape[2]
-            ).numpy()
+                x_cat_emb = self.embedding(train_cat_torch)  # tensor
+                x_cat_emb = x_cat_emb.view(
+                    -1, x_cat_emb.shape[1] * x_cat_emb.shape[2]
+                ).numpy()
 
-            self.x_cat_emb_col = [
-                f"{col}_{i}" for col in self.cat_attrs for i in range(self.cat_emb_dim)
-            ]
+                self.x_cat_emb_col = [
+                    f"{col}_{i}" for col in self.cat_attrs for i in range(self.cat_emb_dim)
+                ]
 
-            self.df_transformed_cat = pd.DataFrame(
-                x_cat_emb, columns=self.x_cat_emb_col
-            )
+                self.df_transformed_cat = pd.DataFrame(
+                    x_cat_emb, columns=self.x_cat_emb_col
+                )
 
             self.encoders_priv = (
                 {}
-            )  # Encoder to scale the range of each variable to provided bounds and no decoding should be performed
+            )
+
+            # Encoder to scale the range of each variable to provided bounds and no decoding should be performed
             self.df_transformed_num = self._df[
                 self.num_attrs
             ]  # Initiate the transformed continuous data
@@ -222,9 +234,12 @@ class SmoteGenerator(Generator):
                     )
 
             # Combine the transformed categorical and numerical data
-            self.df_transformed = pd.concat(
-                [self.df_transformed_num, self.df_transformed_cat], axis=1
-            )
+            if len(self.cat_attrs)>0:
+                self.df_transformed = pd.concat(
+                    [self.df_transformed_num, self.df_transformed_cat], axis=1
+                )
+            else:
+                self.df_transformed = self.df_transformed_num
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -400,45 +415,51 @@ class SmoteGenerator(Generator):
 
             # Separate continuous and categorical features
             df_inverse_num = df_inverse[self.num_attrs]
-            df_inverse_cat = df_inverse[self.x_cat_emb_col]
 
-            # Decode categorical features
-            embedding_lookup = self.embedding.weight.data  # get embedding lookup matrix
+            if len(self.cat_attrs)>0:
+                df_inverse_cat = df_inverse[self.x_cat_emb_col]
 
-            # reshape back to n * n_dim_cat * cat_emb_dim
-            sample_cat = df_inverse_cat.values.reshape(
-                -1, len(self.cat_attrs), self.cat_emb_dim
-            )
+                # Decode categorical features
+                embedding_lookup = self.embedding.weight.data  # get embedding lookup matrix
 
-            # compute pairwise distances; shape = (# of sample, # of value in lookup, # of attributes)
-            distances = torch.cdist(x1=embedding_lookup, x2=torch.Tensor(sample_cat))
+                # reshape back to n * n_dim_cat * cat_emb_dim
+                sample_cat = df_inverse_cat.values.reshape(
+                    -1, len(self.cat_attrs), self.cat_emb_dim
+                )
 
-            # get the closest distance based on the embeddings that belong to a column category
-            z_cat_df = pd.DataFrame(
-                index=range(len(sample_cat)), columns=self.cat_attrs
-            )
-            nearest_dist_df = pd.DataFrame(
-                index=range(len(sample_cat)), columns=self.cat_attrs
-            )
-            for attr_idx, attr_name in enumerate(self.cat_attrs):
-                attr_emb_idx = list(
-                    self.vocab_per_attr[attr_name]
-                )  # in ascending order
-                attr_distances = distances[:, attr_emb_idx, attr_idx]
-                nearest_values, nearest_idx = torch.min(attr_distances, dim=1)
-                nearest_idx = nearest_idx.numpy()
+                # compute pairwise distances; shape = (# of sample, # of value in lookup, # of attributes)
+                distances = torch.cdist(x1=embedding_lookup, x2=torch.Tensor(sample_cat))
 
-                z_cat_df[attr_name] = np.array(attr_emb_idx)[
-                    nearest_idx
-                ]  # need to map emb indices back to column indices
-                nearest_dist_df[attr_name] = nearest_values.numpy()
+                # get the closest distance based on the embeddings that belong to a column category
+                z_cat_df = pd.DataFrame(
+                    index=range(len(sample_cat)), columns=self.cat_attrs
+                )
+                nearest_dist_df = pd.DataFrame(
+                    index=range(len(sample_cat)), columns=self.cat_attrs
+                )
+                for attr_idx, attr_name in enumerate(self.cat_attrs):
+                    attr_emb_idx = list(
+                        self.vocab_per_attr[attr_name]
+                    )  # in ascending order
+                    attr_distances = distances[:, attr_emb_idx, attr_idx]
+                    nearest_values, nearest_idx = torch.min(attr_distances, dim=1)
+                    nearest_idx = nearest_idx.numpy()
 
-            z_cat_df = z_cat_df.apply(self.label_encoder.inverse_transform)
+                    z_cat_df[attr_name] = np.array(attr_emb_idx)[
+                        nearest_idx
+                    ]  # need to map emb indices back to column indices
+                    nearest_dist_df[attr_name] = nearest_values.numpy()
 
-            df_final = pd.concat([z_cat_df, df_inverse_num], axis=1)
+                z_cat_df = z_cat_df.apply(self.label_encoder.inverse_transform)
+
+                df_final = pd.concat([z_cat_df, df_inverse_num], axis=1)
+
+            else:
+                df_final = df_inverse_num
 
             for cat_attr in self.cat_attrs:
-                df_final[cat_attr] = df_final[cat_attr].str.split("_", n=1).str.get(-1)
+                #df_final[cat_attr] = df_final[cat_attr].str.split("_", n=1).str.get(-1)
+                df_final[cat_attr] = df_final[cat_attr].replace(self._cat_dict)
 
             if self._prediction_type == "Classification":
                 df_final[self._metadata["variable_to_predict"]] = target

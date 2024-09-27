@@ -56,6 +56,10 @@ class FinDiffGenerator(Generator):
     Wrapper of the tabular diffusion models FinDiff https://github.com/sattarov/FinDiff.
     The original model was modified to implement differential privacy.
 
+    Note: The authors of the original paper tested the model on three datasets, the smallest of which, Credit Default,
+    contains 30,000 observations. If the model does not function optimally with your available observations, consider
+    augmenting your data.
+
     :cvar name: the name of the generator
     :vartype name: str
 
@@ -108,17 +112,17 @@ class FinDiffGenerator(Generator):
         diff_beta_start_end: list[float] = [1e-4, 0.02],
         scheduler: str = "linear",
         epsilon: Union[float, Dict[str, float]] = None,
-        delta: float = None,
-        max_grad_norm: float = None,
+        delta: float = 1e-5,
+        max_grad_norm: float = 1.0,
         preprocess_metadata: Dict[str, dict] = None,
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
         bounds = preprocess_metadata
 
-        assert not any(
-            df.columns.str.contains("_")
-        ), "Please remove the '_' from column names for correct inverse decoding"
+        #assert not any(
+        #    df.columns.str.contains("_")
+        #), "Please remove the '_' from column names for correct inverse decoding"
 
         # set seeds
         if random_state is not None:
@@ -192,8 +196,17 @@ class FinDiffGenerator(Generator):
                 )
 
             self._df[self.cat_attrs] = self._df[self.cat_attrs].astype("category")
+            # Create a dictionary with all the unique categories (all columns in one dict)
+            # This will then be used to map back the created names to the original names of the categories
+            self._cat_dict = {}
 
             for cat_attr in self.cat_attrs:
+
+                # Add unique values and their mapping to the mapping dictionary created above
+                unique_values = self._df[cat_attr].unique()
+                unique_dict = {f"{cat_attr}_{value}": value for value in unique_values}
+                self._cat_dict.update(unique_dict)
+
                 # add col name to every categorical entry to make them distinguishable for embedding
                 self._df[cat_attr] = cat_attr + "_" + self._df[cat_attr].astype("str")
 
@@ -247,8 +260,17 @@ class FinDiffGenerator(Generator):
             )
         else:  # DP mode with (at least some) bounds provided
             self._df[self.cat_attrs] = self._df[self.cat_attrs].astype("category")
+            # Create a dictionary with all the unique categories (all columns in one dict)
+            # This will then be used to map back the created names to the original names of the categories
+            self._cat_dict = {}
 
             for cat_attr in self.cat_attrs:
+
+                # Add unique values and their mapping to the mapping dictionary created above
+                unique_values = self._df[cat_attr].unique()
+                unique_dict = {f"{cat_attr}_{value}": value for value in unique_values}
+                self._cat_dict.update(unique_dict)
+
                 # add col name to every categorical entry to make them distinguishable for embedding
                 self._df[cat_attr] = cat_attr + "_" + self._df[cat_attr].astype("str")
 
@@ -431,20 +453,21 @@ class FinDiffGenerator(Generator):
         :return: the generated samples
         """
 
-        with ustandard.HiddenPrints():
-            samples = self._gen.sample(
-                n_samples=num_samples,
-                label=None,
-                num_attrs=self.num_attrs,
-                cat_attrs=self.cat_attrs,
-                vocab_per_attr=self.vocab_per_attr,
-                num_scaler=self.num_scaler,
-                label_encoder=self.label_encoder,
-            )
+        #with ustandard.HiddenPrints():
+        samples = self._gen.sample(
+            n_samples=num_samples,
+            label=None,
+            num_attrs=self.num_attrs,
+            cat_attrs=self.cat_attrs,
+            vocab_per_attr=self.vocab_per_attr,
+            num_scaler=self.num_scaler,
+            label_encoder=self.label_encoder,
+        )
 
         # Remove the prefix from the categorical variables
         for cat_attr in self.cat_attrs:
-            samples[cat_attr] = samples[cat_attr].str.split("_", n=1).str.get(-1)
+            #samples[cat_attr] = samples[cat_attr].str.split("_", n=1).str.get(-1)
+            samples[cat_attr] = samples[cat_attr].replace(self._cat_dict)
 
         # Post-processing
         samples = transform_data(

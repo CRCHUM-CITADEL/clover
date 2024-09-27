@@ -77,6 +77,8 @@ class SynthpopGenerator(Generator):
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
+        assert not (epsilon is not None and max_depth is None), "max_depth cannot be None when DP is used"
+
         bounds = preprocess_metadata
 
         self.epsilon = epsilon

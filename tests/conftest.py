@@ -57,3 +57,29 @@ def metadata_wbcd() -> dict:
     }
 
     return metadata
+
+
+@pytest.fixture(scope="package")
+def preprocess_metadata_wbcd() -> dict:
+    """
+    Return the preprocessing metadata associating with the Wisconsin Breast Cancer Dataset wbcd dataset.
+
+    :return: a dict containing the preprocessing metadata for training differentially private generator
+    """
+
+    preprocess_metadata = {
+        "ClumpThickness": {"min": 1, "max": 10},
+        "UniformityofCellSize": {"min": 1, "max": 10},
+        "UniformityofCellShape": {"min": 1, "max": 10},
+        "MarginalAdhesion": {"min": 1, "max": 10},
+        "SingleEpithelialCellSize": {"min": 1, "max": 10},
+        "BlandChromatin": {"min": 1, "max": 10},
+        "Mitoses": {"min": 1, "max": 10},
+        "BareNuclei": {"min": 1, "max": 10},
+        "Class": {"categories": [0, 1]},
+        "NormalNucleoli": {
+            "categories": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+        },
+    }
+
+    return preprocess_metadata

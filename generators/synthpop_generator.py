@@ -133,53 +133,67 @@ class SynthpopGenerator(Generator):
         :return: *None*
         """
 
-        self._df[self._metadata["categorical"]] = self._df[
-            self._metadata["categorical"]
-        ].astype(
-            "category"
-        )  # Synthpop requires "category" for categories and not object or str
+        if len(self._metadata["categorical"])>0:
+            self._df[self._metadata["categorical"]] = self._df[
+                self._metadata["categorical"]
+            ].astype(
+                "category"
+            )  # Synthpop requires "category" for categories and not object or str
 
         if self.epsilon is None:
             self._dtypes = self._df.dtypes.apply(
                 lambda x: x.name.split("64")[0]
             ).to_dict()  # Non-dp generator: only 'int' or 'float' supported without any number after
         else:  # DP mode
-            # Rescale continuous variables to min and max to prevent privacy leakage
-            df_cont_rescaled = pd.DataFrame(columns=self._metadata["continuous"])
+            if len(self._metadata["continuous"]) > 0:
+                # Rescale continuous variables to min and max to prevent privacy leakage
+                df_cont_rescaled = pd.DataFrame(columns=self._metadata["continuous"])
 
-            for col, series in self._df[self._metadata["continuous"]].items():
-                if col not in self.bounds:
-                    warnings.warn(
-                        f"upper and lower bounds not specified for column '{col}'",
-                        PrivacyLeakWarning,
+                for col, series in self._df[self._metadata["continuous"]].items():
+                    if col not in self.bounds:
+                        warnings.warn(
+                            f"upper and lower bounds not specified for column '{col}'",
+                            PrivacyLeakWarning,
+                        )
+                        self.bounds[col] = {"min": series.min(), "max": series.max()}
+                    self._scaler[col] = MinMaxScaler(
+                        feature_range=(self.bounds[col]["min"], self.bounds[col]["max"])
                     )
-                    self.bounds[col] = {"min": series.min(), "max": series.max()}
-                self._scaler[col] = MinMaxScaler(
-                    feature_range=(self.bounds[col]["min"], self.bounds[col]["max"])
+
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        df_cont_rescaled[col] = pd.Series(
+                            self._scaler[col].fit_transform(self._df[[col]]).squeeze(),
+                            name=col,
+                            index=self._df.index,
+                        )
+
+                # Convert continuous columns into categorical ones
+                self._kbins = KBinsDiscretizer(
+                    n_bins=self.n_bins, encode="ordinal", strategy="uniform"
                 )
+                self._kbins.fit(df_cont_rescaled[self._metadata["continuous"]])
+                df_cont = pd.DataFrame(
+                    self._kbins.transform(df_cont_rescaled[self._metadata["continuous"]]),
+                    columns=self._metadata["continuous"],
+                ).astype("category")
 
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    df_cont_rescaled[col] = pd.Series(
-                        self._scaler[col].fit_transform(self._df[[col]]).squeeze(),
-                        name=col,
-                        index=self._df.index,
-                    )
-
-            # Convert continuous columns into categorical ones
-            self._kbins = KBinsDiscretizer(
-                n_bins=self.n_bins, encode="ordinal", strategy="uniform"
-            )
-            self._kbins.fit(df_cont_rescaled[self._metadata["continuous"]])
-            df_cont = pd.DataFrame(
-                self._kbins.transform(df_cont_rescaled[self._metadata["continuous"]]),
-                columns=self._metadata["continuous"],
-            ).astype("category")
-
-            df_cat = self._df[self._metadata["categorical"]]
+            if len(self._metadata["categorical"]) > 0:
+                df_cat = self._df[self._metadata["categorical"]]
 
             # Merge the preprocessed dataframes
-            self._df_trans = pd.concat([df_cont, df_cat], axis=1)
+            #self._df_trans = pd.concat([df_cont, df_cat], axis=1)
+            try:
+                df_cont
+            except NameError:
+                df_cont = None
+
+            try:
+                df_cat
+            except NameError:
+                df_cat = None
+
+            self._df_trans = pd.concat([df for df in [df_cont, df_cat] if df is not None], axis=1)
 
     def fit(self, save_path: Union[Path, str]) -> None:
         """
@@ -246,18 +260,19 @@ class SynthpopGenerator(Generator):
         # Transform discretized variables to origin continuous ones
         samples = samples[self._df.columns]  # same initial columns order
         if self.epsilon is not None:
-            samples[self._metadata["continuous"]] = self._kbins.inverse_transform(
-                samples[self._metadata["continuous"]]
-            )
-
-            for idx, col in enumerate(self._metadata["continuous"]):
-                half_bin_width = (
-                    self._kbins.bin_edges_[idx][1] - self._kbins.bin_edges_[idx][0]
-                ) / 2
-
-                samples[col] = samples[col] + np.random.uniform(
-                    -half_bin_width, half_bin_width, size=len(samples)
+            if len(self._metadata["continuous"]) > 0:
+                samples[self._metadata["continuous"]] = self._kbins.inverse_transform(
+                    samples[self._metadata["continuous"]]
                 )
+
+                for idx, col in enumerate(self._metadata["continuous"]):
+                    half_bin_width = (
+                        self._kbins.bin_edges_[idx][1] - self._kbins.bin_edges_[idx][0]
+                    ) / 2
+
+                    samples[col] = samples[col] + np.random.uniform(
+                        -half_bin_width, half_bin_width, size=len(samples)
+                    )
 
         # Post-processing
         samples = transform_data(

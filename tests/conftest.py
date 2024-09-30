@@ -15,13 +15,12 @@ def df_wbcd() -> dict[str, pd.DataFrame]:
     data = pd.read_csv(config.WBCD_DATASET_FILEPATH)
     data = data.drop(columns="Sample_code_number")  # identifier not needed
 
-    # Remove the underscores from the column names
-    data.rename(columns=lambda x: x.replace("_", ""), inplace=True)
-
     data["Class"] = (data["Class"] / 2 - 1).astype(
         "int"
     )  # Class 0 or 1 instead of 2 and 4
-    data["NormalNucleoli"] = data["NormalNucleoli"].astype(str)  # Categorical variable
+    data["Normal_Nucleoli"] = data["Normal_Nucleoli"].astype(
+        str
+    )  # Categorical variable
 
     # Split train / test
     df = {}
@@ -43,16 +42,16 @@ def metadata_wbcd() -> dict:
 
     metadata = {
         "continuous": [
-            "ClumpThickness",
-            "UniformityofCellSize",
-            "UniformityofCellShape",
-            "MarginalAdhesion",
-            "SingleEpithelialCellSize",
-            "BlandChromatin",
+            "Clump_Thickness",
+            "Uniformity_of_Cell_Size",
+            "Uniformity_of_Cell_Shape",
+            "Marginal_Adhesion",
+            "Single_Epithelial_Cell_Size",
+            "Bland_Chromatin",
             "Mitoses",
-            "BareNuclei",
+            "Bare_Nuclei",
         ],
-        "categorical": ["Class", "NormalNucleoli"],
+        "categorical": ["Class", "Normal_Nucleoli"],
         "variable_to_predict": "Class",
     }
 
@@ -68,16 +67,16 @@ def preprocess_metadata_wbcd() -> dict:
     """
 
     preprocess_metadata = {
-        "ClumpThickness": {"min": 1, "max": 10},
-        "UniformityofCellSize": {"min": 1, "max": 10},
-        "UniformityofCellShape": {"min": 1, "max": 10},
-        "MarginalAdhesion": {"min": 1, "max": 10},
-        "SingleEpithelialCellSize": {"min": 1, "max": 10},
-        "BlandChromatin": {"min": 1, "max": 10},
+        "Clump_Thickness": {"min": 1, "max": 10},
+        "Uniformity_of_Cell_Size": {"min": 1, "max": 10},
+        "Uniformity_of_Cell_Shape": {"min": 1, "max": 10},
+        "Marginal_Adhesion": {"min": 1, "max": 10},
+        "Single_Epithelial_Cell_Size": {"min": 1, "max": 10},
+        "Bland_Chromatin": {"min": 1, "max": 10},
         "Mitoses": {"min": 1, "max": 10},
-        "BareNuclei": {"min": 1, "max": 10},
+        "Bare_Nuclei": {"min": 1, "max": 10},
         "Class": {"categories": [0, 1]},
-        "NormalNucleoli": {
+        "Normal_Nucleoli": {
             "categories": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
         },
     }

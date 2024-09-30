@@ -120,9 +120,9 @@ class FinDiffGenerator(Generator):
 
         bounds = preprocess_metadata
 
-        #assert not any(
+        # assert not any(
         #    df.columns.str.contains("_")
-        #), "Please remove the '_' from column names for correct inverse decoding"
+        # ), "Please remove the '_' from column names for correct inverse decoding"
 
         # set seeds
         if random_state is not None:
@@ -201,7 +201,6 @@ class FinDiffGenerator(Generator):
             self._cat_dict = {}
 
             for cat_attr in self.cat_attrs:
-
                 # Add unique values and their mapping to the mapping dictionary created above
                 unique_values = self._df[cat_attr].unique()
                 unique_dict = {f"{cat_attr}_{value}": value for value in unique_values}
@@ -265,7 +264,6 @@ class FinDiffGenerator(Generator):
             self._cat_dict = {}
 
             for cat_attr in self.cat_attrs:
-
                 # Add unique values and their mapping to the mapping dictionary created above
                 unique_values = self._df[cat_attr].unique()
                 unique_dict = {f"{cat_attr}_{value}": value for value in unique_values}
@@ -453,7 +451,7 @@ class FinDiffGenerator(Generator):
         :return: the generated samples
         """
 
-        #with ustandard.HiddenPrints():
+        # with ustandard.HiddenPrints():
         samples = self._gen.sample(
             n_samples=num_samples,
             label=None,
@@ -466,7 +464,7 @@ class FinDiffGenerator(Generator):
 
         # Remove the prefix from the categorical variables
         for cat_attr in self.cat_attrs:
-            #samples[cat_attr] = samples[cat_attr].str.split("_", n=1).str.get(-1)
+            # samples[cat_attr] = samples[cat_attr].str.split("_", n=1).str.get(-1)
             samples[cat_attr] = samples[cat_attr].replace(self._cat_dict)
 
         # Post-processing

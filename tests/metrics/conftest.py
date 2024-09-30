@@ -25,7 +25,6 @@ def df_mock_wbcd(df_wbcd: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
     )
 
     for set in ["train", "test"]:
-
         # Ensure the support coverage is different
         df[set] = df[set].replace(
             {

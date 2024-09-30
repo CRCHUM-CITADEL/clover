@@ -129,9 +129,6 @@ class MSTGenerator(Generator):
                     PrivacyLeakWarning,
                 )
 
-
-
-
         self._encoder = OrdinalEncoder(
             categories=categories
         )  # One-Hot encoder does not work with the method

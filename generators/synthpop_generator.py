@@ -77,7 +77,9 @@ class SynthpopGenerator(Generator):
     ):
         super().__init__(df, metadata, random_state, generator_filepath)
 
-        assert not (epsilon is not None and max_depth is None), "max_depth cannot be None when DP is used"
+        assert not (
+            epsilon is not None and max_depth is None
+        ), "max_depth cannot be None when DP is used"
 
         bounds = preprocess_metadata
 
@@ -133,7 +135,7 @@ class SynthpopGenerator(Generator):
         :return: *None*
         """
 
-        if len(self._metadata["categorical"])>0:
+        if len(self._metadata["categorical"]) > 0:
             self._df[self._metadata["categorical"]] = self._df[
                 self._metadata["categorical"]
             ].astype(
@@ -174,7 +176,9 @@ class SynthpopGenerator(Generator):
                 )
                 self._kbins.fit(df_cont_rescaled[self._metadata["continuous"]])
                 df_cont = pd.DataFrame(
-                    self._kbins.transform(df_cont_rescaled[self._metadata["continuous"]]),
+                    self._kbins.transform(
+                        df_cont_rescaled[self._metadata["continuous"]]
+                    ),
                     columns=self._metadata["continuous"],
                 ).astype("category")
 
@@ -182,7 +186,7 @@ class SynthpopGenerator(Generator):
                 df_cat = self._df[self._metadata["categorical"]]
 
             # Merge the preprocessed dataframes
-            #self._df_trans = pd.concat([df_cont, df_cat], axis=1)
+            # self._df_trans = pd.concat([df_cont, df_cat], axis=1)
             try:
                 df_cont
             except NameError:
@@ -193,7 +197,9 @@ class SynthpopGenerator(Generator):
             except NameError:
                 df_cat = None
 
-            self._df_trans = pd.concat([df for df in [df_cont, df_cat] if df is not None], axis=1)
+            self._df_trans = pd.concat(
+                [df for df in [df_cont, df_cat] if df is not None], axis=1
+            )
 
     def fit(self, save_path: Union[Path, str]) -> None:
         """

@@ -161,6 +161,13 @@ class FinDiffGenerator(Generator):
         self.max_grad_norm = max_grad_norm
         self.bounds = bounds
 
+        self._contains_num, self._contains_cat = False, False
+
+        if len(self._metadata['continuous']) > 0:
+            self._contains_num = True
+        if len(self._metadata['categorical']) > 0:
+            self._contains_cat = True
+
         if epsilon == {"preprocessing": None, "fitting": None}:
             self.epsilon = None
 
@@ -257,6 +264,7 @@ class FinDiffGenerator(Generator):
                 num_workers=0,  # number of workers, useful for parallelization
                 shuffle=True,
             )
+
         else:  # DP mode with (at least some) bounds provided
             self._df[self.cat_attrs] = self._df[self.cat_attrs].astype("category")
             # Create a dictionary with all the unique categories (all columns in one dict)
@@ -280,42 +288,43 @@ class FinDiffGenerator(Generator):
             # Note the correlation between variables are not preserved, but this won't affect the data transformation.
 
             # Calculate the budget allocated to each variable
-            eps_per_var = self.epsilon["preprocessing"] / len(self.num_attrs)
+            if len(self._metadata['continuous'])>0:
+                eps_per_var = self.epsilon["preprocessing"] / len(self.num_attrs)
 
-            df_num_synth = pd.DataFrame(
-                index=range(len(self._df) * 100), columns=self.num_attrs
-            )  # Generate 100x more data by default
+                df_num_synth = pd.DataFrame(
+                    index=range(len(self._df) * 100), columns=self.num_attrs
+                )  # Generate 100x more data by default
 
-            for col, series in self._df[self.num_attrs].items():
-                if col not in self.bounds:
-                    warnings.warn(
-                        f"Upper and lower bounds not specified for column '{col}', transformer will be trained on real data for this variable",
-                        PrivacyLeakWarning,
+                for col, series in self._df[self.num_attrs].items():
+                    if col not in self.bounds:
+                        warnings.warn(
+                            f"Upper and lower bounds not specified for column '{col}', transformer will be trained on real data for this variable",
+                            PrivacyLeakWarning,
+                        )
+                        df_num_synth[col][: len(self._df)] = self._df[col]
+                    else:
+                        self.eps_spent_preprocessing += eps_per_var
+                        df_num_synth[col] = generate_synth_var(
+                            var=self._df[col],
+                            min=self.bounds[col]["min"],
+                            max=self.bounds[col]["max"],
+                            epsilon=eps_per_var,
+                            n=len(self._df) * 100,  # Generate 100x more data by default
+                            n_bins=100,  # 100 bins by default
+                        )
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    # Quantile transformation for numerical vars
+                    self.num_scaler = QuantileTransformer(
+                        output_distribution="normal", random_state=self._random_state
                     )
-                    df_num_synth[col][: len(self._df)] = self._df[col]
-                else:
-                    self.eps_spent_preprocessing += eps_per_var
-                    df_num_synth[col] = generate_synth_var(
-                        var=self._df[col],
-                        min=self.bounds[col]["min"],
-                        max=self.bounds[col]["max"],
-                        epsilon=eps_per_var,
-                        n=len(self._df) * 100,  # Generate 100x more data by default
-                        n_bins=100,  # 100 bins by default
+                    # Fit on synthetic data
+                    self.num_scaler.fit(df_num_synth.values)
+                    # Transform the real data
+                    train_num_scaled = self.num_scaler.transform(
+                        self._df[self.num_attrs].values
                     )
-
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                # Quantile transformation for numerical vars
-                self.num_scaler = QuantileTransformer(
-                    output_distribution="normal", random_state=self._random_state
-                )
-                # Fit on synthetic data
-                self.num_scaler.fit(df_num_synth.values)
-                # Transform the real data
-                train_num_scaled = self.num_scaler.transform(
-                    self._df[self.num_attrs].values
-                )
 
             # Transform the categorical attributes into ordinal numbers
             vocabulary_classes = []
@@ -350,13 +359,17 @@ class FinDiffGenerator(Generator):
             }
 
             # Convert to tensor
-            train_num_torch = torch.FloatTensor(train_num_scaled)
-            train_cat_torch = torch.LongTensor(train_cat_scaled.values)
+            if self._contains_num:
+                train_num_torch = torch.FloatTensor(train_num_scaled)
+            else:
+                train_num_torch = None
 
-            train_set = TensorDataset(
-                train_cat_torch,  # categorical attributes
-                train_num_torch,  # numerical attributes
-            )
+            if self._contains_cat:
+                train_cat_torch = torch.LongTensor(train_cat_scaled.values)
+            else:
+                train_cat_torch = None
+
+            train_set = TensorDataset(*[tens for tens in [train_cat_torch, train_num_torch] if tens is not None])
 
             self.dataloader = DataLoader(
                 dataset=train_set,
@@ -388,6 +401,8 @@ class FinDiffGenerator(Generator):
                 hidden_layers=self.mpl_layers,
                 activation=self.activation,
                 dim_t=self.dim_t,
+                contains_cat=self._contains_cat,
+                contains_num=self._contains_num,
                 n_cat_tokens=self.n_cat_tokens,
                 n_cat_emb=self.cat_emb_dim,
                 embedding=None,
@@ -451,16 +466,23 @@ class FinDiffGenerator(Generator):
         :return: the generated samples
         """
 
-        # with ustandard.HiddenPrints():
-        samples = self._gen.sample(
-            n_samples=num_samples,
-            label=None,
-            num_attrs=self.num_attrs,
-            cat_attrs=self.cat_attrs,
-            vocab_per_attr=self.vocab_per_attr,
-            num_scaler=self.num_scaler,
-            label_encoder=self.label_encoder,
-        )
+        kwargs = {
+            'n_samples': num_samples,
+            'label': None,
+            'num_attrs': self.num_attrs,
+            'cat_attrs': self.cat_attrs,
+            'vocab_per_attr': self.vocab_per_attr,
+            'label_encoder': self.label_encoder
+        }
+
+        # Only add num_scaler if self.num_scaler exists
+        if hasattr(self, 'num_scaler'):
+            kwargs['num_scaler'] = self.num_scaler
+        else:
+            kwargs['num_scaler'] = None
+
+        with ustandard.HiddenPrints():
+            samples = self._gen.sample(**kwargs)
 
         # Remove the prefix from the categorical variables
         for cat_attr in self.cat_attrs:

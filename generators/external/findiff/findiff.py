@@ -41,6 +41,8 @@ class FinDiff:
         hidden_layers: list,
         activation: str = "lrelu",
         dim_t: int = 64,
+        contains_cat: bool = True,
+        contains_num: bool = True,
         n_cat_tokens: int = None,
         n_cat_emb: int = None,
         embedding: torch.tensor = None,
@@ -79,6 +81,8 @@ class FinDiff:
         self.params["max_grad_norm"] = max_grad_norm
         self.params["accountant"] = accountant
         self.params["device"] = device
+        self.params["contains_cat"] = contains_cat
+        self.params["contains_num"] = contains_num
 
         # initialize the FinDiff synthesizer model
         self.synthesizer_model = MLPSynthesizer(
@@ -123,6 +127,8 @@ class FinDiff:
         losses_dict, self.synthesizer_model, self.diffuser_model = train(
             dataloader=train_data,
             label=label,
+            contains_cat=self.params["contains_cat"],
+            contains_num=self.params["contains_num"],
             synthesizer=self.synthesizer_model,
             diffuser=self.diffuser_model,
             loss_fnc=loss_fnc,
@@ -159,6 +165,8 @@ class FinDiff:
         ) = train_dp(
             dataloader=train_data,
             label=label,
+            contains_cat=self.params["contains_cat"],
+            contains_num=self.params["contains_num"],
             synthesizer=self.synthesizer_model,
             diffuser=self.diffuser_model,
             loss_fnc=loss_fnc,
@@ -180,9 +188,9 @@ class FinDiff:
         n_samples: int,
         label: torch.tensor,
         num_attrs: list,
+        num_scaler: QuantileTransformer,
         cat_attrs: list,
         vocab_per_attr: dict,
-        num_scaler: QuantileTransformer,
         label_encoder: LabelEncoder,
     ) -> pd.DataFrame:
         """Generate synthetic data with trained model
@@ -211,6 +219,8 @@ class FinDiff:
 
         samples = decode_sample(
             sample=raw_samples,
+            contains_cat=self.params["contains_cat"],
+            contains_num=self.params["contains_num"],
             cat_dim=n_cat_dim,
             n_cat_emb=self.params["n_cat_emb"],
             num_attrs=num_attrs,

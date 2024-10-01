@@ -23,6 +23,8 @@ from .MLPSynthesizer import get_embeddings, embed_categorical
 def train(
     dataloader,
     label,
+    contains_cat,
+    contains_num,
     synthesizer,
     diffuser,
     loss_fnc,
@@ -67,27 +69,46 @@ def train(
 
         # iterate over distinct mini-batches
         for elements in dataloader:
+            batch_size = elements[0].size(0)
+            batch_cat, batch_num, batch_y = None, None, None
             if label:
-                (batch_cat, batch_num, batch_y) = elements
+                if contains_cat and contains_num:
+                    (batch_cat, batch_num, batch_y) = elements
+                elif contains_cat:
+                    (batch_cat, batch_y) = elements
+                else:
+                    (batch_num, batch_y) = elements
             else:
-                (batch_cat, batch_num) = elements
-                batch_y = None
+                if contains_cat and contains_num:
+                    (batch_cat, batch_num) = elements
+                elif contains_cat:
+                    batch_cat = elements[0]
+                else:
+                    batch_num = elements[0]
 
-            batch_cat = batch_cat.to(device)
-            batch_num = batch_num.to(device)
+            if batch_cat is not None:
+                batch_cat = batch_cat.to(device)
+
+            if batch_num is not None:
+                batch_num = batch_num.to(device)
+
             if batch_y is not None:
                 batch_y = batch_y.to(device)
 
             # sample timestamps t for each observation in a minibatch
-            timesteps = diffuser.sample_timesteps(n=batch_cat.shape[0])
+            timesteps = diffuser.sample_timesteps(n=batch_size)
 
             # get cat embeddings
-            batch_cat_emb = embed_categorical(
-                embedding=synthesizer.embedding, x_cat=batch_cat
-            )
+            if contains_cat:
+                batch_cat_emb = embed_categorical(
+                    embedding=synthesizer.embedding, x_cat=batch_cat
+                )
+            else:
+                batch_cat_emb = None
 
             # concat cat & num
-            batch_cat_num = torch.cat((batch_cat_emb, batch_num), dim=1)
+            #batch_cat_num = torch.cat((batch_cat_emb, batch_num), dim=1)
+            batch_cat_num = torch.cat([b for b in [batch_cat_emb, batch_num] if b is not None], dim=1)
 
             # add noise
             batch_noise_t, noise_t = diffuser.add_gauss_noise(
@@ -140,6 +161,8 @@ def train(
 def train_dp(
     dataloader,
     label,
+    contains_cat,
+    contains_num,
     synthesizer,
     diffuser,
     loss_fnc,
@@ -212,27 +235,46 @@ def train_dp(
 
         # iterate over distinct mini-batches
         for elements in dataloader:
+            batch_size = elements[0].size(0)
+            batch_cat, batch_num, batch_y = None, None, None
             if label:
-                (batch_cat, batch_num, batch_y) = elements
+                if contains_cat and contains_num:
+                    (batch_cat, batch_num, batch_y) = elements
+                elif contains_cat:
+                    (batch_cat, batch_y) = elements
+                else:
+                    (batch_num, batch_y) = elements
             else:
-                (batch_cat, batch_num) = elements
-                batch_y = None
+                if contains_cat and contains_num:
+                    (batch_cat, batch_num) = elements
+                elif contains_cat:
+                    batch_cat = elements[0]
+                else:
+                    batch_num = elements[0]
 
-            batch_cat = batch_cat.to(device)
-            batch_num = batch_num.to(device)
+            if batch_cat is not None:
+                batch_cat = batch_cat.to(device)
+
+            if batch_num is not None:
+                batch_num = batch_num.to(device)
+
             if batch_y is not None:
                 batch_y = batch_y.to(device)
 
             # sample timestamps t for each observation in a minibatch
-            timesteps = diffuser.sample_timesteps(n=batch_cat.shape[0])
+            timesteps = diffuser.sample_timesteps(n=batch_size)
 
             # get cat embeddings
-            batch_cat_emb = embed_categorical(
-                embedding=synthesizer.embedding, x_cat=batch_cat
-            )
+            if contains_cat:
+                batch_cat_emb = embed_categorical(
+                    embedding=synthesizer.embedding, x_cat=batch_cat
+                )
+            else:
+                batch_cat_emb = None
 
             # concat cat & num
-            batch_cat_num = torch.cat((batch_cat_emb, batch_num), dim=1)
+            #batch_cat_num = torch.cat((batch_cat_emb, batch_num), dim=1)
+            batch_cat_num = torch.cat([b for b in [batch_cat_emb, batch_num] if b is not None], dim=1)
 
             # add noise
             batch_noise_t, noise_t = diffuser.add_gauss_noise(
@@ -305,7 +347,7 @@ def generate_samples(
 
     Args:
         synthesizer (_type_): synthesizer model
-        diffuser (_type_): diffuzer model
+        diffuser (_type_): diffuser model
         encoded_dim (int): transformed data dimension
         last_diff_step (int): total number of diffusion steps
         n_samples (int, optional): number of samples to sample. Defaults to None.
@@ -344,14 +386,16 @@ def generate_samples(
 
 def decode_sample(
     sample,
+    contains_cat,
+    contains_num,
     cat_dim,
     n_cat_emb,
-    num_attrs,
-    cat_attrs,
-    num_scaler,
-    vocab_per_attr,
-    label_encoder,
     synthesizer,
+    num_attrs=[],
+    cat_attrs=[],
+    num_scaler=None,
+    vocab_per_attr=None,
+    label_encoder=None,
 ):
     """Decoding function for unscaling numeric attributes and inverse encoding of categorical attributes.
         Used once synthetic data is generated.
@@ -373,35 +417,47 @@ def decode_sample(
 
     # split sample into numeric and categorical parts
     sample = sample.cpu().numpy()
-    sample_num = sample[:, cat_dim:]
-    sample_cat = sample[:, :cat_dim]
+
+    if contains_cat:
+        sample_num = sample[:, cat_dim:]
+        sample_cat = sample[:, :cat_dim]
+    else:
+        sample_num = sample
+        sample_cat = None
 
     # denormalize numeric attributes
-    z_norm_upscaled = num_scaler.inverse_transform(sample_num)
-    z_norm_df = pd.DataFrame(z_norm_upscaled, columns=num_attrs)
+    if contains_num:
+        z_norm_upscaled = num_scaler.inverse_transform(sample_num)
+        z_norm_df = pd.DataFrame(z_norm_upscaled, columns=num_attrs)
+    else:
+        z_norm_df = None
 
     # get embedding lookup matrix
-    embedding_lookup = get_embeddings(embedding=synthesizer.embedding).cpu()
-    # reshape back to batch_size * n_dim_cat * cat_emb_dim
-    sample_cat = sample_cat.reshape(-1, len(cat_attrs), n_cat_emb)
-    # compute pairwise distances; shape = (# of sample, # of value in lookup, # of attributes)
-    distances = torch.cdist(x1=embedding_lookup, x2=torch.Tensor(sample_cat))
-    # get the closest distance based on the embeddings that belong to a column category
-    z_cat_df = pd.DataFrame(index=range(len(sample_cat)), columns=cat_attrs)
-    nearest_dist_df = pd.DataFrame(index=range(len(sample_cat)), columns=cat_attrs)
-    for attr_idx, attr_name in enumerate(cat_attrs):
-        attr_emb_idx = list(vocab_per_attr[attr_name])  # in ascending order
-        attr_distances = distances[:, attr_emb_idx, attr_idx]
-        # nearest_idx = torch.argmin(attr_distances, dim=1).cpu().numpy()
-        nearest_values, nearest_idx = torch.min(attr_distances, dim=1)
-        nearest_idx = nearest_idx.cpu().numpy()
+    if contains_cat:
+        embedding_lookup = get_embeddings(embedding=synthesizer.embedding).cpu()
+        # reshape back to batch_size * n_dim_cat * cat_emb_dim
+        sample_cat = sample_cat.reshape(-1, len(cat_attrs), n_cat_emb)
+        # compute pairwise distances; shape = (# of sample, # of value in lookup, # of attributes)
+        distances = torch.cdist(x1=embedding_lookup, x2=torch.Tensor(sample_cat))
+        # get the closest distance based on the embeddings that belong to a column category
+        z_cat_df = pd.DataFrame(index=range(len(sample_cat)), columns=cat_attrs)
+        nearest_dist_df = pd.DataFrame(index=range(len(sample_cat)), columns=cat_attrs)
+        for attr_idx, attr_name in enumerate(cat_attrs):
+            attr_emb_idx = list(vocab_per_attr[attr_name])  # in ascending order
+            attr_distances = distances[:, attr_emb_idx, attr_idx]
+            # nearest_idx = torch.argmin(attr_distances, dim=1).cpu().numpy()
+            nearest_values, nearest_idx = torch.min(attr_distances, dim=1)
+            nearest_idx = nearest_idx.cpu().numpy()
 
-        z_cat_df[attr_name] = np.array(attr_emb_idx)[
-            nearest_idx
-        ]  # need to map emb indices back to column indices
-        nearest_dist_df[attr_name] = nearest_values.cpu().numpy()
+            z_cat_df[attr_name] = np.array(attr_emb_idx)[
+                nearest_idx
+            ]  # need to map emb indices back to column indices
+            nearest_dist_df[attr_name] = nearest_values.cpu().numpy()
 
-    z_cat_df = z_cat_df.apply(label_encoder.inverse_transform)
-    sample_decoded = pd.concat([z_cat_df, z_norm_df], axis=1)
+        z_cat_df = z_cat_df.apply(label_encoder.inverse_transform)
+    else:
+        z_cat_df = None
+
+    sample_decoded = pd.concat([df for df in [z_cat_df, z_norm_df] if df is not None], axis=1)
 
     return sample_decoded

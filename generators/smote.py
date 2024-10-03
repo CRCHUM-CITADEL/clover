@@ -164,15 +164,11 @@ class SmoteGenerator(Generator):
                         unique_value = list(np.unique(self._df[col]))
                     else:
                         unique_value_raw = self.bounds[col]["categories"]
-                        unique_value = [
-                            col + "_" + str(val) for val in unique_value_raw
-                        ]
-                        print(col, " ", unique_value)  # TO DELETE
+                        unique_value = [col + "_" + str(val) for val in unique_value_raw]
 
                     vocabulary_classes += unique_value
 
                 vocabulary_classes = np.sort(vocabulary_classes)
-                print(vocabulary_classes)
                 self.label_encoder = LabelEncoder()
                 self.label_encoder.fit(vocabulary_classes)
                 train_cat_scaled = self._df[self.cat_attrs].apply(
@@ -317,6 +313,17 @@ class SmoteGenerator(Generator):
             if self._prediction_type == "Classification":
                 X = self._df.drop(columns=self._metadata["variable_to_predict"])
                 y = self._df[self._metadata["variable_to_predict"]]
+
+                cat_indep_vars = [
+                    i
+                    for i, col in enumerate(X.columns)
+                    if col in self._metadata["categorical"]
+                       and col != self._metadata["variable_to_predict"]  # dependent variable
+                ]
+
+                if self._contains_cont_indep_vars and self._contains_cat_indep_vars:
+                    self._params["categorical_features"] = cat_indep_vars
+
             else:
                 # SMOTE is not defined for regression: we add a fake minority sample so
                 # that the neighbors are searched across all majority samples
@@ -385,6 +392,7 @@ class SmoteGenerator(Generator):
             if self._prediction_type == "Classification":
                 X = self.df_transformed
                 y = self.df_original[self._metadata["variable_to_predict"]]
+
             else:
                 # SMOTE is not defined for regression: we add a fake label 0
                 X = self.df_transformed

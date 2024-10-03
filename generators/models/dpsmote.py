@@ -4,6 +4,7 @@ from typing import Dict, Tuple, Union
 # 3rd party library
 import pandas as pd
 import numpy as np
+import itertools
 
 
 class DPSmote:
@@ -82,6 +83,11 @@ class DPSmote:
         :return: the centers along 1 dimension, the centers of each cell, the count of data points in each cell
         """
 
+        def generate_cell_centers(grid_centers):
+            # Cartesian product of grid centers along all dimensions
+            cell_centers = np.array(list(itertools.product(*grid_centers)))
+            return cell_centers
+
         d = df_X.shape[1]  # The dimension of the grid/cell
         m = int(1 // self.nu)  # Number of partitions along each dimension
         nu_ = 1 / m
@@ -94,7 +100,8 @@ class DPSmote:
                 )
             )
 
-        cell_centers = np.meshgrid(*grid_centers)
+        #cell_centers = np.meshgrid(*grid_centers)
+        cell_centers = generate_cell_centers(grid_centers)
         cell_centers = np.vstack([center.flatten() for center in cell_centers]).T
 
         # Initiate the counts of data points in each cell

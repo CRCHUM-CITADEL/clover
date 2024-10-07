@@ -74,7 +74,7 @@ class DataTransformer(object):
         ohe = OneHotEncoder()
         ohe.fit(data, column_name)
 
-        if categories != "auto":
+        if ~isinstance(categories, str) or categories != "auto":
             # Here we modify the fit function of the OneHotEncoder to be able to specify the desired categories.
             null = pd.isna(data).to_numpy()
             ohe._uniques = categories

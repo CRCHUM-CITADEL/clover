@@ -2,13 +2,18 @@ from typing import Dict, Union  # standard library
 import copy
 
 import pandas as pd  # 3rd party packages
+import numpy as np
 from pathlib import Path
+import warnings
 
 from .base import Generator  # local
 import utils.standard as ustandard
 from utils.postprocessing import transform_data
 from generators.external.ctabgan.ctabgan_synthesizer import CTABGANSynthesizer
 from .external.ctabgan.data_preparation import DataPrep
+from .external.ctabgan.model.synthesizer.transformer import DataTransformer
+
+from utils.preprocessing import generate_continuous_dp
 
 
 class CTABGANGenerator(Generator):
@@ -158,6 +163,131 @@ class CTABGANGenerator(Generator):
             type=self._problem_type,
         )
 
+        if self._params["epsilon"] is not None:
+
+            train_data = self._data_prep.df
+            categorical = self._data_prep.column_types["categorical"]
+            mixed = self._data_prep.column_types["mixed"]
+            self._generated_metadata = self._preprocess_metadata
+
+            # We need to add DP to the preprocessing steps
+            continuous_columns = [
+                column
+                for column_index, column in enumerate(train_data.columns)
+                if column_index not in categorical and column_index not in mixed.keys()
+            ]
+
+            if self._params["preprocess_epsilon_pp"] == 0:
+                warnings.warn(
+                    "preprocess_epsilon_pp was set to 0. No privacy budget will be dedicated to preprocessing. "
+                    "It will be based on the properties of the real data, which may not satisfy differential privacy."
+                )
+
+            if self._params["preprocess_epsilon_pp"] is None:
+                self._params["preprocess_epsilon_pp"] = 0.5
+                warnings.warn(
+                    "Half of the privacy budget will be used for preprocessing purposes."
+                )
+
+            if self._generated_metadata is None:
+                warnings.warn(
+                    "Metadata for preprocessing was not provided. It will be generated based on the properties "
+                    "of the real data, which may not satisfy differential privacy."
+                )
+                self._generated_metadata = {}
+
+            for col in train_data.columns:
+                col_index = train_data.columns.get_loc(col)
+                if col not in self._generated_metadata.keys() and col in continuous_columns:
+                    warnings.warn(
+                        f"Metadata for preprocessing {col} was not provided. It will be generated based on the properties "
+                        "of the real data, which may not satisfy differential privacy."
+                    )
+                    self._generated_metadata[col] = {
+                        "min_val": np.min(train_data[col]),
+                        "max_val": np.max(train_data[col]),
+                    }
+                elif col not in self._generated_metadata.keys() and col_index in mixed.keys():
+                    warnings.warn(
+                        f"Metadata for preprocessing {col} was not provided. It will be generated based on the properties "
+                        "of the real data, which may not satisfy differential privacy."
+                    )
+                    self._generated_metadata[col] = {
+                        "min_val": np.min(
+                            train_data[~train_data[col].isin(mixed[col])][col]
+                        ),
+                        "max_val": np.max(
+                            train_data[~train_data[col].isin(mixed[col])][col]
+                        ),
+                    }
+                elif col in self._generated_metadata.keys() and col in continuous_columns:
+                    assert (
+                        "min_val" in self._generated_metadata[col].keys()
+                        and "max_val" in self._generated_metadata[col].keys()
+                    ), (
+                        f"Both the minimum and maximum values of {col} need to be specified in the metadata for "
+                        f"preprocessing."
+                    )
+                if col not in self._generated_metadata.keys() and col_index in categorical:
+                    self._generated_metadata[col] = train_data[col].unique()
+                elif col in self._generated_metadata.keys() and col_index in categorical:
+                    assert isinstance(self._generated_metadata[col], list) or isinstance(
+                        self._generated_metadata[col], np.ndarray
+                    ), (
+                        f"{col} is a categorical variable. The metadata for preprocessing should be a list of unique "
+                        f"categories."
+                    )
+
+            preprocess_data = train_data.copy()
+            preprocess_data = pd.concat([preprocess_data] * 100, ignore_index=True)
+            # Each category of columns needs its own mechanism
+            # 1. Columns that are in continuous (metadata) but not in mixed (extra_metadata) should be synthesized like
+            # they are in CTGAN
+            if self._params["preprocess_epsilon_pp"] > 0:
+                for col in continuous_columns:
+                    preprocess_data[col] = generate_continuous_dp(
+                        df=preprocess_data,
+                        col=col,
+                        epsilon=self._params["epsilon"]
+                        * self._params["preprocess_epsilon_pp"]
+                        / len(continuous_columns + list(mixed.keys())),
+                        sensitivity=1,
+                        **self._generated_metadata[col],
+                    )
+                # 2. Columns that are in mixed (extra_metadata) should only be synthesized on the values that are not
+                # equal to the specified modes
+                for col in mixed.keys():
+                    preprocess_data[col] = generate_continuous_dp(
+                        df=preprocess_data,
+                        col=col,
+                        epsilon=self._params["epsilon"]
+                        * self._params["preprocess_epsilon_pp"]
+                        / len(continuous_columns + list(mixed.keys())),
+                        sensitivity=1,
+                        modes=mixed[col],
+                        **self._generated_metadata[col],
+                    )
+            # 3. Categorical columns should be able to receive a specified list of categories
+            # This will be specified directly in DataTransformer through the argument categories.
+            if len(categorical) > 0:
+                categories_dict = {
+                    train_data.columns[column_index]: self._generated_metadata[
+                        train_data.columns[column_index]
+                    ]
+                    for column_index in categorical
+                }
+            else:
+                categories_dict = None
+
+            self.transformer = DataTransformer(
+                train_data=preprocess_data,
+                categorical_list=categorical,
+                mixed_dict=mixed,
+                #general_list=self._data_prep.column_types["general"],
+                #non_categorical_list=self._data_prep.column_types["non_categorical"],
+                categories_dict=categories_dict,
+            )
+
     def fit(self, save_path: Union[Path, str]) -> None:
         """
         Train the generator and save it.
@@ -180,12 +310,8 @@ class CTABGANGenerator(Generator):
             if self._params["epsilon"] is not None:
                 self._gen.fit_dp(
                     train_data=self._data_prep.df,
-                    categorical=self._data_prep.column_types["categorical"],
-                    mixed=self._data_prep.column_types["mixed"],
-                    # general=self._data_prep.column_types["general"],
-                    # non_categorical=self._data_prep.column_types["non_categorical"],
                     type=self._problem_type,
-                    preprocess_metadata=self._preprocess_metadata,
+                    transformer=self.transformer,
                 )
 
             else:

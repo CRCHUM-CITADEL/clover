@@ -69,7 +69,7 @@ def application_metrics_results(
 
     :param request: the number of continuous and categorical columns to test
     :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
-    :param df_mock_wbcd: the mock wbcd dataset fixture, split into **train** and **test** sets
+    :param df_mock_wbcd: the mock wbcd dataset fixture, contains **train** and **test** sets
     :param metadata_wbcd: the wbcd metadata fixture
     :return: a tuple containing the metric class, the dataset type and a dictionary containing
       the **average** scores of the metric and the **detailed** scores

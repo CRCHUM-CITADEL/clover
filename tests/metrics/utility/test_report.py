@@ -59,6 +59,7 @@ def utility_report(
         num_repeat=1,
         num_kfolds=3,
         num_optuna_trials=1,
+        use_gpu=True,
         alpha=0.05,
     )
 
@@ -97,8 +98,8 @@ def test_detailed_report(utility_report: UtilityReport) -> None:
     num_cont_vars = utility_report.get_num_continuous_variables()
     num_cat_vars = utility_report.get_num_categorical_variables()
     thresh = (
-        0 if (num_cont_vars == 0 or num_cat_vars in [0, 1]) else 1
-    )  # no figure if there is nothing to report
+        0 if (num_cont_vars == 0 and num_cat_vars == 0) else 1
+    )  # no figure if dataframe is empty
 
     assert num_figures >= thresh
 

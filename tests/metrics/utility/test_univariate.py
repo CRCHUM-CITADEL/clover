@@ -97,14 +97,16 @@ def test_univariate_metrics_summary(
         assert scores[submetric["submetric"]] >= submetric["min"]
         assert scores[submetric["submetric"]] <= submetric["max"]
 
-        # Check the target
-        diff_to_objective = abs(
-            scores[submetric["submetric"]] - submetric[submetric["objective"]]
-        )
-        if which_data == "different_datasets":
-            assert diff_to_objective > 0.01
-        else:
-            assert diff_to_objective < 0.01
+        # Filter out the references
+        if not submetric["submetric"].endswith("_train_test_ref"):
+            # Check the target
+            diff_to_objective = abs(
+                scores[submetric["submetric"]] - submetric[submetric["objective"]]
+            )
+            if which_data == "different_datasets":
+                assert diff_to_objective > 0.01
+            else:
+                assert diff_to_objective < 0.01
 
 
 def test_univariate_metrics_detailed(

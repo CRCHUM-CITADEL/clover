@@ -91,7 +91,7 @@ def application_metrics_results(
         "num_repeat": 1,
         "num_kfolds": 2,
         "num_optuna_trials": 1,
-        "use_gpu": False,
+        "use_gpu": True,
     }
 
     # Select only the expected instance parameters

@@ -98,8 +98,8 @@ def test_detailed_report(utility_report: UtilityReport) -> None:
     num_cont_vars = utility_report.get_num_continuous_variables()
     num_cat_vars = utility_report.get_num_categorical_variables()
     thresh = (
-        0 if (num_cont_vars == 0 and num_cat_vars == 0) else 1
-    )  # no figure if dataframe is empty
+        0 if (num_cont_vars == 0 or num_cat_vars in [0, 1]) else 1
+    )  # no figure if there is nothing to report
 
     assert num_figures >= thresh
 

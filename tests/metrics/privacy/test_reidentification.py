@@ -6,7 +6,6 @@ import math
 
 # 3rd party packages
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 
 # Local packages
@@ -34,7 +33,7 @@ def reidentification_metrics_results(
 
     :param request: the number of continuous and categorical columns to test
     :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
-    :param df_mock_wbcd: the mock wbcd dataset fixture, split into **train** and **test** sets
+    :param df_mock_wbcd: the mock wbcd dataset fixture, contained **train** and **test** sets
     :param metadata_wbcd: the wbcd metadata fixture
     :return: a tuple containing the metric class, the dataset type and a dictionary containing
       the **average** scores of the metric and the **detailed** scores
@@ -76,21 +75,25 @@ def test_reidentification_metrics_summary(
         assert scores[submetric["submetric"]] >= submetric["min"]
         assert scores[submetric["submetric"]] <= submetric["max"]
 
-        # Check the target
-        diff_to_objective = abs(
-            scores[submetric["submetric"]] - submetric[submetric["objective"]]
-        )
-        inv_obj = "min" if submetric["objective"] == "max" else "max"
-        diff_to_inv_objective = abs(scores[submetric["submetric"]] - submetric[inv_obj])
+        # Filter out the references
+        if not submetric["submetric"].endswith("_train_test_ref"):
+            # Check the target
+            diff_to_objective = abs(
+                scores[submetric["submetric"]] - submetric[submetric["objective"]]
+            )
+            inv_obj = "min" if submetric["objective"] == "max" else "max"
+            diff_to_inv_objective = abs(
+                scores[submetric["submetric"]] - submetric[inv_obj]
+            )
 
-        if which_data == "different_datasets":
-            assert (
-                not math.isinf(diff_to_objective) and diff_to_objective < 0.01
-            ) or diff_to_inv_objective > 0.01
-        else:
-            assert (
-                not math.isinf(diff_to_objective) and diff_to_objective > 0.01
-            ) or diff_to_inv_objective < 0.01
+            if which_data == "different_datasets":
+                assert (
+                    not math.isinf(diff_to_objective) and diff_to_objective < 0.01
+                ) or diff_to_inv_objective > 0.01
+            else:
+                assert (
+                    not math.isinf(diff_to_objective) and diff_to_objective > 0.01
+                ) or diff_to_inv_objective < 0.01
 
 
 def test_reidentification_metrics_detailed(

@@ -54,7 +54,7 @@ class DataSynthesizerGenerator(Generator):
         degree: int = 5,
         preprocess_metadata: Dict[str, dict] = None,
     ):
-        super().__init__(df, metadata, random_state, generator_filepath)
+        super().__init__(df, metadata, random_state, None)
 
         bounds = preprocess_metadata
 

@@ -170,8 +170,8 @@ class MSTGenerator(Generator):
         """
         print("Generator: Maximum Spanning Tree MST")
         print("Parameters:")
-        print("* epsilon", self._epsilon)
-        print("* delta", self._delta)
+        print("* epsilon", self._gen._epsilon)
+        print("* delta", self._gen._delta)
 
     def sample(self, save_path: Union[Path, str], num_samples: int = 1) -> pd.DataFrame:
         """

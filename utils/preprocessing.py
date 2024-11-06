@@ -103,7 +103,7 @@ def generate_continuous_dp(
 
     # Calculate num_bins if not provided
     if num_bins is None:
-        #num_bins = int(max(round(max_val - min_val, 0), 10))
+        # num_bins = int(max(round(max_val - min_val, 0), 10))
         num_bins = 100
 
     # Exclude modes if specified by the user
@@ -133,7 +133,7 @@ def generate_continuous_dp(
             [samples_uni, pd.concat([modes_series], ignore_index=True)]
         )
 
-    #if decimals is not None:
+    # if decimals is not None:
     #    return np.round(samples_uni, decimals)
 
     else:

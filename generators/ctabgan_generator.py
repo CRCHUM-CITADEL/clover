@@ -164,7 +164,6 @@ class CTABGANGenerator(Generator):
         )
 
         if self._params["epsilon"] is not None:
-
             train_data = self._data_prep.df
             categorical = self._data_prep.column_types["categorical"]
             mixed = self._data_prep.column_types["mixed"]
@@ -198,7 +197,10 @@ class CTABGANGenerator(Generator):
 
             for col in train_data.columns:
                 col_index = train_data.columns.get_loc(col)
-                if col not in self._generated_metadata.keys() and col in continuous_columns:
+                if (
+                    col not in self._generated_metadata.keys()
+                    and col in continuous_columns
+                ):
                     warnings.warn(
                         f"Metadata for preprocessing {col} was not provided. It will be generated based on the properties "
                         "of the real data, which may not satisfy differential privacy."
@@ -207,7 +209,10 @@ class CTABGANGenerator(Generator):
                         "min_val": np.min(train_data[col]),
                         "max_val": np.max(train_data[col]),
                     }
-                elif col not in self._generated_metadata.keys() and col_index in mixed.keys():
+                elif (
+                    col not in self._generated_metadata.keys()
+                    and col_index in mixed.keys()
+                ):
                     warnings.warn(
                         f"Metadata for preprocessing {col} was not provided. It will be generated based on the properties "
                         "of the real data, which may not satisfy differential privacy."
@@ -220,7 +225,9 @@ class CTABGANGenerator(Generator):
                             train_data[~train_data[col].isin(mixed[col])][col]
                         ),
                     }
-                elif col in self._generated_metadata.keys() and col in continuous_columns:
+                elif (
+                    col in self._generated_metadata.keys() and col in continuous_columns
+                ):
                     assert (
                         "min_val" in self._generated_metadata[col].keys()
                         and "max_val" in self._generated_metadata[col].keys()
@@ -228,12 +235,17 @@ class CTABGANGenerator(Generator):
                         f"Both the minimum and maximum values of {col} need to be specified in the metadata for "
                         f"preprocessing."
                     )
-                if col not in self._generated_metadata.keys() and col_index in categorical:
+                if (
+                    col not in self._generated_metadata.keys()
+                    and col_index in categorical
+                ):
                     self._generated_metadata[col] = train_data[col].unique()
-                elif col in self._generated_metadata.keys() and col_index in categorical:
-                    assert isinstance(self._generated_metadata[col], list) or isinstance(
-                        self._generated_metadata[col], np.ndarray
-                    ), (
+                elif (
+                    col in self._generated_metadata.keys() and col_index in categorical
+                ):
+                    assert isinstance(
+                        self._generated_metadata[col], list
+                    ) or isinstance(self._generated_metadata[col], np.ndarray), (
                         f"{col} is a categorical variable. The metadata for preprocessing should be a list of unique "
                         f"categories."
                     )
@@ -283,8 +295,8 @@ class CTABGANGenerator(Generator):
                 train_data=preprocess_data,
                 categorical_list=categorical,
                 mixed_dict=mixed,
-                #general_list=self._data_prep.column_types["general"],
-                #non_categorical_list=self._data_prep.column_types["non_categorical"],
+                # general_list=self._data_prep.column_types["general"],
+                # non_categorical_list=self._data_prep.column_types["non_categorical"],
                 categories_dict=categories_dict,
             )
 

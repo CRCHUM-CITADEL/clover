@@ -100,7 +100,7 @@ class DPSmote:
                 )
             )
 
-        #cell_centers = np.meshgrid(*grid_centers)
+        # cell_centers = np.meshgrid(*grid_centers)
         cell_centers = generate_cell_centers(grid_centers)
         cell_centers = np.vstack([center.flatten() for center in cell_centers]).T
 

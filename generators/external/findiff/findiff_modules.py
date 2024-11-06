@@ -107,8 +107,10 @@ def train(
                 batch_cat_emb = None
 
             # concat cat & num
-            #batch_cat_num = torch.cat((batch_cat_emb, batch_num), dim=1)
-            batch_cat_num = torch.cat([b for b in [batch_cat_emb, batch_num] if b is not None], dim=1)
+            # batch_cat_num = torch.cat((batch_cat_emb, batch_num), dim=1)
+            batch_cat_num = torch.cat(
+                [b for b in [batch_cat_emb, batch_num] if b is not None], dim=1
+            )
 
             # add noise
             batch_noise_t, noise_t = diffuser.add_gauss_noise(
@@ -273,8 +275,10 @@ def train_dp(
                 batch_cat_emb = None
 
             # concat cat & num
-            #batch_cat_num = torch.cat((batch_cat_emb, batch_num), dim=1)
-            batch_cat_num = torch.cat([b for b in [batch_cat_emb, batch_num] if b is not None], dim=1)
+            # batch_cat_num = torch.cat((batch_cat_emb, batch_num), dim=1)
+            batch_cat_num = torch.cat(
+                [b for b in [batch_cat_emb, batch_num] if b is not None], dim=1
+            )
 
             # add noise
             batch_noise_t, noise_t = diffuser.add_gauss_noise(
@@ -458,6 +462,8 @@ def decode_sample(
     else:
         z_cat_df = None
 
-    sample_decoded = pd.concat([df for df in [z_cat_df, z_norm_df] if df is not None], axis=1)
+    sample_decoded = pd.concat(
+        [df for df in [z_cat_df, z_norm_df] if df is not None], axis=1
+    )
 
     return sample_decoded

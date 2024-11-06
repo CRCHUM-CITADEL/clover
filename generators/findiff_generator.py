@@ -163,9 +163,9 @@ class FinDiffGenerator(Generator):
 
         self._contains_num, self._contains_cat = False, False
 
-        if len(self._metadata['continuous']) > 0:
+        if len(self._metadata["continuous"]) > 0:
             self._contains_num = True
-        if len(self._metadata['categorical']) > 0:
+        if len(self._metadata["categorical"]) > 0:
             self._contains_cat = True
 
         if epsilon == {"preprocessing": None, "fitting": None}:
@@ -288,7 +288,7 @@ class FinDiffGenerator(Generator):
             # Note the correlation between variables are not preserved, but this won't affect the data transformation.
 
             # Calculate the budget allocated to each variable
-            if len(self._metadata['continuous'])>0:
+            if len(self._metadata["continuous"]) > 0:
                 eps_per_var = self.epsilon["preprocessing"] / len(self.num_attrs)
 
                 df_num_synth = pd.DataFrame(
@@ -369,7 +369,13 @@ class FinDiffGenerator(Generator):
             else:
                 train_cat_torch = None
 
-            train_set = TensorDataset(*[tens for tens in [train_cat_torch, train_num_torch] if tens is not None])
+            train_set = TensorDataset(
+                *[
+                    tens
+                    for tens in [train_cat_torch, train_num_torch]
+                    if tens is not None
+                ]
+            )
 
             self.dataloader = DataLoader(
                 dataset=train_set,
@@ -467,19 +473,19 @@ class FinDiffGenerator(Generator):
         """
 
         kwargs = {
-            'n_samples': num_samples,
-            'label': None,
-            'num_attrs': self.num_attrs,
-            'cat_attrs': self.cat_attrs,
-            'vocab_per_attr': self.vocab_per_attr,
-            'label_encoder': self.label_encoder
+            "n_samples": num_samples,
+            "label": None,
+            "num_attrs": self.num_attrs,
+            "cat_attrs": self.cat_attrs,
+            "vocab_per_attr": self.vocab_per_attr,
+            "label_encoder": self.label_encoder,
         }
 
         # Only add num_scaler if self.num_scaler exists
-        if hasattr(self, 'num_scaler'):
-            kwargs['num_scaler'] = self.num_scaler
+        if hasattr(self, "num_scaler"):
+            kwargs["num_scaler"] = self.num_scaler
         else:
-            kwargs['num_scaler'] = None
+            kwargs["num_scaler"] = None
 
         with ustandard.HiddenPrints():
             samples = self._gen.sample(**kwargs)

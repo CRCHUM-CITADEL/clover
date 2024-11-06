@@ -164,7 +164,9 @@ class SmoteGenerator(Generator):
                         unique_value = list(np.unique(self._df[col]))
                     else:
                         unique_value_raw = self.bounds[col]["categories"]
-                        unique_value = [col + "_" + str(val) for val in unique_value_raw]
+                        unique_value = [
+                            col + "_" + str(val) for val in unique_value_raw
+                        ]
 
                     vocabulary_classes += unique_value
 
@@ -318,7 +320,8 @@ class SmoteGenerator(Generator):
                     i
                     for i, col in enumerate(X.columns)
                     if col in self._metadata["categorical"]
-                       and col != self._metadata["variable_to_predict"]  # dependent variable
+                    and col
+                    != self._metadata["variable_to_predict"]  # dependent variable
                 ]
 
                 if self._contains_cont_indep_vars and self._contains_cat_indep_vars:

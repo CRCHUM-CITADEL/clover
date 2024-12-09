@@ -712,7 +712,6 @@ def plot_log_scale(
     plt.ylabel(y_label)
     plt.plot([0, 1], [0, 1], ls="--", color="gray")
     plt.legend()
-    plt.show()
 
 
 def line_plot(data: list, title: str, x_label: str, y_label: str) -> None:
@@ -735,4 +734,3 @@ def line_plot(data: list, title: str, x_label: str, y_label: str) -> None:
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.legend()
-    plt.show()

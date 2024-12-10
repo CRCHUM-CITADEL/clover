@@ -84,6 +84,7 @@ class AttackModel(Metric, metaclass=ABCMeta):
         df_real: dict[str, pd.DataFrame],
         df_synthetic: dict[str, pd.DataFrame],
         metadata: dict,
+        train_test_ref: bool = False,
     ) -> None:
         """
         Assert that the compute method parameters are consistent, when attack model is applied.
@@ -92,10 +93,14 @@ class AttackModel(Metric, metaclass=ABCMeta):
         :param df_synthetic: the synthetic dataset, split into **train**, **test** and **2nd_gen** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
+        :param train_test_ref: a boolean parameter indicating whether the metric is calculated for synthetic data
+          or for the test set as a reference.
         :return: *None*
         """
 
-        Metric.check_consistency_compute_parameters(df_real, df_synthetic, metadata)
+        Metric.check_consistency_compute_parameters(
+            df_real, df_synthetic, metadata, train_test_ref
+        )
 
         assert (
             df_synthetic["train"].shape == df_synthetic["2nd_gen"].shape
@@ -1849,7 +1854,12 @@ class Collision(AttackModel):
         recovery_rate = []
         pr_curve = []
 
-        if (len(y_train[y_train == 1]) == 0) | (len(y_test[y_test == 1]) == 0):
+        if (
+            (len(y_train[y_train == 0]) == 0)
+            | (len(y_train[y_train == 1]) == 0)
+            | (len(y_test[y_test == 0]) == 0)
+            | (len(y_test[y_test == 1]) == 0)
+        ):
             # If there's no collision
             res = {
                 "average": {
@@ -1949,30 +1959,33 @@ class Collision(AttackModel):
             ]
         )
 
-        # Bar plot single value
-        plt.figure(figsize=figsize, layout="constrained")
+        if all(np.isnan(value) for value in report.values()):
+            pass
+        else:
+            # Bar plot single value
+            plt.figure(figsize=figsize, layout="constrained")
 
-        data = pd.DataFrame(
-            {
-                "precision": report["precision"],
-                "recall": report["recall"],
-                "f1_score": report["f1_score"],
-                "recovery_rate": report["recovery_rate"],
-            }
-        )
-        udraw.bar_plot(
-            data=data,
-            title=f"Metric: {cls.name}",
-            value_name="",
-        )
+            data = pd.DataFrame(
+                {
+                    "precision": report["precision"],
+                    "recall": report["recall"],
+                    "f1_score": report["f1_score"],
+                    "recovery_rate": report["recovery_rate"],
+                }
+            )
+            udraw.bar_plot(
+                data=data,
+                title=f"Metric: {cls.name}",
+                value_name="",
+            )
 
-        pr_list = report["pr_curve"]
+            pr_list = report["pr_curve"]
 
-        plt.figure(figsize=figsize, layout="constrained")
+            plt.figure(figsize=figsize, layout="constrained")
 
-        udraw.line_plot(
-            data=pr_list,
-            title=f"{cls.name}: precision-recall curve",
-            x_label="Recall",
-            y_label="Precision",
-        )
+            udraw.line_plot(
+                data=pr_list,
+                title=f"{cls.name}: precision-recall curve",
+                x_label="Recall",
+                y_label="Precision",
+            )

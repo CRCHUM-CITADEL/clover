@@ -1,7 +1,6 @@
 # Standard library
 import pytest
 import tempfile
-from typing import Callable
 
 # 3rd party packages
 import pandas as pd
@@ -9,7 +8,11 @@ import pandas as pd
 # Local packages
 from metrics.report import Report
 
-test_params = [["DCR", "Categorical Consistency"], ["Categorical Consistency"]]
+test_params = [
+    ["DCR", "LOGAN", "Categorical Consistency"],
+    ["DCR", "Categorical Consistency"],
+    ["Categorical Consistency"],
+]
 
 
 @pytest.fixture(
@@ -25,7 +28,7 @@ def report(
 
     :param request: the list of metrics to test
     :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
-    :param df_mock_wbcd: the mock wbcd dataset fixture, split into **train** and **test** sets
+    :param df_mock_wbcd: the mock wbcd dataset fixture, split into **train**, **test** and **2nd_gen** sets
     :return: an instance of the report
     """
 
@@ -38,20 +41,31 @@ def report(
     df_wbcd_mix = {}
     df_mock_wbcd_mix = {}
     for set in ["train", "test"]:
-        df_wbcd_mix[set] = df_wbcd[set][
+        df_wbcd_mix[set] = df_wbcd[set].copy()[
             metadata["continuous"] + metadata["categorical"]
         ]
-        df_mock_wbcd_mix[set] = df_mock_wbcd[set][
+
+    for set in ["train", "test", "2nd_gen"]:
+        df_mock_wbcd_mix[set] = df_mock_wbcd[set].copy()[
             metadata["continuous"] + metadata["categorical"]
         ]
+
+    parameters = {
+        "num_repeat": 1,
+        "num_kfolds": 2,
+        "num_optuna_trials": 1,
+        "sampling_frac": 1.0,
+        "use_gpu": True,
+    }
 
     report = Report(
         dataset_name="Wisconsin Breast Cancer Dataset",
         df_real=df_wbcd_mix,
         df_synthetic=df_mock_wbcd_mix,
         metadata=metadata,
+        random_state=0,
         metrics=request.param,
-        params={"sampling_frac": 0.5},
+        params=parameters,
     )
 
     report.compute()

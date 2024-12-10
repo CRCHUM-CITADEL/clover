@@ -1,7 +1,6 @@
 # Standard library
 import pytest
 import tempfile
-from pathlib import Path
 
 # 3rd party packages
 import pandas as pd
@@ -20,7 +19,7 @@ def metareport(
     Compute the metareport in different settings.
 
     :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
-    :param df_mock_wbcd: the mock wbcd dataset fixture, split into **train** and **test** sets
+    :param df_mock_wbcd: the mock wbcd dataset fixture, split into **train**, **test** and **2nd_gen** sets
     :return: an instance of the metareport
     """
 
@@ -36,33 +35,32 @@ def metareport(
 
     sublist = metadata["continuous"] + metadata["categorical"]
     for set in ["train", "test"]:
-        df_wbcd_mix[set] = df_wbcd[set][sublist]
+        df_wbcd_mix[set] = df_wbcd[set].copy()[sublist]
 
     for set in ["train", "test", "2nd_gen"]:
-        df_mock_1[set] = df_mock_wbcd[set][sublist]
-        df_mock_2[set] = df_mock_1[set].apply(
-            lambda x: np.random.choice(x.unique(), size=len(x), replace=True)
+        df_mock_1[set] = df_mock_wbcd[set].copy()[sublist]
+        df_mock_2[set] = (
+            df_mock_1[set]
+            .copy()
+            .apply(lambda x: np.random.choice(x.unique(), size=len(x), replace=True))
         )
 
-    # df_mock_1 = pd.concat(
-    #     [
-    #         df_mock_wbcd["train"][sublist],
-    #         df_mock_wbcd["test"][sublist],
-    #         df_mock_wbcd["2nd_gen"][sublist]
-    #     ], axis=0
-    # )
-
-    # with tempfile.TemporaryDirectory() as temp_dir:
-    #     df_mock.to_csv(Path(temp_dir) / "1.csv", index=False)
-    #     df_mock.to_csv(Path(temp_dir) / "2.csv", index=False)
+    parameters = {
+        "num_repeat": 1,
+        "num_kfolds": 2,
+        "num_optuna_trials": 1,
+        "sampling_frac": 1.0,
+        "use_gpu": True,
+    }
 
     report = Metareport(
         dataset_name="Wisconsin Breast Cancer Dataset",
         df_real=df_wbcd_mix,
         synthetic_datasets={"df_mock_1": df_mock_1, "df_mock_2": df_mock_2},
-        # synthetic_data_path=temp_dir,
         metadata=metadata,
-        metrics=["Categorical Consistency"],
+        random_state=0,
+        metrics=["Categorical Consistency", "DCR", "LOGAN"],
+        params=parameters,
     )
 
     report.compute()
@@ -80,7 +78,7 @@ def test_summary_report(metareport: Metareport) -> None:
     df_summary = metareport.summary()
 
     assert (
-        df_summary.shape[0] == 1  # the number of metrics computed
+        df_summary.shape[0] == 15  # the number of metrics computed
         and df_summary.shape[1] == 2  # the number of datasets to compare
     )
 

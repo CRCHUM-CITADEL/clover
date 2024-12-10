@@ -27,7 +27,7 @@ def privacy_report(
 
     :param request: the number of continuous and categorical columns to test
     :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
-    :param df_mock_wbcd: the mock wbcd dataset fixture, split into **train** and **test** sets
+    :param df_mock_wbcd: the mock wbcd dataset fixture, split into **train**, **test** and **2nd_gen** sets
     :return: an instance of the report
     """
 
@@ -44,12 +44,12 @@ def privacy_report(
     df_wbcd_mix = {}
     df_mock_wbcd_mix = {}
     for set in ["train", "test"]:
-        df_wbcd_mix[set] = df_wbcd[set][
+        df_wbcd_mix[set] = df_wbcd[set].copy()[
             metadata["continuous"] + metadata["categorical"]
         ]
 
     for set in ["train", "test", "2nd_gen"]:
-        df_mock_wbcd_mix[set] = df_mock_wbcd[set][
+        df_mock_wbcd_mix[set] = df_mock_wbcd[set].copy()[
             metadata["continuous"] + metadata["categorical"]
         ]
 
@@ -58,8 +58,12 @@ def privacy_report(
         df_real=df_wbcd_mix,
         df_synthetic=df_mock_wbcd_mix,
         metadata=metadata,
-        sampling_frac=0.5,
+        random_state=0,
+        num_repeat=1,
         num_kfolds=2,
+        sampling_frac=1.0,
+        num_optuna_trials=1,
+        use_gpu=True,
     )
 
     report.compute()

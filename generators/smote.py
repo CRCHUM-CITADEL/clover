@@ -77,10 +77,6 @@ class SmoteGenerator(Generator):
             self._contains_cont_indep_vars = None
             self._contains_cat_indep_vars = None
         else:  # Initiate DP generator
-            # assert not any(
-            #     df.columns.str.contains("_")
-            # ), "Please remove the '_' from column names for correct inverse decoding"
-
             self.l_connectivity = l_connectivity
             self.nu = nu
             self.cat_emb_dim = cat_emb_dim
@@ -483,7 +479,6 @@ class SmoteGenerator(Generator):
                 df_final = df_inverse_num
 
             for cat_attr in self.cat_attrs:
-                # df_final[cat_attr] = df_final[cat_attr].str.split("_", n=1).str.get(-1)
                 df_final[cat_attr] = df_final[cat_attr].replace(self._cat_dict)
 
             if self._prediction_type == "Classification":

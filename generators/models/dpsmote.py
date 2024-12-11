@@ -5,6 +5,7 @@ from typing import Dict, Tuple, Union
 import pandas as pd
 import numpy as np
 import itertools
+from tqdm import tqdm
 
 
 class DPSmote:
@@ -157,16 +158,21 @@ class DPSmote:
             prob = noisy_counts / np.sum(noisy_counts)
             prob_flat = prob.flatten()
 
+            # Compute index of all the data points
+            idx_all = np.indices(prob.shape).reshape(len(prob.shape), -1).T
+
             # Generate new data points one by one
-            for _ in range(n_sample):
+            for _ in tqdm(range(n_sample), desc=f"Label = {label}"):
+
                 new_data_point = []
 
                 # Randomly select a data point
                 chosen_idx_flat = np.random.choice(len(prob_flat), p=prob_flat)
                 chosen_idx = np.unravel_index(chosen_idx_flat, prob.shape)
 
+                ##########################################
                 # Find the neighbors of the selected point
-                idx_all = np.array(list(np.ndindex(prob.shape)))
+                ##########################################
 
                 # Calculate the offsets for all indices
                 offsets = np.subtract(np.array(chosen_idx), idx_all)

@@ -4,19 +4,21 @@ from typing import Dict, Tuple, Union
 # 3rd party library
 import pandas as pd
 import numpy as np
-import itertools
+
+# import itertools
 from tqdm import tqdm
+from sklearn.neighbors import NearestNeighbors
 
 
 class DPSmote:
     """
     Python implementation of differentially private SMOTE. Only continuous data is considered.
 
-    See `Lut, Yuliia. Privacy-Aware Data Analysis: Recent Developments for Statistics and Machine Learning.
+    Adapted and modified from `Lut, Yuliia. Privacy-Aware Data Analysis: Recent Developments for Statistics and Machine Learning.
     Columbia University, 2022. <https://academiccommons.columbia.edu/doi/10.7916/he4k-zm64/download>`_
     for more details.
 
-    :param l_connectivity: the distance to decide the neighborhood
+    :param k_neighbors: the number of neighbors used to find the avatar
     :param nu: granularity of the uniform grid that the data will be partitioned into
     :param r: each feature should fall into the range of [-r, r]
     :param epsilon: the privacy budget
@@ -26,14 +28,14 @@ class DPSmote:
 
     def __init__(
         self,
-        l_connectivity: int = 2,
+        k_neighbors: int = 5,
         nu: float = None,
         r: float = None,
         epsilon: float = None,
         sampling_strategy: Dict[any, int] = None,
         random_state: int = None,
     ):
-        self.l_connectivity = l_connectivity
+        self.k_neighbors = k_neighbors
         self.nu = nu
         self.r = r
         self.epsilon = epsilon
@@ -64,7 +66,7 @@ class DPSmote:
         :return: the parameters for the configuration
         """
         params = {
-            "l_connectivity": self.l_connectivity,
+            "k_neighbors": self.k_neighbors,
             "nu": self.nu,
             "r": self.r,
             "epsilon": self.epsilon,
@@ -76,18 +78,18 @@ class DPSmote:
 
     def unifrom_grid_partition(
         self, df_X: pd.DataFrame
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Partition data into equal-width cells.
 
         :param df_X: the data to be partitioned (all the variables should be continuous and falls into the same range)
-        :return: the centers along 1 dimension, the centers of each cell, the count of data points in each cell
+        :return: the centers along 1 dimension and the count of data points in each cell
         """
 
-        def generate_cell_centers(grid_centers):
-            # Cartesian product of grid centers along all dimensions
-            cell_centers = np.array(list(itertools.product(*grid_centers)))
-            return cell_centers
+        # def generate_cell_centers(grid_centers):
+        #     # Cartesian product of grid centers along all dimensions
+        #     cell_centers = np.array(list(itertools.product(*grid_centers)))
+        #     return cell_centers
 
         d = df_X.shape[1]  # The dimension of the grid/cell
         m = int(1 // self.nu)  # Number of partitions along each dimension
@@ -101,9 +103,8 @@ class DPSmote:
                 )
             )
 
-        # cell_centers = np.meshgrid(*grid_centers)
-        cell_centers = generate_cell_centers(grid_centers)
-        cell_centers = np.vstack([center.flatten() for center in cell_centers]).T
+        # cell_centers = generate_cell_centers(grid_centers)
+        # cell_centers = np.vstack([center.flatten() for center in cell_centers]).T
 
         # Initiate the counts of data points in each cell
         counts = np.zeros((m,) * d, dtype=int)
@@ -117,7 +118,7 @@ class DPSmote:
             )
             counts[indices] += 1
 
-        return grid_centers[0], cell_centers, counts
+        return grid_centers[0], counts  # cell_centers
 
     def fit_resample(
         self, X: pd.DataFrame, y: Union[pd.Series, np.ndarray]
@@ -143,7 +144,7 @@ class DPSmote:
 
             X_idx = X.iloc[idx, :]
 
-            grid_centers_1d, _, counts = self.unifrom_grid_partition(X_idx)
+            grid_centers_1d, counts = self.unifrom_grid_partition(X_idx)
 
             if self.epsilon is not None:
                 noisy_counts = counts + np.random.laplace(
@@ -159,38 +160,41 @@ class DPSmote:
             prob_flat = prob.flatten()
 
             # Compute index of all the data points
-            idx_all = np.indices(prob.shape).reshape(len(prob.shape), -1).T
+            idx_all = (
+                np.indices(prob.shape).reshape(len(prob.shape), -1).T.astype(np.int8)
+            )
+
+            nn = NearestNeighbors(n_neighbors=self.k_neighbors + 1, n_jobs=-1)
+            nn.fit(idx_all)
 
             # Generate new data points one by one
             for _ in tqdm(range(n_sample), desc=f"Label = {label}"):
-
                 new_data_point = []
 
-                # Randomly select a data point
-                chosen_idx_flat = np.random.choice(len(prob_flat), p=prob_flat)
-                chosen_idx = np.unravel_index(chosen_idx_flat, prob.shape)
+                # Initiate the total count in the neighboring cells
+                total_count = 0
 
-                ##########################################
-                # Find the neighbors of the selected point
-                ##########################################
+                while total_count == 0:
+                    # Randomly select a data point
+                    chosen_idx_flat = np.random.choice(len(prob_flat), p=prob_flat)
+                    chosen_idx = np.unravel_index(chosen_idx_flat, prob.shape)
 
-                # Calculate the offsets for all indices
-                offsets = np.subtract(np.array(chosen_idx), idx_all)
-                dist = np.sum(np.abs(offsets), axis=1)
+                    ##########################################
+                    # Find the neighbors of the selected point
+                    ##########################################
 
-                # Filter neighbors based on l connectivity
-                idx_valid = np.where((dist > 0) & (dist <= self.l_connectivity))
-                neighbors_index = [tuple(i) for i in idx_all[idx_valid]]
-                neighbors_counts = [noisy_counts[i] for i in neighbors_index]
-
-                if np.sum(np.array(neighbors_counts)) == 0:
-                    raise ValueError(
-                        "No neighbors are found. Please increase the l connectivity or decrease grid granularity."
+                    # Find the k-nearest neighbors
+                    dist, neighbors = nn.kneighbors(
+                        np.array(chosen_idx).reshape(1, -1), return_distance=True
                     )
+                    idx_valid = neighbors[0][np.where(dist[0] != 0)]
 
-                prob_neighbor = np.array(neighbors_counts) / np.sum(
-                    np.array(neighbors_counts)
-                )
+                    neighbors_index = [tuple(i) for i in idx_all[idx_valid]]
+                    neighbors_counts = [noisy_counts[i] for i in neighbors_index]
+
+                    total_count = np.sum(np.array(neighbors_counts))
+
+                prob_neighbor = np.array(neighbors_counts) / total_count
                 chosen_neighbor_idx = neighbors_index[
                     np.random.choice(len(neighbors_index), p=prob_neighbor)
                 ]

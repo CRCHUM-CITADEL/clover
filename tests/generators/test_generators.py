@@ -91,7 +91,6 @@ def test_generation_non_dp(
             "methods": None,  # synthpop
             "prediction_matrix": None,  # synthpop
             "n_parents": None,  # synthpop
-            "l_connectivity": None,  # smote
             "nu": None,  # smote
             "r": None,  # smote
             "delta": None,  # ctgan / tvae / ctabganplus / findiff
@@ -176,7 +175,7 @@ def test_generation_dp(
             "methods": None,  # synthpop
             "prediction_matrix": None,  # synthpop
             "n_parents": 2,  # synthpop
-            "l_connectivity": 2,  # smote
+            "k_neighbors": 5,  # smote
             "nu": 0.5,  # smote
             "cat_emb_dim": 2,  # smote / findiff
             "r": 1,  # smote
@@ -205,7 +204,6 @@ def test_generation_dp(
             "scheduler": "linear",  # findiff
             # Parameters not applicable to dp generators
             "min_samples_leaf": None,  # synthpop
-            "k_neighbors": None,  # smote
         }
 
         # Select only the expected instance parameters

@@ -30,8 +30,7 @@ class SmoteGenerator(Generator):
     :param generator_filepath: the path of the generator to sample from if it exists
     :param epsilon: the privacy budget of the differential privacy.
         If epsilon is set to None, a non-DP model will be trained
-    :param k_neighbors: the number of neighbors used to find the avatar (applicable to non-DP generator)
-    :param l_connectivity: the distance to decide the neighborhood (applicable to DP generator)
+    :param k_neighbors: the number of neighbors used to find the avatar
     :param nu: the granularity parameter of the uniform grid that the data will be partitioned into
         (applicable to DP generator)
     :param cat_emb_dim: dimension of categorical embeddings (applicable to DP generator)
@@ -53,7 +52,6 @@ class SmoteGenerator(Generator):
         generator_filepath: Union[Path, str] = None,
         epsilon: float = None,
         k_neighbors: int = 5,
-        l_connectivity: int = 2,
         nu: float = 0.25,
         cat_emb_dim: int = 2,
         r: float = 1,
@@ -77,7 +75,7 @@ class SmoteGenerator(Generator):
             self._contains_cont_indep_vars = None
             self._contains_cat_indep_vars = None
         else:  # Initiate DP generator
-            self.l_connectivity = l_connectivity
+            self._k_neighbors = k_neighbors
             self.nu = nu
             self.cat_emb_dim = cat_emb_dim
             self.r = r
@@ -273,7 +271,7 @@ class SmoteGenerator(Generator):
                 self._gen = DPSmote(**self._params)
             else:
                 self._gen = DPSmote(
-                    l_connectivity=self.l_connectivity,
+                    k_neighbors=self._k_neighbors,
                     nu=self.nu,
                     r=self.r,
                     epsilon=self.epsilon,

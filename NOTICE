@@ -1,0 +1,46 @@
+Notices for the Clover project
+
+This product includes software from the Private PGM project, under the license Apache version 2.0.
+https://github.com/ryan112358/private-pgm
+The file mst.py in the folder mechanisms was modified in the following ways:
+    - The parameter num_samples was added in the MST function
+    - Only the functions MST, measure, compress_domain, exponential_mechanism, select, transform_data and reverse_data
+      are included. Other elements of the code were removed.
+    - The paths of imported modules were modified to be relative to the location of this file.
+
+This product includes software from the Synthpop project, under the MIT license.
+https://github.com/hazy/synthpop
+The following changes were made to the code:
+    - The paths of imported modules were modified to be relative.
+    - Replace iteritems() by items() in validator.py and synthpop.py (deprecated)
+    - Add **kwargs / self.args parameter in synthpop.py to pass arguments to the generation method
+    - Add max_depth parameter in the decision tree classifier/regressor in cart.py
+
+This product includes software from the SDV (and CTGAN) project, under the Business Source License 1.1.
+The Licensed Work is (c) DataCebo, Inc.
+https://github.com/sdv-dev
+The following changes were made to the code:
+    - The paths of imported modules were modified.
+    - The fitting methods were modified to accommodate for differentially private training.
+    - In CTGAN, the gradient penalty was removed in the DP version as the gradient clipping respects the imposed
+      constraints (clipping norm of 1).
+
+This product includes software from the TabDDPM project, under the MIT license.
+https://github.com/yandex-research/tab-ddpm
+
+This product includes software from the CTAB-GAN-Plus project, under the license Apache version 2.0.
+https://github.com/Team-TUD/CTAB-GAN-Plus
+
+This product includes software from the dpart project, under the MIT license.
+https://github.com/hazy/dpart
+The following changes were made to the code:
+    - The paths of imported modules were modified to be relative.
+    - Modify the differential private synthpop class to include more arguments.
+    - Implement privacy budget accountant.
+    - Replace the lambda function in the dpart class by a named function so that the object can be saved with pickle.
+    - Change feature_range of the MinMaxScaler from list to tuple to match the type required by sklearn.
+    - Convert the type of the columns to str type when generating synthetic data.
+    - Update maximum number of iterations for logistic regression to fix the convergence issue.
+    - Set the entropy to its one-sided limitation when the probability is 0 to avoid returning NA.
+
+Please refer to the LICENSE file for details about the licensing of this project.

@@ -1,5 +1,5 @@
 astropy==6.1.7
-category_encoders==2.8.0
+category_encoders==2.6.1
 DataSynthesizer==0.1.13
 diffprivlib==0.6.5
 disjoint_set==0.8.0
@@ -26,7 +26,7 @@ pytest==8.3.5
 ray==2.6.3
 rdt==1.14.0
 rtdl==0.0.13
-scikit-learn>=1.6.0
+scikit_learn==1.3.0
 scipy==1.15.2
 sdv==1.19.0
 seaborn==0.13.2

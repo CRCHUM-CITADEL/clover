@@ -10,5 +10,6 @@ Generators
    mst
    ctgan
    tvae
+   ctabgan
    findiff
 

@@ -1,5 +1,5 @@
-Conditional Table GAN (CTAB-GAN)
-===============================
+Conditional Table GAN (CTAB-GAN+)
+=================================
 
 Introduction
 ------------

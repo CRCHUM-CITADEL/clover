@@ -1,9 +1,9 @@
-Sphinx==6.2.1
+black==23.7.0
 furo==2023.9.10
-sphinx_autodoc_typehints==1.23.0
+ipython==8.12.3
 nbsphinx==0.9.1
 nbsphinx-link==1.3.0
 pandoc==2.3
-ipython==8.13.2
 pytest==7.3.1
-black==22.12.0
+sphinx==6.2.1
+sphinx-autodoc-typehints==1.23.0

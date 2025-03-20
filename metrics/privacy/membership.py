@@ -812,7 +812,8 @@ class Logan(AttackModel):
         :return: a dictionary with two keys pointing to dictionaries
 
             * **average** -- the average across repetitions for **top 1% precision**, **top 50 precision** and **precision**
-            to predict if a record in the real set (train and test) is used to generate the first generation synthetic data
+              to predict if a record in the real set (train and test) is used to generate the first generation synthetic data
+
             * **detailed** -- **top 1% precision**, **top 50% precision**, **precision** and **ROC** for each repetition
         """
 
@@ -1134,7 +1135,8 @@ class TableGan(AttackModel):
         :return: a dictionary with two keys pointing to dictionaries
 
             * **average** -- the average across repetitions for **top 1% precision**, **top 50 precision** and **precision**
-            to predict if a record in the real set (train and test) is used to generate the first generation synthetic data
+              to predict if a record in the real set (train and test) is used to generate the first generation synthetic data
+
             * **detailed** -- **top 1% precision**, **top 50% precision**, **precision** and **ROC** for each repetition
         """
 
@@ -1453,7 +1455,8 @@ class Detector(AttackModel):
         :return: a dictionary with two keys pointing to dictionaries
 
             * **average** -- the average across repetitions for **top 1% precision**, **top 50 precision** and **precision**
-            to predict if a record in the real set (train and test) is used to generate the first generation synthetic data
+              to predict if a record in the real set (train and test) is used to generate the first generation synthetic data
+
             * **detailed** -- **top 1% precision**, **top 50% precision**, **precision** and **ROC** for each repetition
         """
 
@@ -1771,9 +1774,10 @@ class Collision(AttackModel):
         :return: a dictionary with two keys pointing to dictionaries
 
             * **average** -- the average across repetitions for **top 1% precision**, **top 50 precision** and **precision**
-            to predict if a record in the real set (train and test) is used to generate the first generation synthetic data
-            and the average number of appearance of each unique record in real train, real control, synthetic set
-            and for collisions
+              to predict if a record in the real set (train and test) is used to generate the first generation synthetic data
+              and the average number of appearance of each unique record in real train, real control, synthetic set
+              and for collisions
+
             * **detailed** -- **top 1% precision**, **top 50% precision**, **precision** and **ROC** for each repetition
         """
 

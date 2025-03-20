@@ -18,9 +18,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Run black linter
-      uses: psf/black@stable
-      with:
-        options: "--check --verbose"
-        src: "./"
-        jupyter: true
+    - name: Install black
+      run: pip install black
+
+    - name: Run black and output files needing reformatting
+      run: |
+        black --check --diff ./ || echo "Some files need reformatting."

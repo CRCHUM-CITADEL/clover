@@ -37,4 +37,4 @@ jobs:
         
     - name: Run tests with pytest
       run: |
-        pytest tests/metrics/test_metareport.py
+        pytest

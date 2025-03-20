@@ -34,13 +34,13 @@ def metareport(
     df_mock_2 = {}
 
     sublist = metadata["continuous"] + metadata["categorical"]
-    for set in ["train", "test"]:
-        df_wbcd_mix[set] = df_wbcd[set].copy()[sublist]
+    for set_ in ["train", "test"]:
+        df_wbcd_mix[set_] = df_wbcd[set_].copy()[sublist]
 
-    for set in ["train", "test", "2nd_gen"]:
-        df_mock_1[set] = df_mock_wbcd[set].copy()[sublist]
-        df_mock_2[set] = (
-            df_mock_1[set]
+    for set_ in ["train", "test", "2nd_gen"]:
+        df_mock_1[set_] = df_mock_wbcd[set_].copy()[sublist]
+        df_mock_2[set_] = (
+            df_mock_1[set_]
             .copy()
             .apply(lambda x: np.random.choice(x.unique(), size=len(x), replace=True))
         )
@@ -48,7 +48,7 @@ def metareport(
     parameters = {
         "num_repeat": 1,
         "num_kfolds": 2,
-        "num_optuna_trials": 1,
+        "num_optuna_trials": 5,
         "sampling_frac": 1.0,
         "use_gpu": True,
     }
@@ -72,7 +72,7 @@ def test_summary_report(metareport: Metareport) -> None:
     """
     Test the summary metareport.
 
-    :param report: the computed metareport fixture
+    :param metareport: the computed metareport fixture
     :return: *None*
     """
     df_summary = metareport.summary()

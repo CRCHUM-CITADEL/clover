@@ -1,20 +1,14 @@
 # Clover: Synthetic Health Data Generation and Validation Library
 
 Advances in health research are constrained by the availability of data. Indeed, access to a large amount of data from
-different sources is a key factor to increase the generalizability of the machine learning algorithms and validate them
-and thus improve healthcare for the population.
+different sources is a key factor to increase the generalizability in health research and thus improve healthcare for the population.
 
 Public and pre-processed data do not reflect the real-world.
-Synthetic data, which preserve the properties of the original dataset while overcoming privacy risks
-since the information is no longer personal, hold promise.
-However, the evidence regarding their utility and security remains unclear.
-For widespread adoption of synthetic data, both by the general public and by potential users,
-it is essential to establish best practices to mitigate the risks of privacy breach and information loss.
+Synthetic data in healthcare refers to artificially generated datasets that mimic the statistical properties and relationships found in real-world patient data without containing any personally identifiable information. This data is created using advanced algorithms and machine learning techniques, making it a valuable resource for healthcare professionals and researchers who require access to data-driven insights while adhering to stringent patient privacy regulations. Synthetic data can take various forms, ranging from fully synthetic datasets that contain no real records to partially synthetic datasets where only specific sensitive variables are replaced, and hybrid approaches that combine elements of both real and synthetic data. The methods used to generate synthetic data are also diverse, encompassing rule-based systems to sophisticated models.
+While synthetic data is designed to mitigate the risks associated with using real patient data, we need to recognize that it does not entirely eliminate privacy risks if not done properly. Several potential vulnerabilities and limitations can lead to the disclosure of sensitive information, even in artificially generated datasets.
+It is essential to establish best practices to mitigate the risks of privacy breach and information loss.
 
-The goal of this project is therefore to provide means to perform a comprehensive study on synthetic data generation.
-The quality of the synthetic data and their generator will be evaluated on two criteria:
-the preservation of information and privacy. A trade-off between these two aspects is necessary in order to
-preserve the properties of the real data without compromising the privacy of the patients.
+Introducing Clover, a comprehensive library designed for the critical assessment of synthetic data generation. Clover evaluates the quality of both the generated synthetic data and the methods used to create it based on the degree to which information from the original data is preserved and the level of privacy protection afforded. Recognizing the inherent trade-off between these aspects, Clover aims to facilitate the creation of synthetic data that effectively balances the utility of real-world data with the imperative of safeguarding patient privacy.
 
 ## Table of Contents
 
@@ -123,5 +117,6 @@ The documentation was generated with Sphinx.
 
 ## Ongoing Work - Next Steps
 * Improve data coverage (direct identifiers, missing data, etc.)
+* Add support for imaging data
 * Improve the utility metrics (better discretisation, learning algorithms, etc.)
 * Create a benchmark of the synthetic data generator in different settings

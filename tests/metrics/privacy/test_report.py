@@ -63,7 +63,7 @@ def privacy_report(
         num_kfolds=2,
         sampling_frac=1.0,
         num_optuna_trials=1,
-        use_gpu=True,
+        use_gpu=False,
     )
 
     report.compute()

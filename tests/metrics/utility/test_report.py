@@ -59,7 +59,7 @@ def utility_report(
         num_repeat=1,
         num_kfolds=3,
         num_optuna_trials=1,
-        use_gpu=True,
+        use_gpu=False,
         alpha=0.05,
     )
 

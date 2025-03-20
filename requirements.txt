@@ -11,7 +11,7 @@ numpy==1.23.5
 opacus==1.4.1
 optuna==3.2.0
 pandas==1.5.3
-pymoo==0.6.0.3
+pymoo==0.6.0.1
 ray==2.5.1
 rtdl==0.0.13
 scikit-learn==1.2.2

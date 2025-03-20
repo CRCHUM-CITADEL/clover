@@ -48,9 +48,9 @@ def metareport(
     parameters = {
         "num_repeat": 1,
         "num_kfolds": 2,
-        "num_optuna_trials": 5,
+        "num_optuna_trials": 1,
         "sampling_frac": 1.0,
-        "use_gpu": True,
+        "use_gpu": False,
     }
 
     report = Metareport(

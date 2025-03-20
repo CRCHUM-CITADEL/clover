@@ -66,7 +66,7 @@ def population_metrics_results(
         "num_repeat": 1,
         "num_kfolds": 2,
         "num_optuna_trials": 1,
-        "use_gpu": True,
+        "use_gpu": False,
     }
 
     # Select only the expected instance parameters

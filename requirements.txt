@@ -1,6 +1,7 @@
 category_encoders==2.6.1
 DataSynthesizer==0.1.11
 diffprivlib==0.6.5
+disjoint-set==0.7.4
 icecream==2.1.4
 imbalanced-learn==0.10.1
 libzero==0.0.8

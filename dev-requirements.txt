@@ -1,4 +1,5 @@
-black==23.7.0
+black==25.1.0
+black[jupyter]
 furo==2023.9.10
 ipython==8.12.3
 nbsphinx==0.9.1

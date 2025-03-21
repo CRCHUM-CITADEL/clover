@@ -37,9 +37,7 @@ class GraphicalModel:
         if self.size * 8 > 4 * 10**9:
             import warnings
 
-            message = "Size of parameter vector is %.2f GB. " % (
-                self.size * 8 / 10**9
-            )
+            message = "Size of parameter vector is %.2f GB. " % (self.size * 8 / 10**9)
             message += "Consider removing some measurements or finding a better elimination order"
             warnings.warn(message)
 

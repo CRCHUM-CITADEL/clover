@@ -55,9 +55,9 @@ class Processor:
                 # Dealing with NaN
                 for index, (_, bool_series) in enumerate(col_nan_series):
                     nan_cat = self.spop.catgroups[col] + index
-                    self.processing_dict[NUMTOCAT_KEY][col]["categories"][
-                        nan_cat
-                    ] = df.loc[bool_series, col].to_numpy()
+                    self.processing_dict[NUMTOCAT_KEY][col]["categories"][nan_cat] = (
+                        df.loc[bool_series, col].to_numpy()
+                    )
                     df.loc[bool_series, col] = nan_cat
 
                 df[col] = df[col].astype("category")

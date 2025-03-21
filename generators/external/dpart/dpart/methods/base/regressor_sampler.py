@@ -64,9 +64,7 @@ class RegressorSampler(NumericalSampler):
         else:
             additive_noise = 0
 
-        self.sigma = np.abs(
-            np.sqrt(np.sum(residuals**2) / normaliser) + additive_noise
-        )
+        self.sigma = np.abs(np.sqrt(np.sum(residuals**2) / normaliser) + additive_noise)
 
     def postprocess_y(self, y: pd.Series) -> pd.Series:
         return y

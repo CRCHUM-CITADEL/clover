@@ -78,7 +78,7 @@ def membership_metrics_results(
 
 
 def test_membership_metrics_summary(
-    membership_metrics_results: Tuple[Type[Metric], str, dict]
+    membership_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the membership metrics average scores.
@@ -117,7 +117,7 @@ def test_membership_metrics_summary(
 
 
 def test_membership_metrics_detailed(
-    membership_metrics_results: Tuple[Type[Metric], str, dict]
+    membership_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the membership metrics detailed scores.

@@ -5,7 +5,6 @@ from sklearn import model_selection
 
 
 class DataPrep(object):
-
     """
     Data preparation class for pre-processing input data and post-processing generated data
 
@@ -145,15 +144,19 @@ class DataPrep(object):
                         )
                     elif lower_bound == 0:
                         df_sample[i] = df_sample[i].apply(
-                            lambda x: np.ceil(np.exp(x) - eps)
-                            if ((x != -9999999) & ((np.exp(x) - eps) < 0))
-                            else (np.exp(x) - eps if x != -9999999 else -9999999)
+                            lambda x: (
+                                np.ceil(np.exp(x) - eps)
+                                if ((x != -9999999) & ((np.exp(x) - eps) < 0))
+                                else (np.exp(x) - eps if x != -9999999 else -9999999)
+                            )
                         )
                     else:
                         df_sample[i] = df_sample[i].apply(
-                            lambda x: np.exp(x) - eps + lower_bound
-                            if x != -9999999
-                            else -9999999
+                            lambda x: (
+                                np.exp(x) - eps + lower_bound
+                                if x != -9999999
+                                else -9999999
+                            )
                         )
 
         # Rounding numeric columns without floating numbers in the original dataset

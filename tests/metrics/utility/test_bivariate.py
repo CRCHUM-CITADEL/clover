@@ -50,7 +50,7 @@ def bivariate_metrics_results(
 
 
 def test_bivariate_metrics_summary(
-    bivariate_metrics_results: Tuple[Type[Metric], str, dict]
+    bivariate_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the bivariate metrics average scores.
@@ -87,7 +87,7 @@ def test_bivariate_metrics_summary(
 
 
 def test_bivariate_metrics_detailed(
-    bivariate_metrics_results: Tuple[Type[Metric], str, dict]
+    bivariate_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the bivariate metrics detailed scores.

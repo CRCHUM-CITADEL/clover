@@ -78,7 +78,7 @@ def univariate_metrics_results(
 
 
 def test_univariate_metrics_summary(
-    univariate_metrics_results: Tuple[Type[Metric], str, dict]
+    univariate_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the univariate metrics average scores.
@@ -110,7 +110,7 @@ def test_univariate_metrics_summary(
 
 
 def test_univariate_metrics_detailed(
-    univariate_metrics_results: Tuple[Type[Metric], str, dict]
+    univariate_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the univariate metrics detailed scores.

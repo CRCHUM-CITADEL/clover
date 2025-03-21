@@ -80,7 +80,7 @@ def population_metrics_results(
 
 
 def test_population_metrics_summary(
-    population_metrics_results: Tuple[Type[Metric], str, dict]
+    population_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the population metrics average scores.
@@ -111,7 +111,7 @@ def test_population_metrics_summary(
 
 
 def test_population_metrics_detailed(
-    population_metrics_results: Tuple[Type[Metric], str, dict]
+    population_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the population metrics detailed scores.

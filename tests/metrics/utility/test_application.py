@@ -105,7 +105,7 @@ def application_metrics_results(
 
 
 def test_application_metrics_summary(
-    application_metrics_results: Tuple[Type[Metric], str, dict]
+    application_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the application metrics average scores.
@@ -136,7 +136,7 @@ def test_application_metrics_summary(
 
 
 def test_application_metrics_detailed(
-    application_metrics_results: Tuple[Type[Metric], str, dict]
+    application_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the application metrics detailed scores.

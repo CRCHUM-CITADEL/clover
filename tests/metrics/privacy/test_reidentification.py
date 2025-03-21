@@ -56,7 +56,7 @@ def reidentification_metrics_results(
 
 
 def test_reidentification_metrics_summary(
-    reidentification_metrics_results: Tuple[Type[Metric], str, dict]
+    reidentification_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the reidentification metrics average scores.
@@ -97,7 +97,7 @@ def test_reidentification_metrics_summary(
 
 
 def test_reidentification_metrics_detailed(
-    reidentification_metrics_results: Tuple[Type[Metric], str, dict]
+    reidentification_metrics_results: Tuple[Type[Metric], str, dict],
 ) -> None:
     """
     Test the reidentification metrics detailed scores.

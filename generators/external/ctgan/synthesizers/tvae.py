@@ -18,7 +18,6 @@ The original code was modified in the following ways to accommodate differential
 - Addition of the function fit_dp which trains the model with differential privacy
 """
 
-
 """TVAE module."""
 
 import numpy as np

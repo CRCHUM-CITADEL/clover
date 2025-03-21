@@ -111,9 +111,11 @@ class DPSmote:
 
         for _, row in df_X.iterrows():
             indices = tuple(
-                int((coord + self.r) // (2 * nu_ * self.r))
-                if int((coord + self.r) // (2 * nu_ * self.r)) < m
-                else m - 1
+                (
+                    int((coord + self.r) // (2 * nu_ * self.r))
+                    if int((coord + self.r) // (2 * nu_ * self.r)) < m
+                    else m - 1
+                )
                 for coord in row
             )
             counts[indices] += 1

@@ -2,6 +2,7 @@
 The following modifications were made to the file:
     - Global functions were created for categorical variables embedding
 """
+
 import torch
 from torch import nn
 import math

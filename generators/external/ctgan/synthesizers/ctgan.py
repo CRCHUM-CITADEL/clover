@@ -20,7 +20,6 @@ The original code was modified in the following ways to accommodate differential
   Wasserstein Distance
 """
 
-
 """CTGAN module."""
 
 import warnings

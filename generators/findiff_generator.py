@@ -420,9 +420,11 @@ class FinDiffGenerator(Generator):
                 scheduler=self.scheduler,
                 learning_rate=self.learning_rate,
                 epochs=self.epochs,
-                epsilon=self.epsilon.get("fitting", None)
-                if isinstance(self.epsilon, dict)
-                else None,
+                epsilon=(
+                    self.epsilon.get("fitting", None)
+                    if isinstance(self.epsilon, dict)
+                    else None
+                ),
                 delta=self.delta,
                 max_grad_norm=self.max_grad_norm,
                 accountant="gdp",

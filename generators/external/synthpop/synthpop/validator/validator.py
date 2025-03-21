@@ -121,11 +121,13 @@ class Validator:
                 # if method is not specified
                 # for each column set method to default method according to its dtype (method for first visited column is sample_method)
                 self.spop.method = [
-                    DEFAULT_METHODS_MAP[self.spop.default_method][
-                        self.spop.df_dtypes[col]
-                    ]
-                    if col != first_visited_col
-                    else SAMPLE_METHOD
+                    (
+                        DEFAULT_METHODS_MAP[self.spop.default_method][
+                            self.spop.df_dtypes[col]
+                        ]
+                        if col != first_visited_col
+                        else SAMPLE_METHOD
+                    )
                     for col in self.spop.df_columns
                 ]
 
@@ -133,9 +135,11 @@ class Validator:
                 # if method type is str
                 # for each column set method to the corresponding allowed method according to its dtype (method for first visited column is sample_method)
                 self.spop.method = [
-                    INIT_METHODS_MAP[self.spop.method][self.spop.df_dtypes[col]]
-                    if col != first_visited_col
-                    else SAMPLE_METHOD
+                    (
+                        INIT_METHODS_MAP[self.spop.method][self.spop.df_dtypes[col]]
+                        if col != first_visited_col
+                        else SAMPLE_METHOD
+                    )
                     for col in self.spop.df_columns
                 ]
 

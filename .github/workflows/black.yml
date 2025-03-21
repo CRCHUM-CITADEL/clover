@@ -18,8 +18,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Install black and nbformat
-      run: pip install black nbformat
-
-    - name: Run black and output files needing reformatting
-      run: black --check --verbose --diff ./ --include "\.ipynb$"
+    - name: Run black linter
+      uses: psf/black@stable
+      with:
+        options: "--check --verbose --diff"
+        src: "./"
+        jupyter: true

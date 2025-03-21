@@ -1,5 +1,15 @@
 # Clover: Synthetic Health Data Generation and Validation Library
 
+<div align="center">
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![Tests with Pytest](https://img.shields.io/badge/Tests-Pytest-green)](https://pytest.org)
+[![Code Style: Black](https://img.shields.io/badge/Code%20Style-Black-black)](https://black.readthedocs.io)
+[![Docs: Sphinx](https://img.shields.io/badge/Docs-Sphinx-blue)](https://www.sphinx-doc.org)
+
+</div>
+
 Advances in health research are constrained by the availability of data. Indeed, access to a large amount of data from
 different sources is a key factor to increase the generalizability in health research and thus improve healthcare for the population.
 

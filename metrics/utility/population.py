@@ -122,8 +122,8 @@ class Distinguishability(Metric):
     ) -> dict:
         """
         Compute three distinguishability metrics between real and synthetic datasets:
-        the propensity mean squared error (all data), the prediction mean squared error (test only) and
-        the prediction auc score (test only).
+        the propensity mean squared error, the prediction mean squared error and
+        the prediction auc score.
 
         :param df_real: the real dataset, split into **train** and **test** sets
         :param df_synthetic: the synthetic dataset, split into **train** and **test** sets

@@ -1963,7 +1963,7 @@ class Collision(AttackModel):
             ]
         )
 
-        if all(np.isnan(value) for value in report.values()):
+        if all(np.all(np.isnan(value)) for value in report.values()):
             pass
         else:
             # Bar plot single value

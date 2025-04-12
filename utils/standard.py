@@ -19,7 +19,7 @@ def load_pickle(filepath: Union[Path, str]) -> Any:
     """
     Load a pickled object.
 
-    :param filename: the filename of the object with the extension
+    :param filepath: the filename of the object with the extension
     :return: the pickled object
     """
 
@@ -68,3 +68,14 @@ class HiddenPrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout.close()
         sys.stdout = self._original_stdout
+
+
+def create_directory(path: Union[Path, str]) -> None:
+    """
+    Create directory if it does not exist
+
+    :param path: the directory to be created
+    :return: None
+    """
+    if not os.path.exists(path):
+        os.makedirs(path)

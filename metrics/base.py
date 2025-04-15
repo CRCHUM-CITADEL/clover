@@ -86,7 +86,7 @@ class Metric(metaclass=ABCMeta):
         Get the average submetrics of the current metric with their target and min/max values.
 
         :return: the list of the average submetrics formatted as dictionaries
-            (**submetric** name, **min**, **max** and **objective**)
+            (**submetric** name, **min**, **max**, **objective**, **description** and **interpretation**)
         """
 
     @abstractmethod

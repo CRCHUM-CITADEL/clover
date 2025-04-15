@@ -62,8 +62,12 @@ def pipeline_prediction(
                     subsample=trial.suggest_float("subsample", 0.5, 1),
                     colsample_bytree=trial.suggest_float("colsample_bylevel", 0.5, 1),
                     tree_method="auto" if not use_gpu else "gpu_hist",
+                    # The lines below are relevant when packages will be updated (gpu_hist is deprecated)
+                    # tree_method="auto" if not use_gpu else "hist",
+                    # device="cpu" if not use_gpu else "cuda",
                     objective=loss_function,
                     seed=np.random.randint(1000),
+                    # verbosity=0,
                     verbosity=1,
                 ),
             ),

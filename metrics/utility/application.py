@@ -377,6 +377,8 @@ class Regression(Prediction):
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
+                "description": "This evaluates the difference in quality (RMSE) of the predictions of a target variable on the real test set made by a regressor trained separately on the real and synthetic datasets.",
+                "interpretation": "A difference close to 0 indicates high ML utility for the synthetic dataset.",
             }
         ]
 
@@ -446,6 +448,8 @@ class Classification(Prediction):
                 "min": 0,
                 "max": 1,
                 "objective": "min",
+                "description": "This evaluates the difference in quality (AUC) of the predictions of a target variable on the real test set made by a classifier trained separately on the real and synthetic datasets.",
+                "interpretation": "A difference close to 0 indicates high ML utility for the synthetic dataset.",
             }
         ]
 
@@ -528,6 +532,8 @@ class FScore(Metric):
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
+                "description": "The absolute difference between averaged real and synthetic F-scores, computed for each continuous variable, measures the preservation of discriminative capacity for synthetic variables. This metric is only computed if the variable to predict is binary.",
+                "interpretation": "The lower the difference in F-score, the better discriminative capacity is preserved for continuous variables. Note that variables are not scaled.",
             }
         ]
 
@@ -720,6 +726,8 @@ class FeatureImportance(Metric):
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
+                "description": "This metric evaluates whether importance of each feature for the prediction task is preserved. The feature importance of each variable for the prediction task is calculated using the permutation technique.  The absolute difference between averaged real and synthetic feature importance is reported.",
+                "interpretation": "The lower the difference, the better synthetic data preserves the feature importance for the prediction task.",
             }
         ]
 

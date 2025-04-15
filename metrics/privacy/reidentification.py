@@ -69,7 +69,19 @@ class DistanceToClosestRecord(Metric):
             {
                 "submetric": "dcr_5th_percent_synthreal_train",
                 "min": 0,
-                "max": np.inf,
+                "max": 1,
+                "objective": "max",
+            },
+            {
+                "submetric": "dcr_5th_percent_synthreal_control",
+                "min": 0,
+                "max": 1,
+                "objective": "max",
+            },
+            {
+                "submetric": "dcr_5th_percent_train_test_ref",
+                "min": 0,
+                "max": 1,
                 "objective": "max",
             },
             {
@@ -79,25 +91,13 @@ class DistanceToClosestRecord(Metric):
                 "objective": "max",
             },
             {
-                "submetric": "nndr_5th_percent_train_test_ref",
+                "submetric": "nndr_5th_percent_synthreal_control",
                 "min": 0,
                 "max": 1,
                 "objective": "max",
             },
             {
-                "submetric": "dcr_5th_percent_synthreal_control",
-                "min": 0,
-                "max": np.inf,
-                "objective": "max",
-            },
-            {
-                "submetric": "dcr_5th_percent_train_test_ref",
-                "min": 0,
-                "max": np.inf,
-                "objective": "max",
-            },
-            {
-                "submetric": "nndr_5th_percent_synthreal_control",
+                "submetric": "nndr_5th_percent_train_test_ref",
                 "min": 0,
                 "max": 1,
                 "objective": "max",

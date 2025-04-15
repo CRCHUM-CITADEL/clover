@@ -192,8 +192,8 @@ class CategoricalConsistency(Consistency):
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
 
-            * **average** -- the average ratio **within_ratio** of the number of synthetic data samples
-              between the minimum and maximum of the real data across all continuous variables
+            * **average** -- the average ratio **within_ratio**, measuring the coverage of synthetic data samples
+              across the categories observed in the real data, averaged over all categorical variables
             * **detailed** -- a dictionary **within_ratio** with the variables names as keys
               and the ratios as values
         """

@@ -4,7 +4,7 @@
 https://github.com/sattarov/FinDiff
 
 ## License
-N/A
+MIT License
 
 ## Changes
 * Local imports paths

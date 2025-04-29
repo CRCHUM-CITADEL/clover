@@ -1859,8 +1859,8 @@ class Collision(AttackModel):
         pr_curve = []
 
         if (
-            (len(y_train[y_train == 0]) == 0)
-            | (len(y_train[y_train == 1]) == 0)
+            (len(y_train[y_train == 0]) < self._num_kfolds)
+            | (len(y_train[y_train == 1]) < self._num_kfolds)
             | (len(y_test[y_test == 0]) == 0)
             | (len(y_test[y_test == 1]) == 0)
         ):

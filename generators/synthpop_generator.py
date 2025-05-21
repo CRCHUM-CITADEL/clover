@@ -29,7 +29,7 @@ class SynthpopGenerator(Generator):
     :param metadata: a dictionary containing the list of **continuous** and **categorical** variables
     :param random_state: for reproducibility purposes
     :param generator_filepath: the path of the generator to sample from if it exists
-    :param variable_order: the order of the variable to construct sequentially
+    :param variables_order: the order of the variable to construct sequentially
     :param epsilon: the privacy budget of the differential privacy. One can specify how the budget is split between
         optimizing the visit order (dependency) and training the generator (methods), if prediction_matrix is set to "infer".
         By default, half the budget is allocated for optimization and half for fitting. The budget for training
@@ -81,7 +81,10 @@ class SynthpopGenerator(Generator):
             epsilon is not None and max_depth is None
         ), "max_depth cannot be None when DP is used"
 
-        bounds = preprocess_metadata
+        if preprocess_metadata is None:
+            bounds = {}
+        else:
+            bounds = preprocess_metadata
 
         self.epsilon = epsilon
 
@@ -97,7 +100,7 @@ class SynthpopGenerator(Generator):
             self._dtypes = None
         else:  # Initiate DP generator
             n_col = df.shape[1]
-            if n_parents == None:
+            if n_parents is None:
                 self.n_parents = n_col
             else:
                 self.n_parents = n_parents

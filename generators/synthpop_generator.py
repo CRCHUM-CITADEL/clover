@@ -120,6 +120,9 @@ class SynthpopGenerator(Generator):
                     "categories": list(map(str, list(range(n_bins))))
                 }
 
+            # Initialization
+            self._df_trans = None
+
             if generator_filepath is None:
                 self._gen = DPSynthpop(
                     methods=methods,
@@ -145,11 +148,16 @@ class SynthpopGenerator(Generator):
                 "category"
             )  # Synthpop requires "category" for categories and not object or str
 
-        if self.epsilon is None:
+        if isinstance(self._gen, Synthpop):
             self._dtypes = self._df.dtypes.apply(
                 lambda x: x.name.split("64")[0]
             ).to_dict()  # Non-dp generator: only 'int' or 'float' supported without any number after
         else:  # DP mode
+
+            # Initialization
+            df_cont = None
+            df_cat = None
+
             if len(self._metadata["continuous"]) > 0:
                 # Rescale continuous variables to min and max to prevent privacy leakage
                 df_cont_rescaled = pd.DataFrame(columns=self._metadata["continuous"])
@@ -189,17 +197,6 @@ class SynthpopGenerator(Generator):
                 df_cat = self._df[self._metadata["categorical"]]
 
             # Merge the preprocessed dataframes
-            # self._df_trans = pd.concat([df_cont, df_cat], axis=1)
-            try:
-                df_cont
-            except NameError:
-                df_cont = None
-
-            try:
-                df_cat
-            except NameError:
-                df_cat = None
-
             self._df_trans = pd.concat(
                 [df for df in [df_cont, df_cat] if df is not None], axis=1
             )
@@ -215,7 +212,7 @@ class SynthpopGenerator(Generator):
 
         # Deactivate the package prints while fitting the model
         with ustandard.HiddenPrints():
-            if self.epsilon is None:
+            if isinstance(self._gen, Synthpop):
                 self._gen.fit(self._df, self._dtypes)
             else:
                 self._gen.fit(self._df_trans)
@@ -234,7 +231,7 @@ class SynthpopGenerator(Generator):
         :return: *None*
         """
 
-        if self.epsilon is None:
+        if isinstance(self._gen, Synthpop):
             variable_order = list(self._gen.visit_sequence.sort_values().index)
 
             print("Constructed sequential trees:")
@@ -261,14 +258,14 @@ class SynthpopGenerator(Generator):
         """
 
         with ustandard.HiddenPrints():  # turn off the prints
-            if self.epsilon is None:
+            if isinstance(self._gen, Synthpop):
                 samples = self._gen.generate(num_samples)
             else:
                 samples = self._gen.sample(num_samples)
 
         # Transform discretized variables to origin continuous ones
         samples = samples[self._df.columns]  # same initial columns order
-        if self.epsilon is not None:
+        if isinstance(self._gen, DPSynthpop):
             if len(self._metadata["continuous"]) > 0:
                 samples[self._metadata["continuous"]] = self._kbins.inverse_transform(
                     samples[self._metadata["continuous"]]

@@ -1,6 +1,6 @@
 black==25.1.0
 black[jupyter]
-codecov=2.1.13
+codecov==2.1.13
 furo==2023.9.10
 ipython==8.12.3
 nbsphinx==0.9.1

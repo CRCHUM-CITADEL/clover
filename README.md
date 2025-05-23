@@ -5,9 +5,10 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/downloads/)
 [![Tests with Pytest](https://img.shields.io/badge/Tests-Pytest-green)](https://pytest.org)
-[![codecov](https://codecov.io/gh/CRCHUM-CITADEL/clover/branch/main/graph/badge.svg)](https://codecov.io/gh/CRCHUM-CITADEL/clover)
-[!Pytest Status](https://github.com/CRCHUM-CITADEL/clover/actions/workflows/pytest.yml/badge.svg)
+[![Coverage](https://codecov.io/gh/CRCHUM-CITADEL/clover/branch/main/graph/badge.svg)](https://codecov.io/gh/CRCHUM-CITADEL/clover)
+[![CI: Pytest](https://github.com/CRCHUM-CITADEL/clover/actions/workflows/pytest.yml/badge.svg)](https://github.com/CRCHUM-CITADEL/clover/actions/workflows/pytest.yml)
 [![Code Style: Black](https://img.shields.io/badge/Code%20Style-Black-black)](https://black.readthedocs.io)
+[![CI: Black](https://github.com/CRCHUM-CITADEL/clover/actions/workflows/black.yml/badge.svg)](https://github.com/CRCHUM-CITADEL/clover/actions/workflows/black.yml)
 [![Docs: Sphinx](https://img.shields.io/badge/Docs-Sphinx-blue)](https://www.sphinx-doc.org)
 
 </div>

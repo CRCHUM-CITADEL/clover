@@ -23,7 +23,7 @@ class DPSynthpop(dpart):
         self,
         methods: dict = None,
         epsilon: Union[float, Dict[str, Union[float, Dict[str, float]]]] = None,
-        bounds: Dict[str, List] = None,
+        bounds: Dict[str, Union[List, Dict[str, List]]] = None,
         slack: float = 0.0,
         visit_order: List[str] = None,
         prediction_matrix: Union[str, Dict[str, List[str]]] = None,

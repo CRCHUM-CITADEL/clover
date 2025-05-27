@@ -83,18 +83,24 @@ class Distinguishability(Metric):
                 "min": 0,
                 "max": 1,
                 "objective": "min",
+                "description": "The propensity MSE evaluates the confidence of a classifier (by default, XGBoost) trained to differentiate between real and synthetic data points. The predictions are made on the entire dataset, including training data.",
+                "interpretation": "A value of 0 indicates that the model often assigns to the data points a probability of 0.5 of being real: it cannot distinguish confidently between real and synthetic data. Conversely, a value of 1 indicates confidence in the model’s predictions.",
             },
             {
                 "submetric": "prediction_mse",
                 "min": 0,
                 "max": 1,
                 "objective": "min",
+                "description": "The prediction MSE evaluates the confidence of the trained classifier when predicting correctly whether the data points are real or synthetic. The predictions are made on the test set only.",
+                "interpretation": "A value close to 0 indicates that the model does not predict confidently and correctly whether the data points are real or synthetic. A value of 1 indicates that the model always predicts correctly with full confidence.",
             },
             {
                 "submetric": "prediction_auc_rescaled",
                 "min": 0,
                 "max": 1,
                 "objective": "min",
+                "description": "The prediction AUC evaluates the performance of the classifier trained to differentiate between real and synthetic data points. The predictions are made on the test set only. The AUC is rescaled to fall in the 0-1 range.",
+                "interpretation": "A value of 0 indicates predictions equivalent to random guessing. A score of 1 indicates complete distinguishability.",
             },
         ]
 
@@ -119,6 +125,7 @@ class Distinguishability(Metric):
         df_real: dict[str, pd.DataFrame],
         df_synthetic: dict[str, pd.DataFrame],
         metadata: dict,
+        optimize_xgb: bool = True,
     ) -> dict:
         """
         Compute three distinguishability metrics between real and synthetic datasets:
@@ -129,6 +136,7 @@ class Distinguishability(Metric):
         :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
         :param metadata: a dict containing the metadata with the following keys:
           **continuous**, **categorical** and **variable_to_predict**
+        :param optimize_xgb: whether the XGB Predictor should be optimized with Optuna
         :return: a dictionary with two keys pointing to dictionaries
 
             * **average** -- the average across repetitions propensity mean squared error **propensity_mse** and
@@ -219,16 +227,34 @@ class Distinguishability(Metric):
 
         # Compute scores several times to account for randomness
         for _ in range(self._num_repeat):
-            study = optuna.create_study(
-                direction="maximize",
-                sampler=optuna.samplers.TPESampler(
-                    n_startup_trials=10, seed=np.random.randint(1000)
-                ),
-            )
-            study.optimize(objective, n_trials=self._num_optuna_trials)
+            if optimize_xgb:
+                study = optuna.create_study(
+                    direction="maximize",
+                    sampler=optuna.samplers.TPESampler(
+                        n_startup_trials=10, seed=np.random.randint(1000)
+                    ),
+                )
+                study.optimize(objective, n_trials=self._num_optuna_trials)
+                best_trial = study.best_trial
+            else:
+                # Use default XGBClassifier without optimization
+                best_trial = optuna.trial.FixedTrial(
+                    {
+                        "eta": 0.1,
+                        "max_depth": 6,
+                        "subsample": 0.5,
+                        "colsample_bylevel": 1,
+                    }
+                )
+
+            #   Shuffle train dataset - TO DELETE
+            df_train["y"] = y_train
+            df_train = df_train.sample(frac=1).reset_index(drop=True)
+            y_train = df_train["y"].to_numpy()
+            df_train = df_train.drop(columns="y")
 
             auc, y_pred_proba, _ = ulearning.refit_auc_score(
-                trial=study.best_trial,
+                trial=best_trial,
                 pipeline=pipeline,
                 df_train=df_train,
                 y_train=y_train,

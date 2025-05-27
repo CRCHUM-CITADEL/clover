@@ -55,7 +55,7 @@ class UtilityReport(Report):
         random_state: int = 0,
         report_filepath: Union[Path, str] = None,
         metrics: List[str] = None,
-        cross_learning: bool = True,
+        cross_learning: bool = False,
         num_repeat: int = 20,
         num_kfolds: int = 5,
         num_optuna_trials: int = 20,

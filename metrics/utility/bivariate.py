@@ -53,6 +53,8 @@ class PairwiseCorrelationDifference(Metric):
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
+                "description": "The Frobenius norm of the discrepancy between the Pearson correlation matrices in the real and synthetic datasets evaluates the preservation of the relationships between continuous variables.",
+                "interpretation": "The norm should be close to 0 (below 0.1) for similar distributions.",
             }
         ]
 
@@ -181,12 +183,16 @@ class PairwiseChiSquareDifference(Metric):
                 "min": 0,
                 "max": 1,
                 "objective": "max",
+                "description": "This metric evaluates the preservation of relationships between categorical variables by comparing the decision of rejecting the null hypothesis (H0: there is no relationship between two variables) between the real and synthetic datasets.",
+                "interpretation": "Sensitivity is the percentage of true relationships detected among all real relationships: TP / (TP + FN).",
             },
             {
                 "submetric": "specificity",
                 "min": 0,
                 "max": 1,
                 "objective": "max",
+                "description": "This metric evaluates the preservation of relationships between categorical variables by comparing the decision of rejecting the null hypothesis (H0: there is no relationship between two variables) between the real and synthetic datasets.",
+                "interpretation": "Specificity is the percentage of true non-existing relationships detected among all real non-existing relationships: TN / (TN + FP).",
             },
         ]
 

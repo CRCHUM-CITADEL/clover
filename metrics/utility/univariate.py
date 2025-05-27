@@ -55,7 +55,7 @@ class Consistency(Metric, metaclass=ABCMeta):
         Get the average submetrics of the current metric with their target and min/max values.
 
         :return: the list of the average submetrics formatted as dictionaries
-            (**submetric** name, **min**, **max** and **objective**)
+            (**submetric** name, **min**, **max**, **objective**, **description** and **interpretation**)
         """
         return [
             {
@@ -63,6 +63,8 @@ class Consistency(Metric, metaclass=ABCMeta):
                 "min": 0,
                 "max": 1,
                 "objective": "max",
+                "description": "The consistency metric evaluates whether synthetic data values fall within the bounds of the real data for continuous variables and whether categories match those in the real data for categorical variables.",
+                "interpretation": "A ratio of 1 indicates full adherence.",
             }
         ]
 
@@ -261,6 +263,8 @@ class ContinuousStatistics(Metric):
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
+                "description": "The median L1 distance evaluates the average L1 distance between the medians of real and synthetic data across all continuous variables.",
+                "interpretation": "It can be compared to the difference in medians between the train and test sets. Note that the variables are not scaled.",
             },
             {
                 "submetric": "median_l1_distance_train_test_ref",
@@ -273,6 +277,8 @@ class ContinuousStatistics(Metric):
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
+                "description": "The IQR L1 distance evaluates the average L1 distance between the IQRs of real and synthetic data across all continuous variables.",
+                "interpretation": "It can be compared to the difference in IQRs between the train and test sets. Note that the variables are not scaled.",
             },
             {
                 "submetric": "iqr_l1_distance_train_test_ref",
@@ -457,12 +463,16 @@ class CategoricalStatistics(Metric):
                 "min": 0,
                 "max": 1,
                 "objective": "max",
+                "description": "The support coverage evaluates the mean of the proportion of represented (non-zero counts) categories in the synthetic data for all categorical variables.",
+                "interpretation": "A support coverage smaller than 1 indicates missing categories.",
             },
             {
                 "submetric": "frequency_coverage",
                 "min": 0,
                 "max": 1,
                 "objective": "max",
+                "description": "The frequency coverage evaluates whether categories appear with the same frequency in the synthetic and real data. It is equal to 1 - the mean of the differences in frequency for all categorical variables.",
+                "interpretation": "A high coverage indicates a close representation of categorical variables in the synthetic data.",
             },
         ]
 
@@ -940,12 +950,16 @@ class ContinuousUnivariateHellingerDistance(ContinuousUnivariateDistance):
                 "min": 0,
                 "max": 1,
                 "objective": "min",
+                "description": "The mean Hellinger distance assesses the difference in distribution between the real and synthetic datasets for each continuous variable.",
+                "interpretation": "The smaller the H value, the closer the synthetic dataset is to the real dataset. It can be compared to the distance between the train and test sets - generally, below 0.1 indicates a similar distribution.",
             },
             {
                 "submetric": cls.distance_name + "_train_test_ref",
                 "min": 0,
                 "max": 1,
                 "objective": "min",
+                "description": "Reference value for the mean continuous Hellinger distance.",
+                "interpretation": "",
             },
         ]
 
@@ -994,12 +1008,16 @@ class CategoricalUnivariateHellingerDistance(CategoricalUnivariateDistance):
                 "min": 0,
                 "max": 1,
                 "objective": "min",
+                "description": "The mean Hellinger distance assesses the difference in distribution between the real and synthetic datasets for each categorical variable.",
+                "interpretation": "The smaller the H value, the closer the synthetic dataset is to the real dataset. It can be compared to the distance between the train and test sets - generally, below 0.1 indicates a similar distribution.",
             },
             {
                 "submetric": cls.distance_name + "_train_test_ref",
                 "min": 0,
                 "max": 1,
                 "objective": "min",
+                "description": "Reference value for the mean categorical Hellinger distance.",
+                "interpretation": "",
             },
         ]
 
@@ -1048,12 +1066,16 @@ class ContinuousUnivariateKLDivergence(ContinuousUnivariateDistance):
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
+                "description": "The KL divergence is a measure of relative entropy between the synthetic vs. real probability distributions for continuous variables.",
+                "interpretation": "It can be compared to the distance between the train and test sets.",
             },
             {
                 "submetric": cls.distance_name + "_train_test_ref",
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
+                "description": "Reference value for the continuous KL divergence.",
+                "interpretation": "",
             },
         ]
 
@@ -1102,12 +1124,16 @@ class CategoricalUnivariateKLDivergence(CategoricalUnivariateDistance):
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
+                "description": "This KL divergence is a measure of relative entropy between the synthetic vs. real probability distributions for categorical variables.",
+                "interpretation": "It can be compared to the distance between the train and test sets.",
             },
             {
                 "submetric": cls.distance_name + "_train_test_ref",
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
+                "description": "Reference value for the categorical KL divergence.",
+                "interpretation": "",
             },
         ]
 

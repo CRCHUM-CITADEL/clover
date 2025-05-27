@@ -125,7 +125,7 @@ class Distinguishability(Metric):
         df_real: dict[str, pd.DataFrame],
         df_synthetic: dict[str, pd.DataFrame],
         metadata: dict,
-        optimize_xgb: bool=True,
+        optimize_xgb: bool = True,
     ) -> dict:
         """
         Compute three distinguishability metrics between real and synthetic datasets:
@@ -238,12 +238,14 @@ class Distinguishability(Metric):
                 best_trial = study.best_trial
             else:
                 # Use default XGBClassifier without optimization
-                best_trial = optuna.trial.FixedTrial({
-                    "eta": 0.1,
-                    "max_depth": 6,
-                    "subsample": 0.5,
-                    "colsample_bylevel": 1,
-                })
+                best_trial = optuna.trial.FixedTrial(
+                    {
+                        "eta": 0.1,
+                        "max_depth": 6,
+                        "subsample": 0.5,
+                        "colsample_bylevel": 1,
+                    }
+                )
 
             #   Shuffle train dataset - TO DELETE
             df_train["y"] = y_train

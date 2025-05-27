@@ -328,7 +328,9 @@ class GANLeaks(AttackModel):
         y_test: np.ndarray,
         df_synth: pd.DataFrame,
         cat_cols: list,
-    ) -> tuple[float, float, ndarray[Any, dtype[Any]], ndarray[Any, dtype[Any]], Any, Any]:
+    ) -> tuple[
+        float, float, ndarray[Any, dtype[Any]], ndarray[Any, dtype[Any]], Any, Any
+    ]:
         """
         Evaluate a GAN-Leaks model
 
@@ -370,7 +372,14 @@ class GANLeaks(AttackModel):
             n=50, y_true=y_test, y_pred_proba=y_pred_proba
         )
 
-        return precision_top1, precision_top50, distance_top1, distance_top50, min_dist, y_pred_proba
+        return (
+            precision_top1,
+            precision_top50,
+            distance_top1,
+            distance_top50,
+            min_dist,
+            y_pred_proba,
+        )
 
     def compute(
         self,
@@ -422,7 +431,14 @@ class GANLeaks(AttackModel):
         # Label 1 for real records used to generate 1st generation synthetic data and 0 for control
         y_test = np.array([1] * len(real_train) + [0] * len(real_control))
 
-        precision_top1, precision_top50, distance_top1, distance_top50, y_pred_proba, _ = self.eval(
+        (
+            precision_top1,
+            precision_top50,
+            distance_top1,
+            distance_top50,
+            y_pred_proba,
+            _,
+        ) = self.eval(
             df_test=df_test,
             y_test=y_test,
             df_synth=df_synthetic["train"],
@@ -437,7 +453,11 @@ class GANLeaks(AttackModel):
             "detailed": {
                 "distance_top1%": distance_top1,
                 "distance_top50%": distance_top50,
-                "prediction": {'df_test': df_test, 'y_test': y_test, 'model_pred': y_pred_proba}
+                "prediction": {
+                    "df_test": df_test,
+                    "y_test": y_test,
+                    "model_pred": y_pred_proba,
+                },
             },
         }
 
@@ -922,7 +942,11 @@ class Logan(AttackModel):
                 "precision_top50%": np.array(precision_top50),
                 "precision": np.array(precision),
                 "roc": roc,
-                "prediction": {'df_test': df_test, 'y_test': y_test, 'model_pred': y_pred_proba}
+                "prediction": {
+                    "df_test": df_test,
+                    "y_test": y_test,
+                    "model_pred": y_pred_proba,
+                },
             },
         }
 

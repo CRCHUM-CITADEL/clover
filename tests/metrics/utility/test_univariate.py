@@ -8,9 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local packages
-from metrics.base import Metric
-from metrics.utility import univariate as uni
-import utils.stats as ustats
+from src.clover.metrics.base import Metric
+from src.clover.metrics.utility import univariate as uni
+import src.clover.utils.stats as ustats
 
 
 @pytest.mark.parametrize(

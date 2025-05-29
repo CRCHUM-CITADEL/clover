@@ -8,9 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local packages
-from metrics.base import Metric
-from metrics.utility import bivariate as biv
-
+from src.clover.metrics.base import Metric
+from src.clover.metrics.utility import bivariate as biv
 
 test_params = [
     {"metric_class": metric, "which_data": data}

@@ -9,9 +9,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Local packages
-from metrics.base import Metric
-from metrics.privacy import reidentification as reid
-
+from src.clover.metrics.base import Metric
+from src.clover.metrics.privacy import reidentification as reid
 
 test_params = [
     {"metric_class": metric, "which_data": data}

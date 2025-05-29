@@ -6,7 +6,7 @@ import tempfile
 import pandas as pd
 
 # Local packages
-from metrics.report import Report
+from src.clover.metrics.report import Report
 
 test_params = [
     ["DCR", "LOGAN", "Categorical Consistency"],

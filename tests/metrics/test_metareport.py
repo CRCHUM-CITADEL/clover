@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 # Local packages
-from metrics.metareport import Metareport
+from src.clover.metrics import Metareport
 
 
 @pytest.fixture(scope="module")

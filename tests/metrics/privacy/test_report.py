@@ -7,7 +7,7 @@ import tempfile
 import pandas as pd
 
 # Local packages
-from metrics.privacy.report import PrivacyReport
+from src.clover.metrics import PrivacyReport
 
 
 test_params = [

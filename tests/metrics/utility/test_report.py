@@ -7,7 +7,7 @@ import tempfile
 import pandas as pd
 
 # Local packages
-from metrics.utility.report import UtilityReport
+from src.clover.metrics.utility import UtilityReport
 
 
 test_params = [

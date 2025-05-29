@@ -8,15 +8,15 @@ from inspect import getfullargspec
 import pandas as pd
 
 # Local packages
-from generators.base import Generator
-from generators.dataSynthesizer import DataSynthesizerGenerator
-from generators.synthpop_generator import SynthpopGenerator
-from generators.smote import SmoteGenerator
-from generators.tvae_generator import TVAEGenerator
-from generators.ctgan_generator import CTGANGenerator
-from generators.findiff_generator import FinDiffGenerator
-from generators.mst_generator import MSTGenerator
-from generators.ctabgan_generator import CTABGANGenerator
+from src.clover.generators import Generator
+from src.clover.generators import DataSynthesizerGenerator
+from src.clover.generators import SynthpopGenerator
+from src.clover.generators import SmoteGenerator
+from src.clover.generators import TVAEGenerator
+from src.clover.generators import CTGANGenerator
+from src.clover.generators import FinDiffGenerator
+from src.clover.generators import MSTGenerator
+from src.clover.generators import CTABGANGenerator
 
 
 @pytest.mark.parametrize(

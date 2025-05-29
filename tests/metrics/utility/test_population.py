@@ -9,8 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local packages
-from metrics.base import Metric
-from metrics.utility import population as pop
+from src.clover.metrics.base import Metric
+from src.clover.metrics.utility import population as pop
 
 
 def test_propensity_score() -> None:

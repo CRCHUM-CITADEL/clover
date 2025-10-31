@@ -15,7 +15,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.compose import ColumnTransformer
 import xgboost as xgb
 from optuna.trial import Trial
-import cupy as cp
+# import cupy as cp
 
 
 def sklearn_confusion_matrix(
@@ -191,41 +191,41 @@ def hinge_loss(score: float, threshold: float) -> float:
     return max(0.0, score - threshold)
 
 
-def gpu_predict_proba(pipe, X):
-    """
-    Perform GPU-accelerated prediction probabilities for a sklearn pipeline
-    with a preprocessing step and an XGBoost model.
-    This could be used in certain modules (ex, LOGAN attacks) - it needs to be adapted in cross validation beforehand.
-
-    Args:
-        pipe: sklearn Pipeline with steps ['preprocessing', 'catboost'] where 'catboost' is an XGBClassifier.
-        X: pandas DataFrame or array-like, input data.
-
-    Returns:
-        numpy.ndarray: predicted probabilities for class 1 (binary classification).
-    """
-    # Preprocess input (CPU)
-    X_transformed = pipe.named_steps["preprocessing"].transform(X)
-
-    # Convert to dense if sparse and convert to float32
-    if hasattr(X_transformed, "toarray"):
-        X_transformed = X_transformed.toarray()
-    X_transformed = X_transformed.astype(np.float32)
-
-    # Convert to CuPy array (GPU)
-    X_gpu = cp.asarray(X_transformed)
-
-    # Get XGBoost booster
-    booster = pipe.named_steps["catboost"].get_booster()
-
-    # Run inplace_predict on GPU (raw margin output)
-    raw_preds = booster.inplace_predict(X_gpu)
-
-    # Convert raw margin to probability using sigmoid (binary case)
-    probs = 1 / (1 + np.exp(-cp.asnumpy(raw_preds)))
-
-    # Return probability of positive class (class 1)
-    if probs.ndim == 1:
-        return probs  # shape (n_samples,)
-    else:
-        return probs[:, 1]  # shape (n_samples,)
+# def gpu_predict_proba(pipe, X):
+#     """
+#     Perform GPU-accelerated prediction probabilities for a sklearn pipeline
+#     with a preprocessing step and an XGBoost model.
+#     This could be used in certain modules (ex, LOGAN attacks) - it needs to be adapted in cross validation beforehand.
+#
+#     Args:
+#         pipe: sklearn Pipeline with steps ['preprocessing', 'catboost'] where 'catboost' is an XGBClassifier.
+#         X: pandas DataFrame or array-like, input data.
+#
+#     Returns:
+#         numpy.ndarray: predicted probabilities for class 1 (binary classification).
+#     """
+#     # Preprocess input (CPU)
+#     X_transformed = pipe.named_steps["preprocessing"].transform(X)
+#
+#     # Convert to dense if sparse and convert to float32
+#     if hasattr(X_transformed, "toarray"):
+#         X_transformed = X_transformed.toarray()
+#     X_transformed = X_transformed.astype(np.float32)
+#
+#     # Convert to CuPy array (GPU)
+#     X_gpu = cp.asarray(X_transformed)
+#
+#     # Get XGBoost booster
+#     booster = pipe.named_steps["catboost"].get_booster()
+#
+#     # Run inplace_predict on GPU (raw margin output)
+#     raw_preds = booster.inplace_predict(X_gpu)
+#
+#     # Convert raw margin to probability using sigmoid (binary case)
+#     probs = 1 / (1 + np.exp(-cp.asnumpy(raw_preds)))
+#
+#     # Return probability of positive class (class 1)
+#     if probs.ndim == 1:
+#         return probs  # shape (n_samples,)
+#     else:
+#         return probs[:, 1]  # shape (n_samples,)

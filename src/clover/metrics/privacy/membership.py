@@ -454,7 +454,7 @@ class GANLeaks(AttackModel):
                 "distance_top1%": distance_top1,
                 "distance_top50%": distance_top50,
                 "prediction": {
-                    "df_test": df_test,
+                    "test_index": df_test.index,
                     "y_test": y_test,
                     "model_pred": y_pred_proba,
                 },
@@ -948,7 +948,7 @@ class Logan(AttackModel):
                 "precision": np.array(precision),
                 "roc": roc,
                 "prediction": {
-                    "df_test": df_test,
+                    "test_index": df_test.index,
                     "y_test": y_test,
                     "model_pred": y_pred_proba,
                 },
@@ -1316,6 +1316,11 @@ class TableGan(AttackModel):
                 "precision_top50%": np.array(precision_top50),
                 "precision": np.array(precision),
                 "roc": roc,
+                "prediction": {
+                    "test_index": df_test.index,
+                    "y_test": y_test,
+                    "model_pred": y_test_pred_proba,
+                }
             },
         }
 
@@ -1611,6 +1616,11 @@ class Detector(AttackModel):
                 "precision_top50%": np.array(precision_top50),
                 "precision": np.array(precision),
                 "roc": roc,
+                "prediction": {
+                    "test_index": df_test.index,
+                    "y_test": y_test,
+                    "model_pred": y_pred_proba,
+                }
             },
         }
 

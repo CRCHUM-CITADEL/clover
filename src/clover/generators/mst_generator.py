@@ -31,6 +31,7 @@ class MSTGenerator(Generator):
     :param metadata: a dictionary containing the list of **continuous** and **categorical** variables
     :param random_state: for reproducibility purposes
     :param generator_filepath: the path of the generator to sample from if it exists
+    :param nbins: number of bins to discretized continuous variables
     :param epsilon: the privacy budget of the differential privacy
     :param delta: the failure probability of the differential privacy
     :param preprocess_metadata: specify the range (minimum and maximum) for all numerical columns
@@ -48,6 +49,7 @@ class MSTGenerator(Generator):
         metadata: dict,
         random_state: int = None,
         generator_filepath: Union[Path, str] = None,
+        nbins: int = 100,
         epsilon: float = 1.0,
         delta: float = 1e-9,
         preprocess_metadata: Dict[str, dict] = None,
@@ -63,6 +65,7 @@ class MSTGenerator(Generator):
         self._delta = delta
 
         # Encoding
+        self._nbins = nbins
         self._scaler = {}
         self._kbins = None
         self._encoder = None
@@ -103,7 +106,9 @@ class MSTGenerator(Generator):
                 )
 
         # The continuous columns must be converted into categorical ones
-        self._kbins = KBinsDiscretizer(n_bins=100, encode="ordinal", strategy="uniform")
+        self._kbins = KBinsDiscretizer(
+            n_bins=self._nbins, encode="ordinal", strategy="uniform"
+        )
         self._kbins.fit(df_cont_rescaled[self._metadata["continuous"]])
         df_cont = pd.DataFrame(
             self._kbins.transform(df_cont_rescaled[self._metadata["continuous"]]),

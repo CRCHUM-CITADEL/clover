@@ -9,7 +9,10 @@ import warnings
 from .base import Generator  # local
 import src.clover.utils.standard as ustandard
 from src.clover.utils.postprocessing import transform_data
-from src.clover.generators.external.ctabgan.ctabgan_synthesizer import CTABGANSynthesizer
+from src.clover.generators.external.ctabgan.ctabgan_synthesizer import (
+    CTABGANSynthesizer,
+)
+
 from .external.ctabgan.data_preparation import DataPrep
 from .external.ctabgan.model.synthesizer.transformer import DataTransformer
 

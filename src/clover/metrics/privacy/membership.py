@@ -168,9 +168,9 @@ class AttackModel(Metric, metaclass=ABCMeta):
         df_copy = (
             df.copy()
         )  # Make a copy so that the original dataframe is not modified
-        df_copy["frequency"] = df_copy.groupby(list(df_copy.columns), observed=True).transform(
-            "size"
-        ) / len(df_copy)
+        df_copy["frequency"] = df_copy.groupby(
+            list(df_copy.columns), observed=True
+        ).transform("size") / len(df_copy)
 
         df_copy.drop_duplicates(inplace=True, ignore_index=True)
 
@@ -904,9 +904,9 @@ class Logan(AttackModel):
 
             # Code below to use later if we want to place the test data on GPU to avoid mismatch
             # It will have to be integrated in the tuning as well (with manual cross-validation)
-            #if self._use_gpu:
+            # if self._use_gpu:
             #    y_pred_proba = ulearning.gpu_predict_proba(pipe, df_test)
-            #else:
+            # else:
             y_pred_proba = pipe.predict_proba(df_test)[
                 :, 1
             ]  # binary case, y_pred needs to be (num_samples,)

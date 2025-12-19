@@ -122,7 +122,7 @@ class SequenceOrderingProblem(ElementwiseProblem):
             xl=0,
             xu=len(default_sequence) - 1,
             vtype=int,
-            **kwargs
+            **kwargs,
         )
         self._default_sequence = default_sequence
         self._objective = objective

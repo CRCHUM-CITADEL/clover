@@ -28,7 +28,7 @@ class DPSynthpop(dpart):
         visit_order: List[str] = None,
         prediction_matrix: Union[str, Dict[str, List[str]]] = None,
         n_parents: int = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             methods=methods,
@@ -38,5 +38,5 @@ class DPSynthpop(dpart):
             visit_order=visit_order,
             prediction_matrix=prediction_matrix,
             n_parents=n_parents,
-            **kwargs
+            **kwargs,
         )

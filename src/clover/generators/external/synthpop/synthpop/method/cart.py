@@ -28,7 +28,7 @@ class CARTMethod(Method):
         max_depth=None,
         random_state=None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         self.dtype = dtype
         self.smoothing = smoothing

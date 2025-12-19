@@ -17,7 +17,7 @@ class NormMethod(Method):
         random_state=None,
         ridge=0.00001,
         *args,
-        **kwargs
+        **kwargs,
     ):
         self.dtype = dtype
         self.smoothing = smoothing

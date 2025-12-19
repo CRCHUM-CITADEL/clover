@@ -47,7 +47,7 @@ class RegressorSampler(NumericalSampler):
             self.reg = self.dp_reg_class(
                 epsilon=(self.epsilon / 2 if self.epsilon is not None else None),
                 *self.args,
-                **self.kwargs
+                **self.kwargs,
             )
         else:
             self.reg = self.reg_class(*self.args, **self.kwargs)

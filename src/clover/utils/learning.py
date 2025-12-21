@@ -15,7 +15,6 @@ from sklearn.model_selection import cross_val_score
 from sklearn.compose import ColumnTransformer
 import xgboost as xgb
 from optuna.trial import Trial
-# import cupy as cp
 
 
 def sklearn_confusion_matrix(

@@ -1320,7 +1320,7 @@ class TableGan(AttackModel):
                     "test_index": df_test.index,
                     "y_test": y_test,
                     "model_pred": y_test_pred_proba,
-                }
+                },
             },
         }
 
@@ -1620,7 +1620,7 @@ class Detector(AttackModel):
                     "test_index": df_test.index,
                     "y_test": y_test,
                     "model_pred": y_pred_proba,
-                }
+                },
             },
         }
 

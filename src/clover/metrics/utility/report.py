@@ -34,7 +34,9 @@ class UtilityReport(Report):
     :param num_repeat: the scores are averaged across the number of repetitions to account for randomness
     :param num_kfolds: the number of folds to tune the hyperparameters of the classifier
     :param num_optuna_trials: the number of trials of the optimization process for tuning hyperparameters
+    :param corr_type: type of correlation to capture for continuous variables ("pearson" or "spearman")
     :param alpha: the significance level for the chi square test
+    :param use_gpu: whether to use GPU computation
     """
 
     metrics_mapping = {
@@ -59,8 +61,9 @@ class UtilityReport(Report):
         num_repeat: int = 20,
         num_kfolds: int = 5,
         num_optuna_trials: int = 20,
-        use_gpu: bool = False,
+        corr_type: str = "pearson",
         alpha: float = 0.05,
+        use_gpu: bool = False,
     ):
         super().__init__(
             dataset_name,
@@ -75,6 +78,7 @@ class UtilityReport(Report):
         # Metrics instantiation with their respective parameters
         params = {
             "random_state": None,
+            "corr_type": corr_type,
             "alpha": alpha,
             "num_repeat": num_repeat,
             "num_kfolds": num_kfolds,

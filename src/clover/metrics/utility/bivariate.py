@@ -1,4 +1,5 @@
 # Standard library
+import logging
 from itertools import combinations
 from typing import Tuple, List, Type
 
@@ -13,6 +14,8 @@ import src.clover.utils.draw as udraw
 import src.clover.utils.stats as ustats
 import src.clover.utils.learning as ulearning
 
+logging.basicConfig(level=logging.INFO)
+
 
 def get_metrics() -> List[Type[Metric]]:
     """
@@ -26,7 +29,7 @@ def get_metrics() -> List[Type[Metric]]:
 
 class PairwiseCorrelationDifference(Metric):
     """
-    Check the preservation of the pairwise Pearson correlations between continuous variables.
+    Check the preservation of the pairwise Pearson/Spearman correlations between continuous variables.
 
     :cvar name: the name of the metric
     :vartype name: str
@@ -34,10 +37,20 @@ class PairwiseCorrelationDifference(Metric):
     :vartype alias: str
 
     :param random_state: for reproducibility purposes
+    :param corr_type: type of correlation to capture ("pearson" or "spearman")
     """
 
     name = "Pairwise Correlation Difference"
     alias = "pcd"
+
+    def __init__(self, random_state: int = None, corr_type: str = "pearson"):
+        super().__init__(random_state)
+        self._corr_type = corr_type.lower()
+
+        if self._corr_type not in ("pearson", "spearman"):
+            raise ValueError(
+                f"Invalid correlation type: {self._corr_type}, only pearson and spearman are accepted"
+            )
 
     @classmethod
     def get_average_submetrics(cls) -> List[dict]:
@@ -53,8 +66,8 @@ class PairwiseCorrelationDifference(Metric):
                 "min": 0,
                 "max": np.inf,
                 "objective": "min",
-                "description": "The Frobenius norm of the discrepancy between the Pearson correlation matrices in the real and synthetic datasets evaluates the preservation of the relationships between continuous variables.",
-                "interpretation": "The norm should be close to 0 (below 0.1) for similar distributions.",
+                "description": "The Frobenius norm of the discrepancy between the Pearson/Spearman correlation matrices in the real and synthetic datasets evaluates the preservation of the relationships between continuous variables.",
+                "interpretation": "The norm difference should be small for similar distributions.",
             }
         ]
 
@@ -65,7 +78,7 @@ class PairwiseCorrelationDifference(Metric):
         metadata: dict,
     ) -> dict:
         """
-        Compute the Frobenius norm of the difference between the Pearson Correlation matrices of each dataset.
+        Compute the Frobenius norm of the difference between the Pearson/Spearman Correlation matrices of each dataset.
 
         :param df_real: the real dataset, split into **train** and **test** sets
         :param df_synthetic: the synthetic dataset, split into **train** and **test** sets
@@ -73,7 +86,7 @@ class PairwiseCorrelationDifference(Metric):
           **continuous**, **categorical** and **variable_to_predict**
         :return: a dictionary with two keys pointing to dictionaries
 
-            * **average** -- the Frobenius **norm** of the difference between the Pearson Correlation matrices
+            * **average** -- the Frobenius **norm** of the difference between the Pearson/Spearman Correlation matrices
             * **detailed** -- the correlation matrices for the real **corr_real**
               and synthetic datasets **corr_synthetic**
 
@@ -89,8 +102,10 @@ class PairwiseCorrelationDifference(Metric):
         if df_real_cont.shape[1] <= 1:
             return {}
 
-        corr_real = df_real_cont.corr()
-        corr_synth = df_synth_cont.corr()
+        logging.info(f"Type of correlation computed: {self._corr_type}")
+
+        corr_real = df_real_cont.corr(method=self._corr_type)
+        corr_synth = df_synth_cont.corr(method=self._corr_type)
         corr_diff = np.abs(corr_real - corr_synth)
         norm = np.linalg.norm(corr_diff)
 
@@ -102,9 +117,13 @@ class PairwiseCorrelationDifference(Metric):
         return res
 
     @classmethod
-    def draw(cls, report: dict, figsize: Tuple[float, float] = None) -> None:
+    def draw(
+        cls,
+        report: dict,
+        figsize: Tuple[float, float] = None,
+    ) -> None:
         """
-        Draw a heatmap and a scatterplot of the pairwise Pearson correlations of continuous variables.
+        Draw a heatmap and a scatterplot of the pairwise Pearson/Spearman correlations of continuous variables.
 
         :param report: the **detailed** report, outcome of the *compute* method
         :param figsize: the size of the figure in inches (width, height)
@@ -126,7 +145,7 @@ class PairwiseCorrelationDifference(Metric):
 
         udraw.heat_map(
             data=corr_gathered,
-            title="Pairwise Pearson correlations\n(real top right, synthetic bottom left)",
+            title=f"Pairwise correlations\n(real top right, synthetic bottom left)",
             vmin=-1,
             vmax=1,
             ax=axes[0],
@@ -140,8 +159,8 @@ class PairwiseCorrelationDifference(Metric):
         udraw.scatter_plot(
             x=list_corr_real,
             y=llist_corr_synth,
-            xlabel="Pairwise Pearson correlations in real dataset",
-            ylabel="Pairwise Pearson correlations in synthetic dataset",
+            xlabel=f"Pairwise correlations in real dataset",
+            ylabel="Pairwise correlations in synthetic dataset",
             xlim=[0, 1],
             ylim=[0, 1],
             ax=axes[1],

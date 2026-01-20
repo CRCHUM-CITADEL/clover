@@ -541,7 +541,7 @@ def plot_xgb_importance_fmap(
     ylabel="Features",
     importance_type="weight",
     grid=True,
-    **kwargs
+    **kwargs,
 ):
     fmap = xgb_model.booster().get_score(importance_type=importance_type)
 

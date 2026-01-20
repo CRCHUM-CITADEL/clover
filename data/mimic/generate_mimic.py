@@ -66,6 +66,7 @@ def main(
     from dm_cohort
     """
     )
+
     co = pd.read_sql_query(query, con)  # 61532 unique icu stay
 
     # convert the inclusion flags to boolean

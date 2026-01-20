@@ -8,13 +8,23 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import (
     confusion_matrix,
     roc_auc_score,
-    mean_squared_error,
-    root_mean_squared_error,
+    #mean_squared_error,
+    #root_mean_squared_error,
 )
 from sklearn.model_selection import cross_val_score
 from sklearn.compose import ColumnTransformer
 import xgboost as xgb
 from optuna.trial import Trial
+
+# Backward compatible RMSE
+try:
+    from sklearn.metrics import root_mean_squared_error
+except ImportError:
+    from sklearn.metrics import mean_squared_error
+    
+    def root_mean_squared_error(y_true, y_pred, **kwargs):
+        """RMSE for scikit-learn < 1.4.0"""
+        return mean_squared_error(y_true, y_pred, squared=False, **kwargs)
 
 
 def sklearn_confusion_matrix(

@@ -103,8 +103,10 @@ All the required packages are available in the [requirements file](requirements.
 Clover has been tested on a Linux system running Python 3.8.10 and Python 3.10.
 
 ### Installation
-The package is not yet available on pypi. You can clone the Github repository.
-The branch 'main' contains the latest development version.
+The package is available on pypi. You can install the package on a conda environment with:
+```bash
+pip install -i https://test.pypi.org/simple/clover-synth
+```
 
 ## Quickstart
 To get started, we created 4 notebooks to guide you through the generation of synthetic data,

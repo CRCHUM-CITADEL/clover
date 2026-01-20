@@ -97,6 +97,7 @@ def test_generation_non_dp(
             "r": None,  # smote
             "delta": None,  # ctgan / tvae / ctabganplus / findiff
             "max_grad_norm": None,  # ctgan / tvae / ctabganplus / findiff
+            "nbins": 10,  # mst
         }
 
         # Select only the expected instance parameters
@@ -206,6 +207,7 @@ def test_generation_dp(
             "scheduler": "linear",  # findiff
             # Parameters not applicable to dp generators
             "min_samples_leaf": None,  # synthpop
+            "nbins": 10,  # mst
         }
 
         # Select only the expected instance parameters

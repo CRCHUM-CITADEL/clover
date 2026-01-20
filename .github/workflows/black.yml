@@ -24,3 +24,4 @@ jobs:
         options: "--check --verbose --diff"
         src: "./"
         jupyter: true
+        version: "25.1.0"

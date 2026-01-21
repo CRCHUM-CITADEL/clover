@@ -12,6 +12,8 @@ jobs:
     name: Build and publish package
     runs-on: ubuntu-latest
     environment: pypi-release
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code

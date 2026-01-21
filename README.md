@@ -58,9 +58,8 @@ Documentation is available at : https://crchum-citadel.github.io/clover/
      - Hellinger distance 
      - Kullback-Leibler divergence
    - Bivariate metrics 
-     - Pairwise Pearson correlation difference 
+     - Pairwise Pearson and Spearman correlation difference 
      - Pairwise Chi-square correlation difference
-     - Spearman's rank correlation difference
    - Population metrics 
      - Distinguishability 
      - Cross learning (regression & classification)

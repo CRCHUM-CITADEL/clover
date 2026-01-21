@@ -11,6 +11,7 @@ jobs:
   build_package:
     name: Build and publish package
     runs-on: ubuntu-latest
+    environment: pypi-release
 
     steps:
       - name: Checkout code
@@ -52,7 +53,7 @@ jobs:
 #    needs: [ build_package ]
 #    runs-on: ubuntu-latest
 #    environment:
-#      name: pypi
+#      name: pypi-release
 #      url: https://pypi.org/project/clover-synth/
 #    permissions:
 #      contents: read  # Needs read access
@@ -72,7 +73,7 @@ jobs:
     needs: [ build_package ]
     runs-on: ubuntu-latest
     environment:
-      name: pypitest
+      name: pypi-release
       url: https://test.pypi.org/project/clover-synth/
     permissions:
       contents: read  # Needs read access

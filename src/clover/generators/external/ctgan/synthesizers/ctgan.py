@@ -49,7 +49,7 @@ from opacus import GradSampleModule
 from opacus.optimizers import DPOptimizer
 from opacus.accountants.utils import get_noise_multiplier
 
-from src.clover.utils.preprocessing import generate_continuous_dp
+from clover.utils.preprocessing import generate_continuous_dp
 
 
 class Discriminator(Module):

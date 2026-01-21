@@ -2,7 +2,7 @@ import pytest  # 3rd party packages
 from pymoo.core.problem import ElementwiseProblem
 import numpy as np
 
-import src.clover.utils.optimization as uoptimization  # local
+import clover.utils.optimization as uoptimization  # local
 
 
 class TravelingSalesmanProblem(ElementwiseProblem):

@@ -10,9 +10,9 @@ from DataSynthesizer.DataGenerator import DataGenerator
 from DataSynthesizer.lib.utils import read_json_file, display_bayesian_network
 from diffprivlib.utils import PrivacyLeakWarning
 
-from src.clover.generators.base import Generator  # local
-from src.clover.utils.postprocessing import transform_data
-import src.clover.utils.standard as ustandard
+from clover.generators.base import Generator  # local
+from clover.utils.postprocessing import transform_data
+import clover.utils.standard as ustandard
 
 
 class DataSynthesizerGenerator(Generator):

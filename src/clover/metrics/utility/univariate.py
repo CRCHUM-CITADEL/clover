@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 
 # Local
 from ..base import Metric
-import src.clover.utils.stats as ustats
-import src.clover.utils.draw as udraw
-import src.clover.utils.preprocessing as upreprocessing
+import clover.utils.stats as ustats
+import clover.utils.draw as udraw
+import clover.utils.preprocessing as upreprocessing
 
 
 def get_metrics() -> List[Type[Metric]]:

@@ -8,7 +8,7 @@ from inspect import getfullargspec
 import pandas as pd
 
 # Local packages
-from src.clover.generators import (
+from clover.generators import (
     Generator,
     DataSynthesizerGenerator,
     SynthpopGenerator,

@@ -37,7 +37,7 @@ from ctgan.synthesizers.base import BaseSynthesizer, random_state
 from opacus import PrivacyEngine
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 
-from src.clover.utils.preprocessing import generate_continuous_dp
+from clover.utils.preprocessing import generate_continuous_dp
 
 
 class Encoder(Module):

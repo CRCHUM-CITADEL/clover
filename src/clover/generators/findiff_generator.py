@@ -16,8 +16,8 @@ from diffprivlib.utils import PrivacyLeakWarning
 # Local
 from .base import Generator
 from .external.findiff.findiff import FinDiff
-from src.clover.utils.postprocessing import transform_data
-import src.clover.utils.standard as ustandard
+from clover.utils.postprocessing import transform_data
+import clover.utils.standard as ustandard
 
 tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
 

@@ -11,8 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local packages
-import src.clover.utils.standard as ustandard
-import src.clover.utils.draw as udraw
+import clover.utils.standard as ustandard
+import clover.utils.draw as udraw
 
 
 class Metric(metaclass=ABCMeta):

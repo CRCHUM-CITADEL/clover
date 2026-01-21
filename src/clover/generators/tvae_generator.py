@@ -3,12 +3,12 @@ import copy
 
 import pandas as pd  # 3rd party packages
 from pathlib import Path
-from src.clover.generators.external.ctgan.single_table.dp_ctgan import TVAESynthesizer
+from clover.generators.external.ctgan.single_table.dp_ctgan import TVAESynthesizer
 from sdv.metadata import SingleTableMetadata
 
-from src.clover.generators.base import Generator  # local
-from src.clover.utils.postprocessing import transform_data
-import src.clover.utils.standard as ustandard
+from clover.generators.base import Generator  # local
+from clover.utils.postprocessing import transform_data
+import clover.utils.standard as ustandard
 
 
 class TVAEGenerator(Generator):

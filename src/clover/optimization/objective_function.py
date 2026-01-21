@@ -2,10 +2,10 @@
 import pandas as pd
 
 # Local
-import src.clover.utils.learning as ulearning
-from src.clover.metrics.utility.population import Distinguishability
-from src.clover.metrics.utility.application import Classification, Regression
-from src.clover.metrics.privacy.reidentification import DistanceToClosestRecord
+import clover.utils.learning as ulearning
+from clover.metrics.utility.population import Distinguishability
+from clover.metrics.utility.application import Classification, Regression
+from clover.metrics.privacy.reidentification import DistanceToClosestRecord
 
 
 def distinguishability_hinge_loss(

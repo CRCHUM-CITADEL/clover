@@ -11,12 +11,12 @@ from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, MinMaxScaler
 from diffprivlib.utils import PrivacyLeakWarning
 
 # Local
-from src.clover.generators.base import Generator
-from src.clover.generators.external.private_pgm.mechanisms import mst
-from src.clover.generators.external.private_pgm.mbi.dataset import Dataset
-from src.clover.generators.external.private_pgm.mbi.domain import Domain
-from src.clover.utils.postprocessing import transform_data
-import src.clover.utils.standard as ustandard
+from clover.generators.base import Generator
+from clover.generators.external.private_pgm.mechanisms import mst
+from clover.generators.external.private_pgm.mbi.dataset import Dataset
+from clover.generators.external.private_pgm.mbi.domain import Domain
+from clover.utils.postprocessing import transform_data
+import clover.utils.standard as ustandard
 
 
 class MSTGenerator(Generator):

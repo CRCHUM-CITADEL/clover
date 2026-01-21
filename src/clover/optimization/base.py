@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.model_selection import StratifiedKFold, KFold
 
 # Local
-from src.clover.generators import Generator
+from clover.generators import Generator
 
 
 class HyperparametersSearch(metaclass=ABCMeta):

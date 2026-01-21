@@ -10,10 +10,10 @@ import numpy as np
 import torch
 from torch import nn
 
-from src.clover.generators.base import Generator  # local
-from src.clover.generators.models.dpsmote import DPSmote
-from src.clover.utils.postprocessing import transform_data
-import src.clover.utils.standard as ustandard
+from clover.generators.base import Generator  # local
+from clover.generators.models.dpsmote import DPSmote
+from clover.utils.postprocessing import transform_data
+import clover.utils.standard as ustandard
 
 
 class SmoteGenerator(Generator):

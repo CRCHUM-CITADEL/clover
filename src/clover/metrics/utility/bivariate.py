@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 
 # Local
 from ..base import Metric
-import src.clover.utils.draw as udraw
-import src.clover.utils.stats as ustats
-import src.clover.utils.learning as ulearning
+import clover.utils.draw as udraw
+import clover.utils.stats as ustats
+import clover.utils.learning as ulearning
 
 logging.basicConfig(level=logging.INFO)
 

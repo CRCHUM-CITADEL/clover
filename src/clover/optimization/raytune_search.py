@@ -9,8 +9,8 @@ from ray.tune.search.optuna import OptunaSearch
 from optuna import samplers
 
 # Local
-from src.clover.optimization.base import HyperparametersSearch
-from src.clover.generators import Generator
+from clover.optimization.base import HyperparametersSearch
+from clover.generators import Generator
 import config
 
 

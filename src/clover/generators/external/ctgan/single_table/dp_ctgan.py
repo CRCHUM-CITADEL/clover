@@ -16,8 +16,8 @@ The original code was modified in the following ways to accommodate differential
 - Modification of the class methods to integrate DP training
 """
 
-from src.clover.generators.external.ctgan.synthesizers.tvae import TVAE
-from src.clover.generators.external.ctgan.synthesizers.ctgan import CTGAN
+from clover.generators.external.ctgan.synthesizers.tvae import TVAE
+from clover.generators.external.ctgan.synthesizers.ctgan import CTGAN
 
 """Wrapper around CTGAN model."""
 

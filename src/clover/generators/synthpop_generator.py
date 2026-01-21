@@ -13,8 +13,8 @@ from diffprivlib.utils import PrivacyLeakWarning
 from .external.synthpop.synthpop import Synthpop
 from .external.dpart.dpart.engines import DPSynthpop
 from .base import Generator
-from src.clover.utils.postprocessing import transform_data
-import src.clover.utils.standard as ustandard
+from clover.utils.postprocessing import transform_data
+import clover.utils.standard as ustandard
 
 
 class SynthpopGenerator(Generator):

@@ -10,8 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local packages
-from src.clover.metrics.base import Metric
-from src.clover.metrics.utility import application as app
+from clover.metrics.base import Metric
+from clover.metrics.utility import application as app
 
 
 def test_fscore() -> None:

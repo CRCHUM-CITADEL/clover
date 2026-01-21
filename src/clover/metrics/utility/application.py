@@ -22,8 +22,8 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
 # Local
-import src.clover.utils.draw as udraw
-import src.clover.utils.learning as ulearning
+import clover.utils.draw as udraw
+import clover.utils.learning as ulearning
 from ..base import Metric
 
 

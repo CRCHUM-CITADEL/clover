@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd  # 3rd party packages
 
-import src.clover.utils.standard as ustandard  # local
+import clover.utils.standard as ustandard  # local
 
 
 class Generator(metaclass=ABCMeta):

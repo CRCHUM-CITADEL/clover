@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 
 # Local
 from ..base import Metric
-import src.clover.utils.external.gower.gower_dist as gower
-import src.clover.utils.draw as udraw
+import clover.utils.external.gower.gower_dist as gower
+import clover.utils.draw as udraw
 
 
 def get_metrics() -> List[Type[Metric]]:

@@ -7,8 +7,8 @@ import optuna
 from optuna import samplers, pruners
 
 # Local
-from src.clover.optimization.base import HyperparametersSearch
-from src.clover.generators import Generator
+from clover.optimization.base import HyperparametersSearch
+from clover.generators import Generator
 
 
 class OptunaSearch(HyperparametersSearch):

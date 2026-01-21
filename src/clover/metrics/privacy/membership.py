@@ -26,9 +26,9 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 # Local
 from ..base import Metric
-import src.clover.utils.draw as udraw
-import src.clover.utils.external.gower.gower_dist as gower
-import src.clover.utils.learning as ulearning
+import clover.utils.draw as udraw
+import clover.utils.external.gower.gower_dist as gower
+import clover.utils.learning as ulearning
 
 
 def get_metrics() -> List[Type[Metric]]:

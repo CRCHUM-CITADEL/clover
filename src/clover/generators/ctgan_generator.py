@@ -5,12 +5,12 @@ import pandas as pd  # 3rd party packages
 from pathlib import Path
 
 # from sdv.single_table import CTGANSynthesizer
-from src.clover.generators.external.ctgan.single_table.dp_ctgan import CTGANSynthesizer
+from clover.generators.external.ctgan.single_table.dp_ctgan import CTGANSynthesizer
 from sdv.metadata import SingleTableMetadata
 
-from src.clover.generators.base import Generator  # local
-from src.clover.utils.postprocessing import transform_data
-import src.clover.utils.standard as ustandard
+from clover.generators.base import Generator  # local
+from clover.utils.postprocessing import transform_data
+import clover.utils.standard as ustandard
 
 
 class CTGANGenerator(Generator):

@@ -7,9 +7,9 @@ import numpy as np
 from pymoo.core.problem import ElementwiseProblem
 
 # Local
-from src.clover.optimization.base import HyperparametersSearch
-from src.clover.generators import Generator
-import src.clover.utils.optimization as uoptimization
+from clover.optimization.base import HyperparametersSearch
+from clover.generators import Generator
+import clover.utils.optimization as uoptimization
 
 
 class DiscreteParticleSwarmOptimizationSearch(HyperparametersSearch):

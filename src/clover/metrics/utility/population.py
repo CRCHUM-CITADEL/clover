@@ -17,8 +17,8 @@ import matplotlib.pyplot as plt
 # Local
 from ..base import Metric
 from . import application as app
-import src.clover.utils.learning as ulearning
-import src.clover.utils.draw as udraw
+import clover.utils.learning as ulearning
+import clover.utils.draw as udraw
 
 
 def get_metrics() -> List[Type[Metric]]:

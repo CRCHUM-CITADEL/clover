@@ -18,6 +18,13 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Extract version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+
+      - name: Update pyproject.toml version
+        run: | 
+          sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -46,7 +53,7 @@ jobs:
 #    runs-on: ubuntu-latest
 #    environment:
 #      name: pypi
-#      url: https://pypi.org/project/YOUR-PACKAGE-NAME/
+#      url: https://pypi.org/project/clover-synth/
 #    permissions:
 #      contents: read  # Needs read access
 #      id-token: write  # Needs to be able to write the publishing token
@@ -54,8 +61,30 @@ jobs:
 #      - name: Download artifacts
 #        uses: actions/download-artifact@v4
 #        with:
-#          name: dist
+#          name: python-package-distributions
 #          path: dist/
 #
 #      - name: Publish to PyPI
 #        uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish_release_to_pypitest:
+    name: Publish release to PyPI Test
+    needs: [ build_package ]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypitest
+      url: https://test.pypi.org/project/clover-synth/
+    permissions:
+      contents: read  # Needs read access
+      id-token: write  # Needs to be able to write the publishing token
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish to PyPI Test
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/

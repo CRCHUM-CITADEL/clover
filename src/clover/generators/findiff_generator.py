@@ -174,7 +174,13 @@ class FinDiffGenerator(Generator):
         # Initiate privacy budget
         if epsilon is not None:
             if not isinstance(epsilon, dict):
-                self.epsilon = {"preprocessing": epsilon / 2, "fitting": epsilon / 2}
+                if self.bounds is not None:
+                    self.epsilon = {
+                        "preprocessing": epsilon / 2,
+                        "fitting": epsilon / 2,
+                    }
+                else:
+                    self.epsilon = {"preprocessing": 0, "fitting": epsilon}
             self.eps_spent_preprocessing = 0
 
     def preprocess(self) -> None:
@@ -198,7 +204,7 @@ class FinDiffGenerator(Generator):
                 and self.bounds is None
             ):  # Privacy leakage warning
                 warnings.warn(
-                    f"No bounds are specified for all the columns",
+                    f"No bounds are specified for all the columns. DP is not guaranteed as it is not used in data preprocessing.",
                     PrivacyLeakWarning,
                 )
 

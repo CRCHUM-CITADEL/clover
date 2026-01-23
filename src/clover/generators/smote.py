@@ -75,7 +75,10 @@ class SmoteGenerator(Generator):
             self._contains_cont_indep_vars = None
             self._contains_cat_indep_vars = None
         else:  # Initiate DP generator
-            self._k_neighbors = k_neighbors
+            if k_neighbors is not None:
+                self._k_neighbors = k_neighbors
+            else:
+                self._k_neighbors = 5
             self.nu = nu
             self.cat_emb_dim = cat_emb_dim
             self.r = r

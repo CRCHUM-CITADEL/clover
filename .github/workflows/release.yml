@@ -50,33 +50,13 @@ jobs:
           if-no-files-found: error
           retention-days: 1  # Artifact to be deleted after 1 day
 
-#  publish_release_to_pypi:
-#    name: Publish release to PyPI
-#    needs: [ build_package ]
-#    runs-on: ubuntu-latest
-#    environment:
-#      name: pypi-release
-#      url: https://pypi.org/project/clover-synth/
-#    permissions:
-#      contents: read  # Needs read access
-#      id-token: write  # Needs to be able to write the publishing token
-#    steps:
-#      - name: Download artifacts
-#        uses: actions/download-artifact@v4
-#        with:
-#          name: python-package-distributions
-#          path: dist/
-#
-#      - name: Publish to PyPI
-#        uses: pypa/gh-action-pypi-publish@release/v1
-
-  publish_release_to_pypitest:
-    name: Publish release to PyPI Test
+  publish_release_to_pypi:
+    name: Publish release to PyPI
     needs: [ build_package ]
     runs-on: ubuntu-latest
     environment:
       name: pypi-release
-      url: https://test.pypi.org/project/clover-synth/
+      url: https://pypi.org/project/clover-synth/
     permissions:
       contents: read  # Needs read access
       id-token: write  # Needs to be able to write the publishing token
@@ -87,7 +67,27 @@ jobs:
           name: python-package-distributions
           path: dist/
 
-      - name: Publish to PyPI Test
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
+
+#  publish_release_to_pypitest:
+#    name: Publish release to PyPI Test
+#    needs: [ build_package ]
+#    runs-on: ubuntu-latest
+#    environment:
+#      name: pypi-release
+#      url: https://test.pypi.org/project/clover-synth/
+#    permissions:
+#      contents: read  # Needs read access
+#      id-token: write  # Needs to be able to write the publishing token
+#    steps:
+#      - name: Download artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: python-package-distributions
+#          path: dist/
+#
+#      - name: Publish to PyPI Test
+#        uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          repository-url: https://test.pypi.org/legacy/

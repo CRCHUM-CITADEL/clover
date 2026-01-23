@@ -87,7 +87,7 @@ All the required packages are available in the [requirements file](requirements.
 Clover has been tested on a Linux system running Python 3.8.10 and Python 3.10.
 
 ### Installation
-The package is available on pypi. You can install the package on a conda environment with:
+The package is available on pypi. You can install the package with:
 ```bash
 pip install clover-synth
 ```

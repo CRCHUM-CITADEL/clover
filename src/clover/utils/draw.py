@@ -537,6 +537,9 @@ def count_plot_hue_plot_per_col(
     :param hue_name: the name of the nested group
     :param title: the title of the plot
     :param axes: the *Axes* list to draw the plot onto, otherwise use the current *Axes*
+    :param limit_display: Maximum number of categories to show, defaults to None (no limit)
+    :param other_label: Label to use for group of categories outside the main ones
+    (when there are more than limit_display), defaults to "Other"
     :return: *None*
     """
     assert set(df.columns) == set(df_nested.columns)

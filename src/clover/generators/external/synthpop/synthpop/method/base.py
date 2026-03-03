@@ -65,7 +65,9 @@ class Method(ABC):
 
                 # X_df = X_df[self.train_cols]
                 if missing_cols:
-                    missing_df = pd.DataFrame(0, index=X_df.index, columns=list(missing_cols))
+                    missing_df = pd.DataFrame(
+                        0, index=X_df.index, columns=list(missing_cols)
+                    )
                     X_df = pd.concat([X_df, missing_df], axis=1)
                 X_df = X_df[self.train_cols]
 

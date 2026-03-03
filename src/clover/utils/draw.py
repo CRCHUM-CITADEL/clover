@@ -8,7 +8,7 @@ from matplotlib.axes import Axes
 import seaborn as sns
 import pandas as pd
 
-import config  # local packages
+SEABORN_PALETTE = "YlGnBu_r"
 
 
 def save_figure(
@@ -118,7 +118,7 @@ def heat_map(
         vmin=vmin,
         vmax=vmax,
         ax=ax,
-        cmap=config.SEABORN_PALETTE,
+        cmap=SEABORN_PALETTE,
     )
     if xrotation:
         plt.setp(
@@ -148,7 +148,7 @@ def box_plot(
         data=data,
         orient=orient,
         ax=ax,
-        palette=config.SEABORN_PALETTE,
+        palette=SEABORN_PALETTE,
     )
 
     axis.set_title(title)
@@ -212,7 +212,7 @@ def box_plot_per_column_hue(
         hue=hue_name,
         hue_order=[original_name, nested_name],
         orient=orient,
-        palette=config.SEABORN_PALETTE,
+        palette=SEABORN_PALETTE,
         fliersize=2,
         ax=ax,
     )
@@ -287,7 +287,7 @@ def bar_plot_per_column_hue(
         hue=hue_name,
         hue_order=[original_name, nested_name],
         orient=orient,
-        palette=config.SEABORN_PALETTE,
+        palette=SEABORN_PALETTE,
         ax=ax,
     )
     axis.set_title(title)
@@ -333,7 +333,7 @@ def bar_plot(
     :return: the *Axes* object with the plot drawn into it
     """
 
-    axis = sns.barplot(data=data, orient=orient, palette=config.SEABORN_PALETTE, ax=ax)
+    axis = sns.barplot(data=data, orient=orient, palette=SEABORN_PALETTE, ax=ax)
 
     plt.title(title)
 
@@ -415,7 +415,7 @@ def bar_plot_hue(
         hue=hue_name,
         hue_order=[original_name, nested_name],
         orient=orient,
-        palette=config.SEABORN_PALETTE,
+        palette=SEABORN_PALETTE,
         ax=ax,
     )
 
@@ -466,7 +466,7 @@ def pair_plot(
     nested[hue_name] = nested_name
     df_concat = pd.concat([original, nested])
 
-    sns.pairplot(data=df_concat, hue=hue_name, palette=config.SEABORN_PALETTE)
+    sns.pairplot(data=df_concat, hue=hue_name, palette=SEABORN_PALETTE)
     plt.title(title)
 
 
@@ -506,7 +506,7 @@ def kde_plot_hue_plot_per_col(
             data=df_concat[[col, hue_name]],
             x=col,
             hue=hue_name,
-            palette=config.SEABORN_PALETTE,
+            palette=SEABORN_PALETTE,
             fill=True,
             ax=axes[i] if axes is not None else None,
         )
@@ -524,6 +524,8 @@ def count_plot_hue_plot_per_col(
     hue_name: str,
     title: str,
     axes: np.ndarray = None,
+    limit_display: int | None = None,
+    other_label: str = "Other",
 ) -> None:
     """
     Draw a categorical variable distribution (normalized to 1) with one plot per variable.
@@ -544,6 +546,16 @@ def count_plot_hue_plot_per_col(
     for i, col in enumerate(df.columns):
         vc_original = df[col].value_counts(normalize=True)
         vc_nested = df_nested[col].value_counts(normalize=True)
+
+        if limit_display is not None and limit_display < len(vc_original):
+            top_cats = vc_original.nlargest(limit_display).index
+
+            vc_original = vc_original.loc[top_cats]
+            vc_nested = vc_nested.reindex(top_cats, fill_value=0)
+
+            # Add "Other"
+            vc_original.loc[other_label] = 1.0 - vc_original.sum()
+            vc_nested.loc[other_label] = 1.0 - vc_nested.sum()
 
         # Combine value counts into a single DataFrame
         df_combined = pd.DataFrame(
@@ -605,7 +617,7 @@ def histplot_hue(
         )
     )
 
-    colors = sns.color_palette(config.SEABORN_PALETTE, n_colors=10).as_hex()
+    colors = sns.color_palette(SEABORN_PALETTE, n_colors=10).as_hex()
     colors = [colors[3], colors[-1]]
 
     axis = sns.histplot(
@@ -665,7 +677,7 @@ def histplot_plot(
         bins=bins,
         binrange=binrange,
         alpha=0.5,
-        color=sns.color_palette(config.SEABORN_PALETTE, n_colors=10).as_hex()[0],
+        color=sns.color_palette(SEABORN_PALETTE, n_colors=10).as_hex()[0],
         ax=ax,
         stat=stat,
     )

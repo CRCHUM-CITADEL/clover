@@ -60,9 +60,15 @@ class Method(ABC):
             else:
                 test_cols = X_df.columns.tolist()
                 missing_cols = set(self.train_cols) - set(test_cols)
-                for col in missing_cols:
-                    X_df[col] = 0
+                # for col in missing_cols:
+                #     X_df[col] = 0
 
+                # X_df = X_df[self.train_cols]
+                if missing_cols:
+                    missing_df = pd.DataFrame(
+                        0, index=X_df.index, columns=list(missing_cols)
+                    )
+                    X_df = pd.concat([X_df, missing_df], axis=1)
                 X_df = X_df[self.train_cols]
 
         return X_df, y_df

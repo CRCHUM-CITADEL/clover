@@ -75,8 +75,12 @@ class Processor:
                             "nan_value": col_nan_category,
                         }
 
-                        df[col].cat.add_categories(col_nan_category, inplace=True)
-                        df[col].fillna(col_nan_category, inplace=True)
+                        # df[col].cat.add_categories(col_nan_category, inplace=True)
+                        # df[col].fillna(col_nan_category, inplace=True)
+                        if col_nan_category not in df[col].cat.categories:
+                            df[col] = df[col].cat.add_categories([col_nan_category])
+
+                        df[col] = df[col].fillna(col_nan_category)
 
                 # NaNs in numerical columns
                 elif self.spop.df_dtypes[col] in NUM_COLS_DTYPES:

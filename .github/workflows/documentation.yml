@@ -18,7 +18,7 @@ jobs:
 
     - name: Copy sample data for notebook execution
       run: |
-        cp -r data/ notebooks/data/
+        cp -r data/ docs/tutorial/data/
 
     - name: Cache dependencies
       uses: actions/cache@v3

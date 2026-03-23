@@ -16,6 +16,10 @@ jobs:
       with:
         python-version: "3.10"
 
+    - name: Copy sample data for notebook execution
+      run: |
+        cp -r data/ notebooks/data/
+
     - name: Cache dependencies
       uses: actions/cache@v3
       with:

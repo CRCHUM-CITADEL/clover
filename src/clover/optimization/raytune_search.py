@@ -1,8 +1,12 @@
 # Standard library
 from typing import Type, Callable, Union
+import tempfile
+from pathlib import Path
 
 # 3rd party packages
 import pandas as pd
+import ray
+import sys
 from ray import tune, air
 from ray.air import session
 from ray.tune.search.optuna import OptunaSearch
@@ -11,7 +15,6 @@ from optuna import samplers
 # Local
 from clover.optimization.base import HyperparametersSearch
 from clover.generators import Generator
-import config
 
 
 class RayTuneSearch(HyperparametersSearch):
@@ -46,6 +49,7 @@ class RayTuneSearch(HyperparametersSearch):
     :param direction: the direction of optimization (**min** or **max**)
     :param num_iter: the number of steps of bayesian optimization to perform, including the number of startup trials
     :param verbose: 0 (silent), 1 (default), 2 (verbose)
+    :param output_path: where to store the optimization results
     """
 
     name = "Ray Tune"
@@ -65,6 +69,7 @@ class RayTuneSearch(HyperparametersSearch):
         direction: str = "min",
         num_iter: int = 10,
         verbose: int = 0,
+        output_path: Union[str, Path, None] = None,
     ):
         super().__init__(
             df,
@@ -83,8 +88,16 @@ class RayTuneSearch(HyperparametersSearch):
                 trainable,
                 resources,
             )
-        output_path = config.OUTPUT_PATH / "ray"
-        output_path.mkdir(parents=True, exist_ok=True)
+
+        # Resolve output path
+        if output_path is not None:
+            ray_output_path = Path(output_path).resolve() / "ray"
+            ray_output_path.mkdir(parents=True, exist_ok=True)
+            self._tmp_dir = None
+        else:
+            self._tmp_dir = tempfile.TemporaryDirectory()
+            ray_output_path = Path(self._tmp_dir.name).resolve() / "ray"
+            ray_output_path.mkdir(parents=True, exist_ok=True)
 
         self._tuner = tune.Tuner(
             trainable,
@@ -98,7 +111,7 @@ class RayTuneSearch(HyperparametersSearch):
                 num_samples=num_iter,
             ),
             run_config=air.config.RunConfig(
-                storage_path=str(output_path), verbose=verbose
+                storage_path=str(ray_output_path), verbose=verbose
             ),
         )
 
@@ -108,12 +121,16 @@ class RayTuneSearch(HyperparametersSearch):
 
         :return: *None*
         """
-
-        results = self._tuner.fit()
-        best_result = results.get_best_result(metric="score", mode="min")
-
-        self._best_params = best_result.config
-        self._best_cost = best_result.metrics["score"]
+        if not ray.is_initialized():
+            ray.init(runtime_env={"env_vars": {"PYTHONPATH": ":".join(sys.path)}})
+        try:
+            results = self._tuner.fit()
+            best_result = results.get_best_result(metric="score", mode="min")
+            self._best_params = best_result.config
+            self._best_cost = best_result.metrics["score"]
+        finally:
+            if self._tmp_dir is not None:
+                self._tmp_dir.cleanup()
 
     def _trainable(self, config: dict) -> None:
         """

@@ -1,0 +1,451 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+<link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="Metrics" href="../metrics/modules.html" /><link rel="prev" title="Conditional Table GAN (CTAB-GAN+)" href="ctabgan.html" />
+
+    <!-- Generated with Sphinx 6.2.1 and Furo 2023.09.10 -->
+        <title>FinDiff - Clover documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=369552022d0b975c8e74270ce6eabe0fb7978f24" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #ffffff;
+  --color-code-foreground: black;
+  --color-brand-primary: #7C4DFF;
+  --color-brand-content: #7C4DFF;
+  --color-problematic: #00b377;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-brand-primary: #926bff;
+  --color-brand-content: #926bff;
+  --color-problematic: #00b377;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-brand-primary: #926bff;
+  --color-brand-content: #926bff;
+  --color-problematic: #00b377;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">Clover  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  
+  <span class="sidebar-brand-text">Clover  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../home/clover.html">What is Clover?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../home/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../home/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../home/getting_involved.html">Getting Involved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../home/license.html">MIT License</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">Generators</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Generators</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="datasynthesizer.html">DataSynthesizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="synthpop.html">Synthpop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="smote.html">SMOTE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mst.html">Private-PGM - MST</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ctgan.html">Conditional Tabular GAN (CTGAN)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tvae.html">TVAE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ctabgan.html">Conditional Table GAN (CTAB-GAN+)</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">FinDiff</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../metrics/modules.html">Metrics</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Metrics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../metrics/utility.html">Utility Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../metrics/privacy.html">Privacy Metrics</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../optimization/modules.html">Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Optimization</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../optimization/pso.html">Discrete Particle Swarm Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optimization/optuna.html">Hyperparameter tuning with Optuna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optimization/raytune.html">Parallel hyperparameter tuning with RayTune</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../API/generators/modules.html">Generators API</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Generators API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../API/generators/generators.html">generators</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../API/metrics/modules.html">Metrics API</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Metrics API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../API/metrics/metrics.html">metrics</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of metrics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../API/metrics/metrics.utility.html">metrics.utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../API/metrics/metrics.privacy.html">metrics.privacy</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../API/optimization/modules.html">Optimization API</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of Optimization API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../API/optimization/optimization.html">optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../API/utils/modules.html">Utilities API</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Utilities API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../API/utils/utils.html">utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../API/tests/modules.html">Unit Tests API</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Unit Tests API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../API/tests/tests.html">tests</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of tests</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../API/tests/tests.generators.html">tests.generators</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../API/tests/tests.metrics.html">tests.metrics</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of tests.metrics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../API/tests/tests.metrics.utility.html">tests.metrics.utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../API/tests/tests.metrics.privacy.html">tests.metrics.privacy</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../API/tests/tests.utils.html">tests.utils</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorial</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/synthetic_data_generation.html">Synthetic Data Generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/utility_report.html">How to generate a utility report?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/privacy_report.html">How to generate a membership inference attacks report?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/tune_hyperparameters.html">Synthetic Data Generation – Find the best hyperparameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/combined_report.html">How to generate a combined utility/privacy report?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/metareport.html">How to generate a metareport?</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="findiff">
+<h1>FinDiff<a class="headerlink" href="#findiff" title="Permalink to this heading">#</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">#</a></h2>
+<p>Diffusion models, initially introduced by Ho et al., have achieved considerable success in the field of computer vision. Similar to Generative Adversarial Networks (GANs), they aim to approximate the probability distribution of a given domain and provide a means to sample from that distribution. These models follow a unique approach inspired by non-equilibrium thermodynamics. In the case of diffusion models, a random noise signal is progressively refined until it closely aligns with the desired data distribution. Consequently, diffusion models have emerged as a powerful technique for generating complex data. Sattarov et al. have further adapted the diffusion model framework for tabular data generation, demonstrating superior performance compared to VAE and GAN models in this context.</p>
+</section>
+<section id="algorithm">
+<h2>Algorithm<a class="headerlink" href="#algorithm" title="Permalink to this heading">#</a></h2>
+<p>The diffusion model comprises both a forward diffusion process and a reverse denoising diffusion process. These processes occur over predefined finite time steps. In the forward diffusion process, we initially sample real data from our data distribution. Noise is sampled at each subsequent step, and this noise is added to the data from the previous step. A neural network is trained to predict the added noise at each step. By following a well-behaved schedule for adding noise at each time step and using a sufficiently large number of steps, we eventually obtain pure noise. In the reverse denoising process, the data is gradually denoised, starting from pure noise and progressing toward realistic data.</p>
+<p>When generating synthetic data with diffusion models, we begin by sampling pure noise and then progressively denoise it using the trained neural network, leveraging the conditional probability it has learned.</p>
+<p>Generating tabular data with diffusion models presents challenges due to the inherent heterogeneity of such data. Each variable in tabular data may have a different nature. To address these issues, FinDiff converts categorical data into semantically rich continuous representations using embeddings. Additionally, it integrates time and label embeddings into the model input, enhancing the overall input quality.</p>
+<p>Below is the pseudo code for generating synthetic data with diffusion model.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span># Step 1: model training
+procedure TRAINING(X_0, θ, T):
+    for step t ∈ {1,...,T} do
+        z_t = sample_noise(t)
+        X_t = add_noise_to_data(X_t-1, z_t)
+        M_θ.fit(X_t, z_t)
+    return M_θ
+
+# Step 2: data sampling
+procedure SAMPLING(M_θ, T):
+    X&#39;_T= sample_pure_noise()
+    for step t = T down to 1 do
+        z&#39;_t = M_θ.pred(X&#39;_t)
+        X&#39;_t-1= denoise_data(X&#39;_t, z&#39;_t)
+    return X&#39;_0
+</pre></div>
+</div>
+<p>In this pseudocode:</p>
+<ul class="simple">
+<li><p>X_0 is the training data.</p></li>
+<li><p>θ is the parameters of the model M_θ.</p></li>
+<li><p>T is the total number of steps.</p></li>
+</ul>
+</section>
+<section id="clover-implementation">
+<h2>Clover implementation<a class="headerlink" href="#clover-implementation" title="Permalink to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">FinDiffGenerator</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapper of the tabular diffusion models FinDiff https://github.com/sattarov/FinDiff.</span>
+<span class="sd">    The original model was modified to implement differential privacy.</span>
+
+<span class="sd">    :cvar name: the name of the generator</span>
+<span class="sd">    :vartype name: str</span>
+
+<span class="sd">    :param df: the data to synthesize</span>
+<span class="sd">    :param metadata: a dictionary containing the list of **continuous** and **categorical** variables</span>
+<span class="sd">        (make sure the column name does not contain underscore)</span>
+<span class="sd">    :param random_state: for reproducibility purposes</span>
+<span class="sd">    :param generator_filepath: the path of the generator to sample from if it exists</span>
+<span class="sd">    :param learning_rate: the learning rate for training</span>
+<span class="sd">    :param batch_size: the batch size for training and sampling</span>
+<span class="sd">    :param diffusion_steps: the diffusion timesteps for the forward diffusion process</span>
+<span class="sd">    :param epochs: the training epochs</span>
+<span class="sd">    :param mlp_layers: number of neurons per layer</span>
+<span class="sd">    :param activation: activation function - &quot;lrelu&quot;, &quot;relu&quot;, &quot;tanh&quot; or &quot;sigmoid&quot;</span>
+<span class="sd">    :param dim_t: dimensionality of the intermediate layer for connecting the embeddings.</span>
+<span class="sd">    :param cat_emb_dim: dimension of categorical embeddings</span>
+<span class="sd">    :param diff_beta_start_end: diffusion start and end betas</span>
+<span class="sd">    :param scheduler: diffusion scheduler - &quot;linear&quot; or &quot;quad&quot;</span>
+<span class="sd">    :param epsilon: the privacy budget of the differential privacy.</span>
+<span class="sd">        One can specify how the budget is split between pre-processing and fitting the model.</span>
+<span class="sd">        For example, epsilon = {&quot;preprocessing&quot;: 0.1, &quot;fitting&quot;: 0.9}.</span>
+<span class="sd">        If a single float number is provide, half the budget is allocated for pre-processing</span>
+<span class="sd">        and half for fitting.</span>
+<span class="sd">    :param delta: target delta to be achieved for fitting (for differentially private model)</span>
+<span class="sd">    :param max_grad_norm: the maximum norm of the per-sample gradients.</span>
+<span class="sd">        Any gradient with norm higher than this will be clipped to this value. (for differentially private model)</span>
+<span class="sd">    :param bounds: specify the range (minimum and maximum) for all numerical columns</span>
+<span class="sd">        and the distinct categories for categorical columns. This ensures that no further privacy leakage</span>
+<span class="sd">        is happening. For example, bounds = {&quot;col1&quot;: {&quot;min&quot;: 0, &quot;max&quot;: 1}, &quot;col2&quot;: {&quot;categories&quot;: [&quot;cat1&quot;, &quot;cat2&quot;]}}.</span>
+<span class="sd">        If not specified, they will be estimated from the real data and a warning will be raised</span>
+<span class="sd">        (for differentially private model)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>Steps include:</p>
+<ol class="arabic simple">
+<li><p>Preparing the parameters to train the generator.</p></li>
+<li><p>Train the generator and save it.</p></li>
+<li><p>Generate samples using trained model.</p></li>
+</ol>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf">Ho, J., Jain, A., &amp; Abbeel, P. (2020). Denoising diffusion probabilistic models. Advances in neural information processing systems, 33, 6840-6851.</a></p></li>
+<li><p><a class="reference external" href="https://proceedings.neurips.cc/paper/2021/file/67d96d458abdef21792e6d8e590244e7-Paper.pdf">Hoogeboom, E., Nielsen, D., Jaini, P., Forré, P., &amp; Welling, M. (2021). Argmax flows and multinomial diffusion: Learning categorical distributions. Advances in Neural Information Processing Systems, 34, 12454-12465.</a></p></li>
+<li><p><a class="reference external" href="https://dl.acm.org/doi/abs/10.1145/3604237.3626876">Sattarov, T., Schreyer, M., &amp; Borth, D. (2023). Findiff: Diffusion models for financial tabular data generation. In Proceedings of the Fourth ACM International Conference on AI in Finance 64-72.</a></p></li>
+<li><p><a class="reference external" href="https://github.com/CRCHUM-CITADEL/clover/blob/main/generators/findiff_generator.py">https://github.com/CRCHUM-CITADEL/clover/blob/main/generators/findiff_generator.py</a></p></li>
+<li><p><a class="reference external" href="https://github.com/CRCHUM-CITADEL/clover/blob/main/notebooks/synthetic_data_generation.ipynb">https://github.com/CRCHUM-CITADEL/clover/blob/main/notebooks/synthetic_data_generation.ipynb</a></p></li>
+</ul>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../metrics/modules.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Metrics</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="ctabgan.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Conditional Table GAN (CTAB-GAN+)</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, IVADO PRF3 Human Health
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">FinDiff</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#algorithm">Algorithm</a></li>
+<li><a class="reference internal" href="#clover-implementation">Clover implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/scripts/furo.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    </body>
+</html>

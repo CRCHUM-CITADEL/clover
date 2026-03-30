@@ -1,0 +1,1311 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="prev" title="How to generate a combined utility/privacy report?" href="combined_report.html" />
+
+    <!-- Generated with Sphinx 6.2.1 and Furo 2023.09.10 -->
+        <title>How to generate a metareport? - Clover documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=369552022d0b975c8e74270ce6eabe0fb7978f24" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #ffffff;
+  --color-code-foreground: black;
+  --color-brand-primary: #7C4DFF;
+  --color-brand-content: #7C4DFF;
+  --color-problematic: #00b377;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-brand-primary: #926bff;
+  --color-brand-content: #926bff;
+  --color-problematic: #00b377;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-brand-primary: #926bff;
+  --color-brand-content: #926bff;
+  --color-problematic: #00b377;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Clover  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  
+  <span class="sidebar-brand-text">Clover  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../home/clover.html">What is Clover?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../home/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../home/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../home/getting_involved.html">Getting Involved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../home/license.html">MIT License</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../userguide/introduction.html">Introduction</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../userguide/generators/modules.html">Generators</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Generators</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/generators/datasynthesizer.html">DataSynthesizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/generators/synthpop.html">Synthpop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/generators/smote.html">SMOTE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/generators/mst.html">Private-PGM - MST</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/generators/ctgan.html">Conditional Tabular GAN (CTGAN)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/generators/tvae.html">TVAE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/generators/ctabgan.html">Conditional Table GAN (CTAB-GAN+)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/generators/findiff.html">FinDiff</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../userguide/metrics/modules.html">Metrics</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Metrics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/metrics/utility.html">Utility Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/metrics/privacy.html">Privacy Metrics</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../userguide/optimization/modules.html">Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Optimization</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/optimization/pso.html">Discrete Particle Swarm Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/optimization/optuna.html">Hyperparameter tuning with Optuna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../userguide/optimization/raytune.html">Parallel hyperparameter tuning with RayTune</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../API/generators/modules.html">Generators API</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Generators API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../API/generators/generators.html">generators</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../API/metrics/modules.html">Metrics API</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Metrics API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../API/metrics/metrics.html">metrics</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of metrics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../API/metrics/metrics.utility.html">metrics.utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../API/metrics/metrics.privacy.html">metrics.privacy</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../API/optimization/modules.html">Optimization API</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of Optimization API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../API/optimization/optimization.html">optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../API/utils/modules.html">Utilities API</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Utilities API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../API/utils/utils.html">utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../API/tests/modules.html">Unit Tests API</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Unit Tests API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../API/tests/tests.html">tests</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of tests</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../API/tests/tests.generators.html">tests.generators</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../API/tests/tests.metrics.html">tests.metrics</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of tests.metrics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../API/tests/tests.metrics.utility.html">tests.metrics.utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../API/tests/tests.metrics.privacy.html">tests.metrics.privacy</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../API/tests/tests.utils.html">tests.utils</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorial</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="synthetic_data_generation.html">Synthetic Data Generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utility_report.html">How to generate a utility report?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="privacy_report.html">How to generate a membership inference attacks report?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tune_hyperparameters.html">Synthetic Data Generation – Find the best hyperparameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="combined_report.html">How to generate a combined utility/privacy report?</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">How to generate a metareport?</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="How-to-generate-a-metareport?">
+<h1>How to generate a metareport?<a class="headerlink" href="#How-to-generate-a-metareport?" title="Permalink to this heading">#</a></h1>
+<section id="Create-a-metareport-comparing-synthetic-datasets-with-respect-to-a-list-of-metrics.-/! Only-for-the-summary.">
+<h2>Create a metareport comparing synthetic datasets with respect to a list of metrics. /! Only for the summary.<a class="headerlink" href="#Create-a-metareport-comparing-synthetic-datasets-with-respect-to-a-list-of-metrics.-/! Only-for-the-summary." title="Permalink to this heading">#</a></h2>
+<div class="line-block">
+<div class="line">Assume that the synthetic datasets to compare are already generated</div>
+<div class="line">Wisconsin Breast Cancer Dataset (WBCD)</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Standard library</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;..&quot;</span><span class="p">)</span>
+
+<span class="c1"># 3rd party packages</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Local packages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clover.metrics.metareport</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metareport</span>
+</pre></div>
+</div>
+</div>
+<section id="Load-the-real-and-synthetic-Wisconsin-Breast-Cancer-Datasets">
+<h3>Load the real and synthetic Wisconsin Breast Cancer Datasets<a class="headerlink" href="#Load-the-real-and-synthetic-Wisconsin-Breast-Cancer-Datasets" title="Permalink to this heading">#</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df_real</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">df_real</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;../data/WBCD_train.csv&quot;</span><span class="p">)</span>
+<span class="n">df_real</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;../data/WBCD_test.csv&quot;</span><span class="p">)</span>
+<span class="n">df_real</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(455, 10)
+</pre></div></div>
+</div>
+</section>
+</section>
+<section id="Choose-the-synthetic-dataset">
+<h2>Choose the synthetic dataset<a class="headerlink" href="#Choose-the-synthetic-dataset" title="Permalink to this heading">#</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># generated by Synthpop here</span>
+<span class="n">df_synth</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;train&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+        <span class="s2">&quot;../results/attack/data/1st_generation/2025-06-18_Synthpop_455samples.csv&quot;</span>
+    <span class="p">),</span>
+    <span class="s2">&quot;test&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+        <span class="s2">&quot;../results/attack/data/1st_generation/2025-06-18_Synthpop_228samples.csv&quot;</span>
+    <span class="p">),</span>
+    <span class="s2">&quot;2nd_gen&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+        <span class="s2">&quot;../results/attack/data/2nd_generation/2025-06-18_Synthpop_455samples.csv&quot;</span>
+    <span class="p">),</span>
+<span class="p">}</span>
+
+<span class="c1"># random synthetic dataset to compare to the one generated by Synthpop</span>
+<span class="n">df_mock</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;train&quot;</span><span class="p">:</span> <span class="n">df_synth</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="p">),</span>
+    <span class="s2">&quot;test&quot;</span><span class="p">:</span> <span class="n">df_synth</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()),</span>
+    <span class="s2">&quot;2nd_gen&quot;</span><span class="p">:</span> <span class="n">df_synth</span><span class="p">[</span><span class="s2">&quot;2nd_gen&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="p">),</span>
+<span class="p">}</span>
+
+<span class="n">synth_datasets</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;synthpop&quot;</span><span class="p">:</span> <span class="n">df_synth</span><span class="p">,</span> <span class="s2">&quot;random&quot;</span><span class="p">:</span> <span class="n">df_mock</span><span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<section id="Configure-the-metadata-dictionary">
+<h3>Configure the metadata dictionary<a class="headerlink" href="#Configure-the-metadata-dictionary" title="Permalink to this heading">#</a></h3>
+</section>
+</section>
+<section id="The-continuous-and-categorical-variables-need-to-be-specified,-as-well-as-the-variable-to-predict">
+<h2>The continuous and categorical variables need to be specified, as well as the variable to predict<a class="headerlink" href="#The-continuous-and-categorical-variables-need-to-be-specified,-as-well-as-the-variable-to-predict" title="Permalink to this heading">#</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;continuous&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;Clump_Thickness&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Uniformity_of_Cell_Size&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Uniformity_of_Cell_Shape&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Marginal_Adhesion&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Single_Epithelial_Cell_Size&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Bland_Chromatin&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Normal_Nucleoli&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Mitoses&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Bare_Nuclei&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;categorical&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Class&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;variable_to_predict&quot;</span><span class="p">:</span> <span class="s2">&quot;Class&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<section id="Generate-the-metareport">
+<h3>Generate the metareport<a class="headerlink" href="#Generate-the-metareport" title="Permalink to this heading">#</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span>  <span class="c1"># see the notebooks utility_report and privacy_report for more details</span>
+    <span class="s2">&quot;cross_learning&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s2">&quot;num_repeat&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;num_kfolds&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s2">&quot;num_optuna_trials&quot;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
+    <span class="s2">&quot;use_gpu&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;sampling_frac&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">metareport</span> <span class="o">=</span> <span class="n">Metareport</span><span class="p">(</span>
+    <span class="n">dataset_name</span><span class="o">=</span><span class="s2">&quot;Wisconsin Breast Cancer Dataset&quot;</span><span class="p">,</span>
+    <span class="n">df_real</span><span class="o">=</span><span class="n">df_real</span><span class="p">,</span>
+    <span class="n">synthetic_datasets</span><span class="o">=</span><span class="n">synth_datasets</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>  <span class="c1"># will be automatically adjusted for larger or longer figures</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>  <span class="c1"># for reproducibility purposes</span>
+    <span class="n">metareport_folderpath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># a dictionary containing the path of each already computed report to load and compare</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># list of the metrics to compute. Can be utility or privacy metrics. If not specified, all the metrics are computed.</span>
+    <span class="n">params</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span>  <span class="c1"># the dictionary containing the parameters for both utility and privacy reports</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">metareport</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/data8/install/anaconda3/envs/synthetic_data_p3.10/lib/python3.10/site-packages/xgboost/core.py:158: UserWarning: [21:31:25] WARNING: /workspace/src/common/error_msg.cc:58: Falling back to prediction using DMatrix due to mismatched devices. This might lead to higher memory usage and slower performance. XGBoost is running on: cuda:0, while the input data is on: cpu.
+Potential solutions:
+- Use a data structure that matches the device ordinal in the booster.
+- Set the device for booster before call to inplace_predict.
+
+This warning will only be shown once.
+
+  warnings.warn(smsg, UserWarning)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+GAN-Leaks test set shape: (228, 10)
+Monte Carlo Membership test set shape: (228, 10)
+Detector test set shape: (228, 10)
+LOGAN test set shape: (228, 10)
+TableGan test set shape: (228, 10)
+GAN-Leaks test set shape: (228, 10)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/data8/install/anaconda3/envs/synthetic_data_p3.10/lib/python3.10/site-packages/sklearn/metrics/_classification.py:1531: UndefinedMetricWarning: Precision is ill-defined and being set to 0.0 due to no predicted samples. Use `zero_division` parameter to control this behavior.
+  _warn_prf(average, modifier, f&#34;{metric.capitalize()} is&#34;, len(result))
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Monte Carlo Membership test set shape: (228, 10)
+Detector test set shape: (228, 10)
+LOGAN test set shape: (228, 10)
+TableGan test set shape: (228, 10)
+</pre></div></div>
+</div>
+</section>
+<section id="Get-the-summary-report-as-a-pandas-dataframe">
+<h3>Get the summary report as a pandas dataframe<a class="headerlink" href="#Get-the-summary-report-as-a-pandas-dataframe" title="Permalink to this heading">#</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df_summary</span> <span class="o">=</span> <span class="n">metareport</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df_summary</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>compared</th>
+      <th>random</th>
+      <th>synthpop</th>
+    </tr>
+    <tr>
+      <th>metric</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>cat_consis-within_ratio</th>
+      <td>1.000000</td>
+      <td>1.000000</td>
+    </tr>
+    <tr>
+      <th>cat_stats-frequency_coverage</th>
+      <td>0.975824</td>
+      <td>0.956044</td>
+    </tr>
+    <tr>
+      <th>cat_stats-support_coverage</th>
+      <td>1.000000</td>
+      <td>1.000000</td>
+    </tr>
+    <tr>
+      <th>classif-diff_real_synth</th>
+      <td>0.065878</td>
+      <td>0.004307</td>
+    </tr>
+    <tr>
+      <th>collision-avg_num_appearance_collision_real</th>
+      <td>6.428571</td>
+      <td>3.403509</td>
+    </tr>
+    <tr>
+      <th>collision-avg_num_appearance_collision_synth</th>
+      <td>1.285714</td>
+      <td>3.263158</td>
+    </tr>
+    <tr>
+      <th>collision-avg_num_appearance_realcontrol</th>
+      <td>1.349112</td>
+      <td>1.349112</td>
+    </tr>
+    <tr>
+      <th>collision-avg_num_appearance_realtrain</th>
+      <td>1.463023</td>
+      <td>1.463023</td>
+    </tr>
+    <tr>
+      <th>collision-avg_num_appearance_synth</th>
+      <td>1.006637</td>
+      <td>1.413043</td>
+    </tr>
+    <tr>
+      <th>collision-f1_score</th>
+      <td>0.000000</td>
+      <td>0.300792</td>
+    </tr>
+    <tr>
+      <th>collision-precision</th>
+      <td>0.000000</td>
+      <td>0.177019</td>
+    </tr>
+    <tr>
+      <th>collision-recall</th>
+      <td>0.000000</td>
+      <td>1.000000</td>
+    </tr>
+    <tr>
+      <th>collision-recovery_rate</th>
+      <td>0.000000</td>
+      <td>0.183280</td>
+    </tr>
+    <tr>
+      <th>cont_consis-within_ratio</th>
+      <td>1.000000</td>
+      <td>1.000000</td>
+    </tr>
+    <tr>
+      <th>cont_stats-iqr_l1_distance</th>
+      <td>0.092593</td>
+      <td>0.080247</td>
+    </tr>
+    <tr>
+      <th>cont_stats-iqr_l1_distance_train_test_ref</th>
+      <td>0.098765</td>
+      <td>0.098765</td>
+    </tr>
+    <tr>
+      <th>cont_stats-median_l1_distance</th>
+      <td>0.012346</td>
+      <td>0.012346</td>
+    </tr>
+    <tr>
+      <th>cont_stats-median_l1_distance_train_test_ref</th>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>dcr-dcr_5th_percent_synthreal_control</th>
+      <td>0.033333</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>dcr-dcr_5th_percent_synthreal_train</th>
+      <td>0.033333</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>dcr-dcr_5th_percent_train_test_ref</th>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>dcr-nndr_5th_percent_synthreal_control</th>
+      <td>0.723947</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>dcr-nndr_5th_percent_synthreal_train</th>
+      <td>0.554167</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>dcr-nndr_5th_percent_train_test_ref</th>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>dcr-ratio_match_synthreal_control</th>
+      <td>0.000000</td>
+      <td>0.333333</td>
+    </tr>
+    <tr>
+      <th>dcr-ratio_match_synthreal_train</th>
+      <td>0.000000</td>
+      <td>0.315789</td>
+    </tr>
+    <tr>
+      <th>dcr-ratio_match_train_test_ref</th>
+      <td>0.333333</td>
+      <td>0.333333</td>
+    </tr>
+    <tr>
+      <th>detector-precision</th>
+      <td>0.575000</td>
+      <td>0.525773</td>
+    </tr>
+    <tr>
+      <th>detector-precision_top1%</th>
+      <td>1.000000</td>
+      <td>0.500000</td>
+    </tr>
+    <tr>
+      <th>detector-precision_top50%</th>
+      <td>0.508772</td>
+      <td>0.517544</td>
+    </tr>
+    <tr>
+      <th>detector-tpr_at_0.001%_fpr</th>
+      <td>0.017544</td>
+      <td>0.008772</td>
+    </tr>
+    <tr>
+      <th>detector-tpr_at_0.1%_fpr</th>
+      <td>0.017544</td>
+      <td>0.008772</td>
+    </tr>
+    <tr>
+      <th>dist-prediction_auc_rescaled</th>
+      <td>0.950081</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>dist-prediction_mse</th>
+      <td>0.588812</td>
+      <td>0.000078</td>
+    </tr>
+    <tr>
+      <th>dist-propensity_mse</th>
+      <td>0.607270</td>
+      <td>0.000158</td>
+    </tr>
+    <tr>
+      <th>feature_imp-diff_permutation_importance</th>
+      <td>0.026678</td>
+      <td>0.003163</td>
+    </tr>
+    <tr>
+      <th>fscore-diff_f_score</th>
+      <td>1.245316</td>
+      <td>0.359862</td>
+    </tr>
+    <tr>
+      <th>ganleaks-precision_top1%</th>
+      <td>0.500000</td>
+      <td>0.500000</td>
+    </tr>
+    <tr>
+      <th>ganleaks-precision_top50%</th>
+      <td>0.807018</td>
+      <td>0.894737</td>
+    </tr>
+    <tr>
+      <th>hell_cat_univ_dist-hellinger_distance</th>
+      <td>0.017793</td>
+      <td>0.032174</td>
+    </tr>
+    <tr>
+      <th>hell_cat_univ_dist-hellinger_distance_train_test_ref</th>
+      <td>0.001057</td>
+      <td>0.001057</td>
+    </tr>
+    <tr>
+      <th>hell_cont_univ_dist-hellinger_distance</th>
+      <td>0.053408</td>
+      <td>0.041094</td>
+    </tr>
+    <tr>
+      <th>hell_cont_univ_dist-hellinger_distance_train_test_ref</th>
+      <td>0.057075</td>
+      <td>0.057075</td>
+    </tr>
+    <tr>
+      <th>kl_div_cat_univ_dist-kl_divergence</th>
+      <td>0.001273</td>
+      <td>0.004175</td>
+    </tr>
+    <tr>
+      <th>kl_div_cat_univ_dist-kl_divergence_train_test_ref</th>
+      <td>0.000004</td>
+      <td>0.000004</td>
+    </tr>
+    <tr>
+      <th>kl_div_cont_univ_dist-kl_divergence</th>
+      <td>0.012086</td>
+      <td>0.007177</td>
+    </tr>
+    <tr>
+      <th>kl_div_cont_univ_dist-kl_divergence_train_test_ref</th>
+      <td>0.013798</td>
+      <td>0.013798</td>
+    </tr>
+    <tr>
+      <th>logan-precision</th>
+      <td>0.475309</td>
+      <td>0.527778</td>
+    </tr>
+    <tr>
+      <th>logan-precision_top1%</th>
+      <td>0.500000</td>
+      <td>1.000000</td>
+    </tr>
+    <tr>
+      <th>logan-precision_top50%</th>
+      <td>0.473684</td>
+      <td>0.543860</td>
+    </tr>
+    <tr>
+      <th>logan-tpr_at_0.001%_fpr</th>
+      <td>0.008772</td>
+      <td>0.070175</td>
+    </tr>
+    <tr>
+      <th>logan-tpr_at_0.1%_fpr</th>
+      <td>0.008772</td>
+      <td>0.070175</td>
+    </tr>
+    <tr>
+      <th>mcmebership-precision_top1%</th>
+      <td>0.500000</td>
+      <td>0.500000</td>
+    </tr>
+    <tr>
+      <th>mcmebership-precision_top50%</th>
+      <td>0.526316</td>
+      <td>0.526316</td>
+    </tr>
+    <tr>
+      <th>pcd-norm</th>
+      <td>5.161654</td>
+      <td>0.285290</td>
+    </tr>
+    <tr>
+      <th>tablegan-precision</th>
+      <td>0.585366</td>
+      <td>0.485981</td>
+    </tr>
+    <tr>
+      <th>tablegan-precision_top1%</th>
+      <td>1.000000</td>
+      <td>0.500000</td>
+    </tr>
+    <tr>
+      <th>tablegan-precision_top50%</th>
+      <td>0.561404</td>
+      <td>0.508772</td>
+    </tr>
+    <tr>
+      <th>tablegan-tpr_at_0.001%_fpr</th>
+      <td>0.035088</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>tablegan-tpr_at_0.1%_fpr</th>
+      <td>0.035088</td>
+      <td>0.000000</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+</section>
+<section id="Style-the-result">
+<h2>Style the result<a class="headerlink" href="#Style-the-result" title="Permalink to this heading">#</a></h2>
+<p>The best value (minimum or maximal according to the submetric objective) is colored in green. The worst in yellow.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">df_summary</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">Metareport</span><span class="o">.</span><span class="n">make_pretty</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">df_summary</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+<span class="n">s</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<style type="text/css">
+#T_706d0_row0_col0, #T_706d0_row0_col1, #T_706d0_row2_col0, #T_706d0_row2_col1, #T_706d0_row13_col0, #T_706d0_row13_col1, #T_706d0_row15_col0, #T_706d0_row15_col1, #T_706d0_row16_col0, #T_706d0_row16_col1, #T_706d0_row17_col0, #T_706d0_row17_col1, #T_706d0_row20_col0, #T_706d0_row20_col1, #T_706d0_row23_col0, #T_706d0_row23_col1, #T_706d0_row26_col0, #T_706d0_row26_col1, #T_706d0_row37_col0, #T_706d0_row37_col1, #T_706d0_row40_col0, #T_706d0_row40_col1, #T_706d0_row42_col0, #T_706d0_row42_col1, #T_706d0_row44_col0, #T_706d0_row44_col1, #T_706d0_row46_col0, #T_706d0_row46_col1, #T_706d0_row52_col0, #T_706d0_row52_col1, #T_706d0_row53_col0, #T_706d0_row53_col1 {
+  background-color: lemonchiffon;
+  background-color: mediumaquamarine;
+}
+#T_706d0_row1_col0, #T_706d0_row3_col1, #T_706d0_row9_col0, #T_706d0_row10_col0, #T_706d0_row11_col0, #T_706d0_row12_col0, #T_706d0_row14_col1, #T_706d0_row18_col0, #T_706d0_row19_col0, #T_706d0_row21_col0, #T_706d0_row22_col0, #T_706d0_row24_col0, #T_706d0_row25_col0, #T_706d0_row27_col1, #T_706d0_row28_col1, #T_706d0_row29_col0, #T_706d0_row30_col1, #T_706d0_row31_col1, #T_706d0_row32_col1, #T_706d0_row33_col1, #T_706d0_row34_col1, #T_706d0_row35_col1, #T_706d0_row36_col1, #T_706d0_row38_col0, #T_706d0_row39_col0, #T_706d0_row41_col1, #T_706d0_row43_col0, #T_706d0_row45_col1, #T_706d0_row47_col0, #T_706d0_row48_col0, #T_706d0_row49_col0, #T_706d0_row50_col0, #T_706d0_row51_col0, #T_706d0_row54_col1, #T_706d0_row55_col1, #T_706d0_row56_col1, #T_706d0_row57_col1, #T_706d0_row58_col1, #T_706d0_row59_col1 {
+  background-color: mediumaquamarine;
+}
+#T_706d0_row1_col1, #T_706d0_row3_col0, #T_706d0_row9_col1, #T_706d0_row10_col1, #T_706d0_row11_col1, #T_706d0_row12_col1, #T_706d0_row14_col0, #T_706d0_row18_col1, #T_706d0_row19_col1, #T_706d0_row21_col1, #T_706d0_row22_col1, #T_706d0_row24_col1, #T_706d0_row25_col1, #T_706d0_row27_col0, #T_706d0_row28_col0, #T_706d0_row29_col1, #T_706d0_row30_col0, #T_706d0_row31_col0, #T_706d0_row32_col0, #T_706d0_row33_col0, #T_706d0_row34_col0, #T_706d0_row35_col0, #T_706d0_row36_col0, #T_706d0_row38_col1, #T_706d0_row39_col1, #T_706d0_row41_col0, #T_706d0_row43_col1, #T_706d0_row45_col0, #T_706d0_row47_col1, #T_706d0_row48_col1, #T_706d0_row49_col1, #T_706d0_row50_col1, #T_706d0_row51_col1, #T_706d0_row54_col0, #T_706d0_row55_col0, #T_706d0_row56_col0, #T_706d0_row57_col0, #T_706d0_row58_col0, #T_706d0_row59_col0 {
+  background-color: lemonchiffon;
+}
+</style>
+<table id="T_706d0">
+  <thead>
+    <tr>
+      <th class="index_name level0" >compared</th>
+      <th id="T_706d0_level0_col0" class="col_heading level0 col0" >random</th>
+      <th id="T_706d0_level0_col1" class="col_heading level0 col1" >synthpop</th>
+    </tr>
+    <tr>
+      <th class="index_name level0" >metric</th>
+      <th class="blank col0" >&nbsp;</th>
+      <th class="blank col1" >&nbsp;</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th id="T_706d0_level0_row0" class="row_heading level0 row0" >cat_consis-within_ratio</th>
+      <td id="T_706d0_row0_col0" class="data row0 col0" >1.00</td>
+      <td id="T_706d0_row0_col1" class="data row0 col1" >1.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row1" class="row_heading level0 row1" >cat_stats-frequency_coverage</th>
+      <td id="T_706d0_row1_col0" class="data row1 col0" >0.98</td>
+      <td id="T_706d0_row1_col1" class="data row1 col1" >0.96</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row2" class="row_heading level0 row2" >cat_stats-support_coverage</th>
+      <td id="T_706d0_row2_col0" class="data row2 col0" >1.00</td>
+      <td id="T_706d0_row2_col1" class="data row2 col1" >1.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row3" class="row_heading level0 row3" >classif-diff_real_synth</th>
+      <td id="T_706d0_row3_col0" class="data row3 col0" >0.07</td>
+      <td id="T_706d0_row3_col1" class="data row3 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row4" class="row_heading level0 row4" >collision-avg_num_appearance_collision_real</th>
+      <td id="T_706d0_row4_col0" class="data row4 col0" >6.43</td>
+      <td id="T_706d0_row4_col1" class="data row4 col1" >3.40</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row5" class="row_heading level0 row5" >collision-avg_num_appearance_collision_synth</th>
+      <td id="T_706d0_row5_col0" class="data row5 col0" >1.29</td>
+      <td id="T_706d0_row5_col1" class="data row5 col1" >3.26</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row6" class="row_heading level0 row6" >collision-avg_num_appearance_realcontrol</th>
+      <td id="T_706d0_row6_col0" class="data row6 col0" >1.35</td>
+      <td id="T_706d0_row6_col1" class="data row6 col1" >1.35</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row7" class="row_heading level0 row7" >collision-avg_num_appearance_realtrain</th>
+      <td id="T_706d0_row7_col0" class="data row7 col0" >1.46</td>
+      <td id="T_706d0_row7_col1" class="data row7 col1" >1.46</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row8" class="row_heading level0 row8" >collision-avg_num_appearance_synth</th>
+      <td id="T_706d0_row8_col0" class="data row8 col0" >1.01</td>
+      <td id="T_706d0_row8_col1" class="data row8 col1" >1.41</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row9" class="row_heading level0 row9" >collision-f1_score</th>
+      <td id="T_706d0_row9_col0" class="data row9 col0" >0.00</td>
+      <td id="T_706d0_row9_col1" class="data row9 col1" >0.30</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row10" class="row_heading level0 row10" >collision-precision</th>
+      <td id="T_706d0_row10_col0" class="data row10 col0" >0.00</td>
+      <td id="T_706d0_row10_col1" class="data row10 col1" >0.18</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row11" class="row_heading level0 row11" >collision-recall</th>
+      <td id="T_706d0_row11_col0" class="data row11 col0" >0.00</td>
+      <td id="T_706d0_row11_col1" class="data row11 col1" >1.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row12" class="row_heading level0 row12" >collision-recovery_rate</th>
+      <td id="T_706d0_row12_col0" class="data row12 col0" >0.00</td>
+      <td id="T_706d0_row12_col1" class="data row12 col1" >0.18</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row13" class="row_heading level0 row13" >cont_consis-within_ratio</th>
+      <td id="T_706d0_row13_col0" class="data row13 col0" >1.00</td>
+      <td id="T_706d0_row13_col1" class="data row13 col1" >1.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row14" class="row_heading level0 row14" >cont_stats-iqr_l1_distance</th>
+      <td id="T_706d0_row14_col0" class="data row14 col0" >0.09</td>
+      <td id="T_706d0_row14_col1" class="data row14 col1" >0.08</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row15" class="row_heading level0 row15" >cont_stats-iqr_l1_distance_train_test_ref</th>
+      <td id="T_706d0_row15_col0" class="data row15 col0" >0.10</td>
+      <td id="T_706d0_row15_col1" class="data row15 col1" >0.10</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row16" class="row_heading level0 row16" >cont_stats-median_l1_distance</th>
+      <td id="T_706d0_row16_col0" class="data row16 col0" >0.01</td>
+      <td id="T_706d0_row16_col1" class="data row16 col1" >0.01</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row17" class="row_heading level0 row17" >cont_stats-median_l1_distance_train_test_ref</th>
+      <td id="T_706d0_row17_col0" class="data row17 col0" >0.00</td>
+      <td id="T_706d0_row17_col1" class="data row17 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row18" class="row_heading level0 row18" >dcr-dcr_5th_percent_synthreal_control</th>
+      <td id="T_706d0_row18_col0" class="data row18 col0" >0.03</td>
+      <td id="T_706d0_row18_col1" class="data row18 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row19" class="row_heading level0 row19" >dcr-dcr_5th_percent_synthreal_train</th>
+      <td id="T_706d0_row19_col0" class="data row19 col0" >0.03</td>
+      <td id="T_706d0_row19_col1" class="data row19 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row20" class="row_heading level0 row20" >dcr-dcr_5th_percent_train_test_ref</th>
+      <td id="T_706d0_row20_col0" class="data row20 col0" >0.00</td>
+      <td id="T_706d0_row20_col1" class="data row20 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row21" class="row_heading level0 row21" >dcr-nndr_5th_percent_synthreal_control</th>
+      <td id="T_706d0_row21_col0" class="data row21 col0" >0.72</td>
+      <td id="T_706d0_row21_col1" class="data row21 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row22" class="row_heading level0 row22" >dcr-nndr_5th_percent_synthreal_train</th>
+      <td id="T_706d0_row22_col0" class="data row22 col0" >0.55</td>
+      <td id="T_706d0_row22_col1" class="data row22 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row23" class="row_heading level0 row23" >dcr-nndr_5th_percent_train_test_ref</th>
+      <td id="T_706d0_row23_col0" class="data row23 col0" >0.00</td>
+      <td id="T_706d0_row23_col1" class="data row23 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row24" class="row_heading level0 row24" >dcr-ratio_match_synthreal_control</th>
+      <td id="T_706d0_row24_col0" class="data row24 col0" >0.00</td>
+      <td id="T_706d0_row24_col1" class="data row24 col1" >0.33</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row25" class="row_heading level0 row25" >dcr-ratio_match_synthreal_train</th>
+      <td id="T_706d0_row25_col0" class="data row25 col0" >0.00</td>
+      <td id="T_706d0_row25_col1" class="data row25 col1" >0.32</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row26" class="row_heading level0 row26" >dcr-ratio_match_train_test_ref</th>
+      <td id="T_706d0_row26_col0" class="data row26 col0" >0.33</td>
+      <td id="T_706d0_row26_col1" class="data row26 col1" >0.33</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row27" class="row_heading level0 row27" >detector-precision</th>
+      <td id="T_706d0_row27_col0" class="data row27 col0" >0.57</td>
+      <td id="T_706d0_row27_col1" class="data row27 col1" >0.53</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row28" class="row_heading level0 row28" >detector-precision_top1%</th>
+      <td id="T_706d0_row28_col0" class="data row28 col0" >1.00</td>
+      <td id="T_706d0_row28_col1" class="data row28 col1" >0.50</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row29" class="row_heading level0 row29" >detector-precision_top50%</th>
+      <td id="T_706d0_row29_col0" class="data row29 col0" >0.51</td>
+      <td id="T_706d0_row29_col1" class="data row29 col1" >0.52</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row30" class="row_heading level0 row30" >detector-tpr_at_0.001%_fpr</th>
+      <td id="T_706d0_row30_col0" class="data row30 col0" >0.02</td>
+      <td id="T_706d0_row30_col1" class="data row30 col1" >0.01</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row31" class="row_heading level0 row31" >detector-tpr_at_0.1%_fpr</th>
+      <td id="T_706d0_row31_col0" class="data row31 col0" >0.02</td>
+      <td id="T_706d0_row31_col1" class="data row31 col1" >0.01</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row32" class="row_heading level0 row32" >dist-prediction_auc_rescaled</th>
+      <td id="T_706d0_row32_col0" class="data row32 col0" >0.95</td>
+      <td id="T_706d0_row32_col1" class="data row32 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row33" class="row_heading level0 row33" >dist-prediction_mse</th>
+      <td id="T_706d0_row33_col0" class="data row33 col0" >0.59</td>
+      <td id="T_706d0_row33_col1" class="data row33 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row34" class="row_heading level0 row34" >dist-propensity_mse</th>
+      <td id="T_706d0_row34_col0" class="data row34 col0" >0.61</td>
+      <td id="T_706d0_row34_col1" class="data row34 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row35" class="row_heading level0 row35" >feature_imp-diff_permutation_importance</th>
+      <td id="T_706d0_row35_col0" class="data row35 col0" >0.03</td>
+      <td id="T_706d0_row35_col1" class="data row35 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row36" class="row_heading level0 row36" >fscore-diff_f_score</th>
+      <td id="T_706d0_row36_col0" class="data row36 col0" >1.25</td>
+      <td id="T_706d0_row36_col1" class="data row36 col1" >0.36</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row37" class="row_heading level0 row37" >ganleaks-precision_top1%</th>
+      <td id="T_706d0_row37_col0" class="data row37 col0" >0.50</td>
+      <td id="T_706d0_row37_col1" class="data row37 col1" >0.50</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row38" class="row_heading level0 row38" >ganleaks-precision_top50%</th>
+      <td id="T_706d0_row38_col0" class="data row38 col0" >0.81</td>
+      <td id="T_706d0_row38_col1" class="data row38 col1" >0.89</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row39" class="row_heading level0 row39" >hell_cat_univ_dist-hellinger_distance</th>
+      <td id="T_706d0_row39_col0" class="data row39 col0" >0.02</td>
+      <td id="T_706d0_row39_col1" class="data row39 col1" >0.03</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row40" class="row_heading level0 row40" >hell_cat_univ_dist-hellinger_distance_train_test_ref</th>
+      <td id="T_706d0_row40_col0" class="data row40 col0" >0.00</td>
+      <td id="T_706d0_row40_col1" class="data row40 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row41" class="row_heading level0 row41" >hell_cont_univ_dist-hellinger_distance</th>
+      <td id="T_706d0_row41_col0" class="data row41 col0" >0.05</td>
+      <td id="T_706d0_row41_col1" class="data row41 col1" >0.04</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row42" class="row_heading level0 row42" >hell_cont_univ_dist-hellinger_distance_train_test_ref</th>
+      <td id="T_706d0_row42_col0" class="data row42 col0" >0.06</td>
+      <td id="T_706d0_row42_col1" class="data row42 col1" >0.06</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row43" class="row_heading level0 row43" >kl_div_cat_univ_dist-kl_divergence</th>
+      <td id="T_706d0_row43_col0" class="data row43 col0" >0.00</td>
+      <td id="T_706d0_row43_col1" class="data row43 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row44" class="row_heading level0 row44" >kl_div_cat_univ_dist-kl_divergence_train_test_ref</th>
+      <td id="T_706d0_row44_col0" class="data row44 col0" >0.00</td>
+      <td id="T_706d0_row44_col1" class="data row44 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row45" class="row_heading level0 row45" >kl_div_cont_univ_dist-kl_divergence</th>
+      <td id="T_706d0_row45_col0" class="data row45 col0" >0.01</td>
+      <td id="T_706d0_row45_col1" class="data row45 col1" >0.01</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row46" class="row_heading level0 row46" >kl_div_cont_univ_dist-kl_divergence_train_test_ref</th>
+      <td id="T_706d0_row46_col0" class="data row46 col0" >0.01</td>
+      <td id="T_706d0_row46_col1" class="data row46 col1" >0.01</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row47" class="row_heading level0 row47" >logan-precision</th>
+      <td id="T_706d0_row47_col0" class="data row47 col0" >0.48</td>
+      <td id="T_706d0_row47_col1" class="data row47 col1" >0.53</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row48" class="row_heading level0 row48" >logan-precision_top1%</th>
+      <td id="T_706d0_row48_col0" class="data row48 col0" >0.50</td>
+      <td id="T_706d0_row48_col1" class="data row48 col1" >1.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row49" class="row_heading level0 row49" >logan-precision_top50%</th>
+      <td id="T_706d0_row49_col0" class="data row49 col0" >0.47</td>
+      <td id="T_706d0_row49_col1" class="data row49 col1" >0.54</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row50" class="row_heading level0 row50" >logan-tpr_at_0.001%_fpr</th>
+      <td id="T_706d0_row50_col0" class="data row50 col0" >0.01</td>
+      <td id="T_706d0_row50_col1" class="data row50 col1" >0.07</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row51" class="row_heading level0 row51" >logan-tpr_at_0.1%_fpr</th>
+      <td id="T_706d0_row51_col0" class="data row51 col0" >0.01</td>
+      <td id="T_706d0_row51_col1" class="data row51 col1" >0.07</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row52" class="row_heading level0 row52" >mcmebership-precision_top1%</th>
+      <td id="T_706d0_row52_col0" class="data row52 col0" >0.50</td>
+      <td id="T_706d0_row52_col1" class="data row52 col1" >0.50</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row53" class="row_heading level0 row53" >mcmebership-precision_top50%</th>
+      <td id="T_706d0_row53_col0" class="data row53 col0" >0.53</td>
+      <td id="T_706d0_row53_col1" class="data row53 col1" >0.53</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row54" class="row_heading level0 row54" >pcd-norm</th>
+      <td id="T_706d0_row54_col0" class="data row54 col0" >5.16</td>
+      <td id="T_706d0_row54_col1" class="data row54 col1" >0.29</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row55" class="row_heading level0 row55" >tablegan-precision</th>
+      <td id="T_706d0_row55_col0" class="data row55 col0" >0.59</td>
+      <td id="T_706d0_row55_col1" class="data row55 col1" >0.49</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row56" class="row_heading level0 row56" >tablegan-precision_top1%</th>
+      <td id="T_706d0_row56_col0" class="data row56 col0" >1.00</td>
+      <td id="T_706d0_row56_col1" class="data row56 col1" >0.50</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row57" class="row_heading level0 row57" >tablegan-precision_top50%</th>
+      <td id="T_706d0_row57_col0" class="data row57 col0" >0.56</td>
+      <td id="T_706d0_row57_col1" class="data row57 col1" >0.51</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row58" class="row_heading level0 row58" >tablegan-tpr_at_0.001%_fpr</th>
+      <td id="T_706d0_row58_col0" class="data row58 col0" >0.04</td>
+      <td id="T_706d0_row58_col1" class="data row58 col1" >0.00</td>
+    </tr>
+    <tr>
+      <th id="T_706d0_level0_row59" class="row_heading level0 row59" >tablegan-tpr_at_0.1%_fpr</th>
+      <td id="T_706d0_row59_col0" class="data row59 col0" >0.04</td>
+      <td id="T_706d0_row59_col1" class="data row59 col1" >0.00</td>
+    </tr>
+  </tbody>
+</table></div>
+</div>
+</section>
+<section id="Save-the-styled-result-as-html">
+<h2>Save the styled result as html<a class="headerlink" href="#Save-the-styled-result-as-html" title="Permalink to this heading">#</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">temp_dir</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;df.html&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">to_html</span><span class="p">(),</span> <span class="n">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="Save-and-load-the-metareport">
+<h3>Save and load the metareport<a class="headerlink" href="#Save-and-load-the-metareport" title="Permalink to this heading">#</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">temp_dir</span><span class="p">:</span>
+    <span class="n">metareport</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">savepath</span><span class="o">=</span><span class="n">temp_dir</span><span class="p">)</span>  <span class="c1"># save</span>
+    <span class="n">new_report</span> <span class="o">=</span> <span class="n">Metareport</span><span class="p">(</span>
+        <span class="n">metareport_folderpath</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;synthpop&quot;</span><span class="p">:</span> <span class="n">temp_dir</span><span class="p">,</span> <span class="s2">&quot;random&quot;</span><span class="p">:</span> <span class="n">temp_dir</span><span class="p">}</span>
+    <span class="p">)</span>  <span class="c1"># load</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          <a class="prev-page" href="combined_report.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">How to generate a combined utility/privacy report?</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, IVADO PRF3 Human Health
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">How to generate a metareport?</a><ul>
+<li><a class="reference internal" href="#Create-a-metareport-comparing-synthetic-datasets-with-respect-to-a-list-of-metrics.-/! Only-for-the-summary.">Create a metareport comparing synthetic datasets with respect to a list of metrics. /! Only for the summary.</a><ul>
+<li><a class="reference internal" href="#Load-the-real-and-synthetic-Wisconsin-Breast-Cancer-Datasets">Load the real and synthetic Wisconsin Breast Cancer Datasets</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#Choose-the-synthetic-dataset">Choose the synthetic dataset</a><ul>
+<li><a class="reference internal" href="#Configure-the-metadata-dictionary">Configure the metadata dictionary</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#The-continuous-and-categorical-variables-need-to-be-specified,-as-well-as-the-variable-to-predict">The continuous and categorical variables need to be specified, as well as the variable to predict</a><ul>
+<li><a class="reference internal" href="#Generate-the-metareport">Generate the metareport</a></li>
+<li><a class="reference internal" href="#Get-the-summary-report-as-a-pandas-dataframe">Get the summary report as a pandas dataframe</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#Style-the-result">Style the result</a></li>
+<li><a class="reference internal" href="#Save-the-styled-result-as-html">Save the styled result as html</a><ul>
+<li><a class="reference internal" href="#Save-and-load-the-metareport">Save and load the metareport</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/scripts/furo.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    </body>
+</html>

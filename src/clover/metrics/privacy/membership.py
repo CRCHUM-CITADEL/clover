@@ -413,14 +413,14 @@ class GANLeaks(AttackModel):
         real_control = df_real["test"].sample(
             frac=self._sampling_frac,
             replace=False,
-            ignore_index=True,
+            ignore_index=False,
             random_state=self._random_state,
         )
 
         real_train = df_real["train"].sample(
             n=len(real_control),
             replace=False,
-            ignore_index=True,
+            ignore_index=False,
             random_state=self._random_state,
         )
 
@@ -454,7 +454,10 @@ class GANLeaks(AttackModel):
                 "distance_top1%": distance_top1,
                 "distance_top50%": distance_top50,
                 "prediction": {
-                    "test_index": df_test.index,
+                    "test_index": {
+                        "real_train_index": real_train.index,
+                        "real_control_index": real_control.index,
+                    },
                     "y_test": y_test,
                     "model_pred": y_pred_proba,
                 },
@@ -652,14 +655,14 @@ class MCMembership(AttackModel):
         real_control = df_real["test"].sample(
             frac=self._sampling_frac,
             replace=False,
-            ignore_index=True,
+            ignore_index=False,
             random_state=self._random_state,
         )
 
         real_train = df_real["train"].sample(
             n=len(real_control),
             replace=False,
-            ignore_index=True,
+            ignore_index=False,
             random_state=self._random_state,
         )
 
@@ -684,6 +687,11 @@ class MCMembership(AttackModel):
             },
             "detailed": {
                 "num_neighbors": num_neighbor,
+                "test_index": {
+                    "real_train_index": real_train.index,
+                    "real_control_index": real_control.index,
+                },
+                "y_test": y_test,
             },
         }
 
@@ -855,14 +863,14 @@ class Logan(AttackModel):
         real_control = df_real["test"].sample(
             frac=self._sampling_frac,
             replace=False,
-            ignore_index=True,
+            ignore_index=False,
             random_state=self._random_state,
         )
 
         real_train = df_real["train"].sample(
             n=len(real_control),
             replace=False,
-            ignore_index=True,
+            ignore_index=False,
             random_state=self._random_state,
         )
 
@@ -948,7 +956,10 @@ class Logan(AttackModel):
                 "precision": np.array(precision),
                 "roc": roc,
                 "prediction": {
-                    "test_index": df_test.index,
+                    "test_index": {
+                        "real_train_index": real_train.index,
+                        "real_control_index": real_control.index,
+                    },
                     "y_test": y_test,
                     "model_pred": y_pred_proba,
                 },
@@ -1214,14 +1225,14 @@ class TableGan(AttackModel):
         real_control = df_real["test"].sample(
             frac=self._sampling_frac,
             replace=False,
-            ignore_index=True,
+            ignore_index=False,
             random_state=self._random_state,
         )
 
         real_train = df_real["train"].sample(
             n=len(real_control),
             replace=False,
-            ignore_index=True,
+            ignore_index=False,
             random_state=self._random_state,
         )
 
@@ -1317,7 +1328,10 @@ class TableGan(AttackModel):
                 "precision": np.array(precision),
                 "roc": roc,
                 "prediction": {
-                    "test_index": df_test.index,
+                    "test_index": {
+                        "real_train_index": real_train.index,
+                        "real_control_index": real_control.index,
+                    },
                     "y_test": y_test,
                     "model_pred": y_test_pred_proba,
                 },
@@ -1504,7 +1518,7 @@ class Detector(AttackModel):
             return {}
 
         # Split the real test data which is not used to generate 1st generation synthetic data into 2 sets:
-        # 1 set used to train the detector and another set for control (ratio = 80%:20%)
+        # 1 set used to train the detector and another set for control (ratio = 50%:50%)
         real_control = df_real["test"].sample(
             frac=0.5,
             replace=False,
@@ -1534,14 +1548,12 @@ class Detector(AttackModel):
         real_train = df_real["train"].sample(
             n=len(real_control),
             replace=False,
-            ignore_index=True,
+            ignore_index=False,
             random_state=self._random_state,
         )
 
         # Construct the test set
-        df_test = pd.concat(
-            [real_train, real_control.reset_index(drop=True)], axis=0, ignore_index=True
-        )
+        df_test = pd.concat([real_train, real_control], axis=0, ignore_index=True)
 
         print(f"Detector test set shape: {df_test.shape}")
 
@@ -1617,7 +1629,10 @@ class Detector(AttackModel):
                 "precision": np.array(precision),
                 "roc": roc,
                 "prediction": {
-                    "test_index": df_test.index,
+                    "test_index": {
+                        "real_train_index": real_train.index,
+                        "real_control_index": real_control.index,
+                    },
                     "y_test": y_test,
                     "model_pred": y_pred_proba,
                 },

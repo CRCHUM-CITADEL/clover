@@ -16,6 +16,10 @@ jobs:
       with:
         python-version: "3.10"
 
+    - name: Copy sample data for notebook execution
+      run: |
+        cp -r data/ docs/tutorial/data/
+
     - name: Cache dependencies
       uses: actions/cache@v3
       with:
@@ -28,6 +32,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r dev-requirements.txt
+        
+    - name: Install package
+      run: pip install .
 
     - name: Build Sphinx documentation
       run: |

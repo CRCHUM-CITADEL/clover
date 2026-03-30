@@ -26,6 +26,7 @@ author = "IVADO PRF3 Human Health"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+nbsphinx_execute_notebooks = "never"
 extensions = [
     "sphinx.ext.autodoc",  # include documentation from docstrings
     "sphinx_autodoc_typehints",  # include signature hints

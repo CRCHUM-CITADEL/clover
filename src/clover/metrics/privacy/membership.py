@@ -436,8 +436,8 @@ class GANLeaks(AttackModel):
             precision_top50,
             distance_top1,
             distance_top50,
-            y_pred_proba,
             _,
+            y_pred_proba,
         ) = self.eval(
             df_test=df_test,
             y_test=y_test,

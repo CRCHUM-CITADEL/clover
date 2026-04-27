@@ -123,8 +123,14 @@ def test_metadata_without_variable_to_predict(
         "categorical": ["Class", "Normal_Nucleoli"],
     }
 
-    df_real = {s: df_wbcd[s][metadata["continuous"] + metadata["categorical"]] for s in ["train", "test"]}
-    df_syn = {s: df_mock_wbcd[s][metadata["continuous"] + metadata["categorical"]] for s in ["train", "test", "2nd_gen"]}
+    df_real = {
+        s: df_wbcd[s][metadata["continuous"] + metadata["categorical"]]
+        for s in ["train", "test"]
+    }
+    df_syn = {
+        s: df_mock_wbcd[s][metadata["continuous"] + metadata["categorical"]]
+        for s in ["train", "test", "2nd_gen"]
+    }
 
     report = Report(
         dataset_name="Wisconsin Breast Cancer Dataset",
@@ -133,7 +139,13 @@ def test_metadata_without_variable_to_predict(
         metadata=metadata,
         random_state=0,
         metrics=["DCR"],
-        params={"num_repeat": 1, "num_kfolds": 2, "num_optuna_trials": 1, "sampling_frac": 1.0, "use_gpu": False},
+        params={
+            "num_repeat": 1,
+            "num_kfolds": 2,
+            "num_optuna_trials": 1,
+            "sampling_frac": 1.0,
+            "use_gpu": False,
+        },
     )
     report.compute()
 

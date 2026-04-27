@@ -151,7 +151,9 @@ def test_generator_metadata_without_variable_to_predict(
         "categorical": ["Class", "Normal_Nucleoli"],
     }
 
-    gen = DataSynthesizerGenerator(df=df_wbcd["train"], metadata=metadata, random_state=0)
+    gen = DataSynthesizerGenerator(
+        df=df_wbcd["train"], metadata=metadata, random_state=0
+    )
 
     assert gen._metadata.get("variable_to_predict") is None
 

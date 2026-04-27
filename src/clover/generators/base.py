@@ -69,6 +69,8 @@ class Generator(metaclass=ABCMeta):
         :return: *None*
         """
 
+        metadata.setdefault("variable_to_predict", None)
+
         assert {"continuous", "categorical", "variable_to_predict"} == set(
             metadata.keys()
         ), "Missing keys in the metadata dictionary"

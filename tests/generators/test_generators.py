@@ -128,6 +128,36 @@ def test_generation_non_dp(
         ), "Datasets must have the same columns"
 
 
+def test_generator_metadata_without_variable_to_predict(
+    df_wbcd: dict[str, pd.DataFrame],
+) -> None:
+    """
+    Test that a generator can be instantiated without variable_to_predict in the metadata.
+
+    :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
+    :return: *None*
+    """
+    metadata = {
+        "continuous": [
+            "Clump_Thickness",
+            "Uniformity_of_Cell_Size",
+            "Uniformity_of_Cell_Shape",
+            "Marginal_Adhesion",
+            "Single_Epithelial_Cell_Size",
+            "Bland_Chromatin",
+            "Mitoses",
+            "Bare_Nuclei",
+        ],
+        "categorical": ["Class", "Normal_Nucleoli"],
+    }
+
+    gen = DataSynthesizerGenerator(
+        df=df_wbcd["train"], metadata=metadata, random_state=0
+    )
+
+    assert gen._metadata.get("variable_to_predict") is None
+
+
 @pytest.mark.parametrize(
     "generator_dp",
     [

@@ -107,6 +107,39 @@ def test_save_load_report(report: Report) -> None:
         )  # check the content of the new report
 
 
+def test_metadata_without_variable_to_predict(
+    df_wbcd: dict[str, pd.DataFrame],
+    df_mock_wbcd: dict[str, pd.DataFrame],
+) -> None:
+    """
+    Test that metadata without variable_to_predict does not raise and defaults to None.
+
+    :param df_wbcd: the real Wisconsin Breast Cancer Dataset fixture, split into **train** and **test** sets
+    :param df_mock_wbcd: the mock wbcd dataset fixture, split into **train**, **test** and **2nd_gen** sets
+    :return: *None*
+    """
+    metadata = {
+        "continuous": ["Clump_Thickness", "Bland_Chromatin"],
+        "categorical": ["Class", "Normal_Nucleoli"],
+    }
+
+    df_real = {s: df_wbcd[s][metadata["continuous"] + metadata["categorical"]] for s in ["train", "test"]}
+    df_syn = {s: df_mock_wbcd[s][metadata["continuous"] + metadata["categorical"]] for s in ["train", "test", "2nd_gen"]}
+
+    report = Report(
+        dataset_name="Wisconsin Breast Cancer Dataset",
+        df_real=df_real,
+        df_synthetic=df_syn,
+        metadata=metadata,
+        random_state=0,
+        metrics=["DCR"],
+        params={"num_repeat": 1, "num_kfolds": 2, "num_optuna_trials": 1, "sampling_frac": 1.0, "use_gpu": False},
+    )
+    report.compute()
+
+    assert metadata.get("variable_to_predict") is None
+
+
 @pytest.mark.parametrize(
     "metrics",
     [

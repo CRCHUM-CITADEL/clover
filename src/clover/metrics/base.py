@@ -142,6 +142,8 @@ class Metric(metaclass=ABCMeta):
             df_synthetic["test"].columns
         ), "Test sets must have the same columns"
 
+        metadata.setdefault("variable_to_predict", None)
+
         assert {"continuous", "categorical", "variable_to_predict"} == set(
             metadata.keys()
         ), "Missing keys in the metadata dictionary"
@@ -223,6 +225,8 @@ class Report(metaclass=ABCMeta):
         # Datasets
         self._dataset_name = dataset_name
         self._metadata = metadata
+        if self._metadata is not None:
+            self._metadata.setdefault("variable_to_predict", None)
         self._df_real = df_real
         self._df_synthetic = df_synthetic
         self._num_instances = (
